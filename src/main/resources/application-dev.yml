@@ -1,0 +1,26 @@
+# 数据库连接
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/db_course_arrangement?characterEncoding=utf-8
+    type: com.alibaba.druid.pool.DruidDataSource
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  #设置文件传输大小限制
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+  thymeleaf:
+    cache: true
+  devtools:
+    restart:
+      enabled: true
+      additional-paths: src/main/java
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/xml/*Mapper.xml
+  typeAliasesPackage: com.lyk.coursearrange.entity
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
