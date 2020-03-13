@@ -1,8 +1,8 @@
 package com.lyk.coursearrange.service.impl;
 
-import com.lyk.coursearrange.entity.Student;
-import com.lyk.coursearrange.dao.StudentDao;
-import com.lyk.coursearrange.service.StudentService;
+import com.lyk.coursearrange.entity.Teacher;
+import com.lyk.coursearrange.dao.TeacherDao;
+import com.lyk.coursearrange.service.TeacherService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +15,6 @@ import org.springframework.stereotype.Service;
  * @since 2020-03-13
  */
 @Service
-public class StudentServiceImpl extends ServiceImpl<StudentDao, Student> implements StudentService {
+public class TeacherServiceImpl extends ServiceImpl<TeacherDao, Teacher> implements TeacherService {
 
 }

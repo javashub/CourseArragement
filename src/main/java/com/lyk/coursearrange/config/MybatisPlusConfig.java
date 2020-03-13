@@ -5,16 +5,18 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+
 /**
  * @author: 15760
  * @Date: 2020/3/4
- * @Descripe: 分页插件
+ * @Descripe: MybatisPlus配置类
  */
 
 @Configuration
 @MapperScan("com.lyk.coursearrange.dao")
 public class MybatisPlusConfig {
 
+    // 分页插件
     @Bean
     public PaginationInterceptor paginationInterceptor() {
         return new PaginationInterceptor();

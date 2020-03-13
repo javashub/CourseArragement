@@ -1,6 +1,6 @@
 package com.lyk.coursearrange.dao;
 
-import com.lyk.coursearrange.entity.Student;
+import com.lyk.coursearrange.entity.Teacher;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
@@ -11,6 +11,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @author lequal
  * @since 2020-03-13
  */
-public interface StudentDao extends BaseMapper<Student> {
+public interface TeacherDao extends BaseMapper<Teacher> {
 
 }

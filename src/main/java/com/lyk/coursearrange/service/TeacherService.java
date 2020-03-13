@@ -1,6 +1,6 @@
 package com.lyk.coursearrange.service;
 
-import com.lyk.coursearrange.entity.Student;
+import com.lyk.coursearrange.entity.Teacher;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -11,6 +11,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author lequal
  * @since 2020-03-13
  */
-public interface StudentService extends IService<Student> {
+public interface TeacherService extends IService<Teacher> {
 
 }
