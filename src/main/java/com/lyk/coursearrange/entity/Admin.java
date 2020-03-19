@@ -1,5 +1,8 @@
 package com.lyk.coursearrange.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import lombok.AllArgsConstructor;
@@ -91,13 +94,14 @@ public class Admin extends Model<Admin> {
      */
     private Integer status;
 
+    @TableLogic
     private Integer deleted;
 
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-
-
 
     @Override
     protected Serializable pkVal() {

@@ -21,4 +21,7 @@ public class MybatisPlusConfig {
     public PaginationInterceptor paginationInterceptor() {
         return new PaginationInterceptor();
     }
+
+    // 逻辑删除插件,MP3.1之后不需要配置
+
 }

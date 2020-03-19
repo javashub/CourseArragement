@@ -8,22 +8,22 @@
       </div>
 
       <!-- 登录表单 -->
-      <el-form class="login-form" ref="loginFormRef" :model="studentLoginForm" :rules="studentLoginFormRules">
-        <h3>学生登录</h3>
+      <el-form class="login-form" ref="loginFormRef" :model="adminLoginForm" :rules="adminLoginFormRules">
+        <h3>管理员登录</h3>
         <!-- 用户名 -->
         <el-form-item prop="username">
-          <el-input v-model="studentLoginForm.username" placeholder="请输入学号/用户名/姓名" prefix-icon="iconfont iconicon"></el-input>
+          <el-input v-model="adminLoginForm.username" placeholder="请输入编号/用户名/姓名" prefix-icon="iconfont iconicon"></el-input>
         </el-form-item>
         <!-- 密码 -->
         <el-form-item prop="password">
-          <el-input v-model="studentLoginForm.password" placeholder="请输入密码" prefix-icon="iconfont iconmima" type="password"></el-input>
+          <el-input v-model="adminLoginForm.password" placeholder="请输入密码" prefix-icon="iconfont iconmima" type="password"></el-input>
         </el-form-item>
-        <!-- 类型 -->
+        <!-- 登录类型 -->
         <el-form-item >
-          <el-select class="login-type"  placeholder="请选择登录类型" >
-            <el-option label="学生" value="shanghai"></el-option>
-            <el-option label="讲师" value="beijing"></el-option>
-          </el-select>
+          <template >
+            <el-radio v-model="radio" label="1" @change="getType()">管理员</el-radio>
+            <el-radio v-model="radio" label="2" @change="getType()">超级管理员</el-radio>
+          </template>
         </el-form-item>
         
         <!-- 按钮 -->
@@ -38,22 +38,26 @@
 
 <script>
 export default {
+  
+
   name: "Admin",
   data() {
     return {
+      // 类型选择，默认选择管理员登录
+      radio: '1',
       // 登录表单的对象
-      studentLoginForm: {
-        username: '1600300522',
-        password: 'lequal'
+      adminLoginForm: {
+        username: '',
+        password: ''
       },
-      studentLoginFormRules: {
+      adminLoginFormRules: {
         username: [
           { required: true, message: '请输入账号', trigger: 'blur' },
-          { min: 5, max: 12, message: '长度在 5 到 12 个字符', trigger: 'blur' }
+          { min: 3, max: 12, message: '长度在 5 到 12 个字符', trigger: 'blur' }
         ],
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
-          { min: 6, max: 15, message: '长度在 6 到 15 个字符', trigger: 'blur' }
+          { min: 3, max: 15, message: '长度在 6 到 15 个字符', trigger: 'blur' }
         ]
       },
     }
@@ -63,11 +67,28 @@ export default {
     resetLoginForm() {
       this.$refs.loginFormRef.resetFields();
     },
+    getType() {
+      // 调用这个方法直接获取到了类型
+    },
     // 表单预验证
     login() {
+      // 此处可以直接获取选中的类型值
+      console.log(this.radio);
+      
       this.$refs.loginFormRef.validate(valid => {
         if (!valid) return;
-        axios.get().then()
+        this.$axios.post('http://localhost:8080/admin/login', {
+          username: this.adminLoginForm.username,
+          password: this.adminLoginForm.password
+        })
+        .then((response) => {
+          // 成功响应
+          console.log(response);
+        }).catch((error) => {
+          // 失败
+          alert('失败！');
+          console.log(error)
+        });
       })
     }
   }
@@ -126,7 +147,7 @@ export default {
 
   .login-box {
     width: 550px;
-    height: 350px;
+    height: 380px;
     background-color: #fff;
     border-radius: 3px;
     position: absolute;
@@ -136,6 +157,4 @@ export default {
   }
   
   
-  
-
 </style>

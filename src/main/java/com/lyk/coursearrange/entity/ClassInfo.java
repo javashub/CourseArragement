@@ -1,10 +1,7 @@
 package com.lyk.coursearrange.entity;
 
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
-import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -62,8 +59,15 @@ public class ClassInfo extends Model<ClassInfo> {
     @TableLogic
     private Integer deleted;
 
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
+    @Override
+    protected Serializable pkVal() {
+        return this.id;
+    }
 
 }

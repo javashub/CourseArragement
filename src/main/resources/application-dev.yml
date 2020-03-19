@@ -10,23 +10,29 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+  # 热部署配置
+  devtools:
+    restart:
+      enable: true
+      additional-paths: src/main/java
+      exclude: WEB-INF/**
+  thymeleaf:
+    cache: false
 
-#设置文件传输大小限制
-servlet:
-  multipart:
-    max-file-size: 200MB
-    max-request-size: 200MB
-thymeleaf:
-  cache: true
-# 热部署
-devtools:
-  restart:
-    enabled: true
-    additional-paths: src/main/java
+  #设置文件传输大小限制
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/xml/*Mapper.xml
   typeAliasesPackage: com.lyk.coursearrange.entity
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-value: 1 #删除
+      logic-not-delete-value: 0 #不删除
 

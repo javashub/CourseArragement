@@ -10,7 +10,7 @@ import 'element-ui/lib/theme-chalk/index.css';
 import '@/assets/iconfonts/fonts/iconfont.css';
 // 引入全局样式
 import './assets/css/global.css';
-import { Button, Select, Form } from 'element-ui';
+import { Button, Select, Form, Radio } from 'element-ui';
 
 Vue.config.productionTip = false;
 Vue.prototype.$axios = axios;
@@ -20,6 +20,7 @@ Vue.use(ElementUI);
 Vue.use(Button);
 Vue.use(Select);
 Vue.use(Form);
+Vue.use(Radio);
 
 /* eslint-disable no-new */
 new Vue({

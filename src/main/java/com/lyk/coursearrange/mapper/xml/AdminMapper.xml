@@ -21,4 +21,12 @@
         <result column="update_time" property="updateTime" />
     </resultMap>
 
+<!--    <select id="adminLogin" resultType="com.lyk.coursearrange.entity.Admin">-->
+<!--        SELECT * FROM tb_admin WHERE admin_no='#{admin_no}' AND password='#{password}'-->
+<!--        UNION-->
+<!--        SELECT * FROM tb_admin WHERE username='#{username}' AND password='#{password}'-->
+<!--        UNION-->
+<!--        SELECT * FROM tb_admin WHERE realname='#{realname}' AND password='#{password}'-->
+<!--    </select>-->
+
 </mapper>

@@ -12,7 +12,7 @@
         <h3>学生登录</h3>
         <!-- 用户名 -->
         <el-form-item prop="username">
-          <el-input v-model="studentLoginForm.username" placeholder="请输入学号/用户名/姓名" prefix-icon="iconfont iconicon"></el-input>
+          <el-input v-model="studentLoginForm.username" placeholder="请输入学号" prefix-icon="iconfont iconicon"></el-input>
         </el-form-item>
         <!-- 密码 -->
         <el-form-item prop="password">
@@ -43,17 +43,17 @@ export default {
     return {
       // 登录表单的对象
       studentLoginForm: {
-        username: '1600300522',
-        password: 'lequal'
+        username: '',
+        password: ''
       },
       studentLoginFormRules: {
         username: [
           { required: true, message: '请输入账号', trigger: 'blur' },
-          { min: 5, max: 12, message: '长度在 5 到 12 个字符', trigger: 'blur' }
+          { min: 3, max: 12, message: '长度在 5 到 12 个字符', trigger: 'blur' }
         ],
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
-          { min: 6, max: 15, message: '长度在 6 到 15 个字符', trigger: 'blur' }
+          { min: 3, max: 15, message: '长度在 6 到 15 个字符', trigger: 'blur' }
         ]
       },
     }
@@ -67,7 +67,18 @@ export default {
     login() {
       this.$refs.loginFormRef.validate(valid => {
         if (!valid) return;
-        axios.get().then()
+          this.$axios.post('http://localhost:8080/student/login', {
+          username: this.studentLoginForm.username,
+          password: this.studentLoginForm.password
+        })
+        .then((response) => {
+          // 成功响应
+          console.log(response);
+        }).catch((error) => {
+          // 失败
+          alert('失败！');
+          console.log(error)
+        });
       })
     }
   }
@@ -134,7 +145,6 @@ export default {
     top: 50%;
     transform: translate(-50%, -50%);
   }
-  
   
   
 
