@@ -94,7 +94,7 @@ public class AdminController {
      */
     @DeleteMapping("/deleteteacher/{id}")
     public ServerResponse deleteTeacher(@PathVariable Integer id) {
-        Boolean b = teacherService.removeById(id);
+        boolean b = teacherService.removeById(id);
         if(b) {
             return ServerResponse.ofSuccess("删除成功！");
         }
@@ -151,10 +151,9 @@ public class AdminController {
      * @return
      */
     @GetMapping("/queryteacher")
-    public ServerResponse queryTeacher(@RequestParam(defaultValue = "1")Integer page, @RequestParam(defaultValue = "5")Integer limit) {
+    public ServerResponse queryTeacher(@RequestParam(defaultValue = "1")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
         QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
         wrapper.orderByDesc("update_time");
-        wrapper.eq("deleted", 0);
         Page<Teacher> pages = new Page<>(page, limit);
         // 调用分页查询
         teacherService.page(pages, wrapper);
@@ -177,7 +176,6 @@ public class AdminController {
     public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @RequestParam(defaultValue = "1") Integer page,
                                         @RequestParam(defaultValue = "10") Integer limit) {
         QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
-        wrapper.eq("deleted", 0);
         wrapper.orderByDesc("update_time");
         wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
         Page<Teacher> pages = new Page<>(page, limit);
@@ -202,7 +200,6 @@ public class AdminController {
     public ServerResponse queryStudent(@RequestParam(defaultValue = "1")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
         Page<Student> pages = new Page<>(page, limit);
         QueryWrapper<Student> wrapper = new QueryWrapper<>();
-        wrapper.eq("deleted", 0);
         wrapper.orderByDesc("update_time");
         studentService.page(pages, wrapper);
         List<Student> list = pages.getRecords();
@@ -212,7 +209,7 @@ public class AdminController {
         return ServerResponse.ofError("查询失败！");
     }
 
-    // 根据班级查询学生
+    // 根据班级查询学生*******未完成
     @GetMapping("/querystudentbyclassno/{classno}")
     public ServerResponse queryStudentByClassno(@PathVariable("classno") String classno) {
         // 班级编号为String类型，因此需要根据班级编号先查询到其ID（int类型）
@@ -257,17 +254,6 @@ public class AdminController {
 
 
 
-    // ↓↓↓↓↓↓↓↓↓    管理员对教室、教学楼的操作       ↓↓↓↓↓↓↓↓
-
-    // 添加教室
-
-
-
-    // 删除教室
-
-
-
-    // 修改教室
 
 
 

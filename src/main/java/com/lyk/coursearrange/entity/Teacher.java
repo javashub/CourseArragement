@@ -57,6 +57,11 @@ public class Teacher extends Model<Teacher> {
     private String jobtitle;
 
     /**
+     * 所属年级
+     */
+    private String gradeNo;
+
+    /**
      * 证件照(地址)
      */
     private String license;

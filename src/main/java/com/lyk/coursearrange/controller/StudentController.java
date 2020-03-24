@@ -7,13 +7,17 @@ import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.request.StudentLoginRequest;
 import com.lyk.coursearrange.entity.request.StudentRegisterRequest;
 import com.lyk.coursearrange.service.StudentService;
+import com.lyk.coursearrange.service.impl.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpSession;
+import java.time.LocalDateTime;
+import java.util.Random;
+
 /**
- * <p>
  *  前端控制器
- * </p>
+ *
  *
  * @author lequal
  * @since 2020-03-13
@@ -26,6 +30,8 @@ public class StudentController {
     private StudentService studentService;
 
 
+    @Autowired
+    private TokenService tokenService;
     /**
      * 学生登录
      * @param studentLoginRequest
@@ -33,13 +39,11 @@ public class StudentController {
      */
     @PostMapping("/login")
     public ServerResponse studentLogin(@RequestBody StudentLoginRequest studentLoginRequest) {
-        System.out.println("学生登录进来了。。。。。");
-        // 构造查询该学生帐号状态的条件，后面需要修改条件成学号、用户名、真实姓名这些条件
+        // 构造查询该学生帐号状态的条件，直接使用学号登录，用户名，真实姓名可能出现相同的
         // 或者干脆用用户名登录好了
         QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("student_no", studentLoginRequest.getUsername());
         // 查询是否有该学生
         Student student2 = studentService.getOne(wrapper);
-        Student student = studentService.studentLogin(studentLoginRequest.getUsername(), studentLoginRequest.getPassword());
 
         if (student2 == null) {
             return ServerResponse.ofError("学生账号不存在!");
@@ -47,22 +51,38 @@ public class StudentController {
         }else if (student2.getStatus() != 0) {
             // 否则进行下一步验证账号的的状态
             return ServerResponse.ofError("该学生账号异常，请联系管理员");
-        } else if (student != null) {
-            //允许登录
-            return ServerResponse.ofSuccess(student);
+        }
+        // 调用登录
+        Student student = studentService.studentLogin(studentLoginRequest.getUsername(), studentLoginRequest.getPassword());
+        if (student != null) {
+            //允许登录,返回token
+            String token = tokenService.getToken(student);
+            return ServerResponse.ofSuccess(token);
         }
 
-        return ServerResponse.ofSuccess("账号或密码错误！");
+        return ServerResponse.ofSuccess("密码错误！");
     }
 
     /**
      * 学生注册
-     * @param studentRegisterRequest
+     * @param stu
      * @return
      */
     @PostMapping("/register")
-    public ServerResponse studentRegister(@RequestBody StudentRegisterRequest studentRegisterRequest) {
-
+    public ServerResponse studentRegister(@RequestBody StudentRegisterRequest stu) {
+        Student student = new Student();
+        student.setStudentNo(stu.getStudentNo()); // 学号
+        student.setUsername(stu.getUsername()); // 用户名
+        student.setPassword(stu.getPassword()); // 密码
+        student.setRealname(stu.getRealname()); // 真实姓名
+        student.setGrade(stu.getGrade()); // 年级
+        student.setAge(stu.getAge()); // 年龄
+        student.setAddress(stu.getAddress()); // 地址
+        student.setTelephone(stu.getTelephone()); // 联系方式
+        boolean b = studentService.save(student);
+        if (b) {
+            return ServerResponse.ofSuccess("注册成功", student);
+        }
         return ServerResponse.ofError("注册失败!");
     }
 
@@ -73,7 +93,7 @@ public class StudentController {
      */
     @PostMapping("/modifystudent")
     public ServerResponse modifyStudent(@RequestBody Student student) {
-        // 修改
+        // 修改操作
         return studentService.updateById(student) ? ServerResponse.ofSuccess("修改成功") : ServerResponse.ofError("修改失败");
     }
 
@@ -89,14 +109,45 @@ public class StudentController {
         return ServerResponse.ofSuccess(studentService.getById(id));
     }
 
+    /**
+     * 学生查询自己的课表,一人一课表
+     * @return
+     */
+    @GetMapping("/querystudentcourse")
+    public ServerResponse queryStudentCourse() {
 
-    // 选网课
+        return ServerResponse.ofError();
+    }
+
+    /**
+     * 给学生创建学号
+     * @param grade
+     * @return
+     */
+    @PostMapping("/createno/{grade}")
+    public ServerResponse create(@PathVariable("grade") String grade) {
+        Random r = new Random();
+        // 得到当前年份字符串2020
+        String str1 = LocalDateTime.now().getYear()+"";
+        System.out.println(str1);
+        // 得到10位学号,2020 02 7845
+        do {
+            // 随机四位数
+            String str2 = String.valueOf(r.nextInt(10000));
+            // 拼接学号  2020##****  十位(三个部分):  年:4位  年级:两位  随机数4位
+            String str3 = str1 + grade + str2;
+            // 查询学号是否已经存在的条件
+            QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("student_no", str3);
+            Student student = studentService.getOne(wrapper);
+            System.out.println("666666");
+            // 如果查不到该学号，则学号可用，跳出循环
+            if (student == null) {
+                return ServerResponse.ofSuccess(str3);
+            }
+        } while(true);
+    }
 
 
-    // 查看课表
-
-
-    // 预约场地
 
 
 }

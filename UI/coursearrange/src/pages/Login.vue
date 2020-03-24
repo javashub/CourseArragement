@@ -17,15 +17,7 @@
         <!-- 密码 -->
         <el-form-item prop="password">
           <el-input v-model="studentLoginForm.password" placeholder="请输入密码" prefix-icon="iconfont iconmima" type="password"></el-input>
-        </el-form-item>
-        <!-- 类型 -->
-        <!-- <el-form-item >
-          <el-select class="login-type"  placeholder="请选择登录类型" >
-            <el-option label="学生" value="shanghai"></el-option>
-            <el-option label="讲师" value="beijing"></el-option>
-          </el-select>
-        </el-form-item> -->
-        
+        </el-form-item>        
         <!-- 按钮 -->
         <el-form-item class="button">
           <el-button type="primary" @click="login">登录</el-button>
@@ -72,8 +64,9 @@ export default {
           password: this.studentLoginForm.password
         })
         .then((response) => {
-          // 成功响应
-          console.log(response);
+          // 成功响应,得到token
+          window.localStorage.setItem('token', response.data.message)
+
         }).catch((error) => {
           // 失败
           alert('失败！');

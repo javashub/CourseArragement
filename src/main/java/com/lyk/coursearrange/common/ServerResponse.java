@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
 /**
  * @author: 15760
  * @Date: 2020/3/13
@@ -22,8 +23,10 @@ public class ServerResponse {
     // 信息
     private String message;
 
-    // 数据对象
+    // 数据
     private Object data;
+
+
 
     private  ServerResponse(int code, String message) {
         this.code = code;

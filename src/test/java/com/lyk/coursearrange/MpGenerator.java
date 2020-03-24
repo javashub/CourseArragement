@@ -8,15 +8,15 @@ import com.baomidou.mybatisplus.generator.config.PackageConfig;
 import com.baomidou.mybatisplus.generator.config.StrategyConfig;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * @author: 15760
  * @Date: 2019/11/30
- * @Descripe:自动生成代码
+ * @Descripe: 代码生成器
  */
 
 public class MpGenerator {
+
     /**
      * MySQL 生成演示
      */
@@ -68,7 +68,7 @@ public class MpGenerator {
         // strategy.setCapitalMode(true);// 全局大写命名 ORACLE 注意
         strategy.setTablePrefix(new String[] { "tb_" });// 此处可以修改为您的表前缀
         strategy.setNaming(NamingStrategy.underline_to_camel);// 表名生成策略
-        strategy.setInclude(new String[] { "tb_student", "tb_teacher"}); // 需要生成的表
+        strategy.setInclude(new String[] { "tb_classroom"}); // 需要生成的表
         mpg.setStrategy(strategy);
         // strategy.setExclude(new String[]{"test"}); // 排除生成的表
         // 自定义实体父类

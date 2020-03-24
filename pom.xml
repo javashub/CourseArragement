@@ -20,6 +20,19 @@
 
     <!-- 依赖 -->
     <dependencies>
+        <!-- 权限认证 -->
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>3.8.3</version>
+        </dependency>
+
+        <!-- fastjson转换 -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.62</version>
+        </dependency>
         <!--Swagger2-->
         <dependency>
             <groupId>io.springfox</groupId>
