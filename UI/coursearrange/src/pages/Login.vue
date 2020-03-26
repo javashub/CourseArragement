@@ -21,7 +21,7 @@
         <!-- 按钮 -->
         <el-form-item class="button">
           <el-button type="primary" @click="login">登录</el-button>
-          <el-button type="info" @click="resetLoginForm">重置</el-button>
+          <el-button type="info" @click="registerNo">注册账号</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -51,12 +51,14 @@ export default {
     }
   },
   methods: {
-    // 重置方法
-    resetLoginForm() {
-      this.$refs.loginFormRef.resetFields();
+    
+    registerNo() {
+      // 跳转到注册页面
+      window.location.href="http://localhost:8081/#/student/register"
     },
-    // 表单预验证
+    
     login() {
+      // 表单预验证
       this.$refs.loginFormRef.validate(valid => {
         if (!valid) return;
           this.$axios.post('http://localhost:8080/student/login', {
@@ -65,6 +67,7 @@ export default {
         })
         .then((response) => {
           // 成功响应,得到token
+          console.log(response)
           window.localStorage.setItem('token', response.data.message)
 
         }).catch((error) => {
@@ -88,10 +91,10 @@ export default {
       box-sizing: border-box;
     }
 
-  .login-type {
-    display: flex;
-    justify-content: left;
-  }
+  // .login-type {
+  //   display: flex;
+  //   justify-content: left;
+  // }
 
   .button {
     display: flex;
@@ -130,7 +133,7 @@ export default {
 
   .login-box {
     width: 550px;
-    height: 350px;
+    height: 320px;
     background-color: #fff;
     border-radius: 3px;
     position: absolute;

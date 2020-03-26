@@ -70,13 +70,13 @@ public class StudentController {
      */
     @PostMapping("/register")
     public ServerResponse studentRegister(@RequestBody StudentRegisterRequest stu) {
+        System.out.println(stu);
         Student student = new Student();
         student.setStudentNo(stu.getStudentNo()); // 学号
         student.setUsername(stu.getUsername()); // 用户名
         student.setPassword(stu.getPassword()); // 密码
         student.setRealname(stu.getRealname()); // 真实姓名
         student.setGrade(stu.getGrade()); // 年级
-        student.setAge(stu.getAge()); // 年龄
         student.setAddress(stu.getAddress()); // 地址
         student.setTelephone(stu.getTelephone()); // 联系方式
         boolean b = studentService.save(student);

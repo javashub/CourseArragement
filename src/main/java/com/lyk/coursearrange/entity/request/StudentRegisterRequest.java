@@ -24,8 +24,6 @@ public class StudentRegisterRequest {
      */
     private String grade;
 
-    private Integer age;
-
     private String address;
 
     private String telephone;
