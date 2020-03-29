@@ -146,46 +146,28 @@ public class AdminController {
     }
 
 
-    /**
-     * 查询所有讲师，带分页
-     * @return
-     */
-    @GetMapping("/queryteacher")
-    public ServerResponse queryTeacher(@RequestParam(defaultValue = "1")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
-        QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
-        wrapper.orderByDesc("update_time");
-        Page<Teacher> pages = new Page<>(page, limit);
-        // 调用分页查询
-        teacherService.page(pages, wrapper);
-        List<Teacher> list = pages.getRecords();
-//        Long total = pages.getTotal();
-//        Map<String, Object> map = new HashMap<>();
-//        map.put("total", total);
-//        map.put("data", list);
-        if (list != null) {
-            return ServerResponse.ofSuccess(list);
-        }
-        return ServerResponse.ofError("查询失败！");
-    }
+//    /**
+//     * 查询所有讲师，带分页
+//     * @return
+//     */
+//    @GetMapping("/queryteacher")
+//    public ServerResponse queryTeacher(@RequestParam(defaultValue = "1")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
+//        QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
+//        wrapper.orderByDesc("update_time");
+//        Page<Teacher> pages = new Page<>(page, limit);
+//        // 调用分页查询
+//        teacherService.page(pages, wrapper);
+//        List<Teacher> list = pages.getRecords();
+////        Long total = pages.getTotal();
+////        Map<String, Object> map = new HashMap<>();
+////        map.put("total", total);
+////        map.put("data", list);
+//        if (list != null) {
+//            return ServerResponse.ofSuccess(list);
+//        }
+//        return ServerResponse.ofError("查询不到数据！");
+//    }
 
-    /**
-     * 根据姓名关键字搜索讲师
-     * @return
-     */
-    @GetMapping("/searchteacher/{keyword}")
-    public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @RequestParam(defaultValue = "1") Integer page,
-                                        @RequestParam(defaultValue = "10") Integer limit) {
-        QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
-        wrapper.orderByDesc("update_time");
-        wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
-        Page<Teacher> pages = new Page<>(page, limit);
-        teacherService.page(pages, wrapper);
-        List<Teacher> list = pages.getRecords();
-        if (list != null) {
-            return ServerResponse.ofSuccess(list);
-        }
-        return ServerResponse.ofError("查询失败!");
-    }
 
 
     // ↓↓↓↓↓↓↓↓↓    管理员对学生的操作       ↓↓↓↓↓↓↓↓
@@ -197,7 +179,8 @@ public class AdminController {
      * @return
      */
     @GetMapping("/querystudent")
-    public ServerResponse queryStudent(@RequestParam(defaultValue = "1")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
+    public ServerResponse queryStudent(@RequestParam(defaultValue = "1")Integer page,
+                                       @RequestParam(defaultValue = "10")Integer limit) {
         Page<Student> pages = new Page<>(page, limit);
         QueryWrapper<Student> wrapper = new QueryWrapper<>();
         wrapper.orderByDesc("update_time");
@@ -206,20 +189,24 @@ public class AdminController {
         if (list != null) {
             return ServerResponse.ofSuccess(list);
         }
-        return ServerResponse.ofError("查询失败！");
+        return ServerResponse.ofError("查询不到数据");
     }
 
-    // 根据班级查询学生*******未完成
+    // 根据班级查询学生，学生表中班级字段已经是String类型的班级编号了，因此可以直接查询
     @GetMapping("/querystudentbyclassno/{classno}")
-    public ServerResponse queryStudentByClassno(@PathVariable("classno") String classno) {
-        // 班级编号为String类型，因此需要根据班级编号先查询到其ID（int类型）
-        // 得到ID之后将学生表中所属班级中id与查询的班级id匹配的学生显示出来
-        // 并且学生不是被删除的
-
+    public ServerResponse queryStudentByClassno(@PathVariable("classno") String classno,
+                                                @RequestParam(defaultValue = "1") Integer page,
+                                                @RequestParam(defaultValue = "10") Integer limit) {
+        Page<Student> pages = new Page<>();
         QueryWrapper<Student> wrapper = new QueryWrapper<>();
-        // 构造查询班级id的条件
-        wrapper.eq("class_no", classno);
-        return ServerResponse.ofError();
+        wrapper.eq("class_no", classno).orderByDesc("update_time");
+        studentService.page(pages, wrapper);
+        // 查询学生列表
+        List<Student> list = pages.getRecords();
+        if (list != null) {
+            return ServerResponse.ofSuccess(list);
+        }
+        return ServerResponse.ofError("查询不到数据");
     }
 
 

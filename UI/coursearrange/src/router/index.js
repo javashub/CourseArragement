@@ -4,6 +4,9 @@ import Home from '@/home/Home';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Admin from '@/pages/Admin';
+import ManagerMain from '@/manager/ManagerMain';
+import TeacherList from '@/manager/components/TeacherList';
+import AddTeacher from '@/manager/components/AddTeacher';
 
 Vue.use(Router)
 
@@ -26,8 +29,25 @@ export default new Router({
     },
     {
       path: '/admin/login',
-      name: 'Admin',
+      name: 'AdminLogin',
       component: Admin
+    },
+    {
+      path: '/admin',
+      name: 'Admin',
+      component: ManagerMain,
+      children: [
+        {
+          path: '/teacherList',
+          name: 'TeacherList',
+          component: TeacherList
+        },
+        {
+          path: '/addTeacher',
+          name: 'AddTeacher',
+          component: AddTeacher
+        }
+      ]
     }
   ]
 })

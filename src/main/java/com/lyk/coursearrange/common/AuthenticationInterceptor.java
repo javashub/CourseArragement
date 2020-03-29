@@ -1,10 +1,7 @@
 package com.lyk.coursearrange.common;
 
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
-import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.lyk.coursearrange.service.AdminService;
 import com.lyk.coursearrange.service.StudentService;
 import com.lyk.coursearrange.service.TeacherService;
