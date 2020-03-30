@@ -15,7 +15,7 @@ import { Button, Select, Form, Radio, Table, Container, Message } from 'element-
 Vue.config.productionTip = false;
 Vue.prototype.$axios = axios;
 // 配置axios请求的根路径
-axios.defaults.baseURL = 'http://127.0.0.1:8080/'
+// axios.defaults.baseURL = 'http://127.0.0.1:8080/'
 Vue.use(ElementUI);
 Vue.use(Button);
 Vue.use(Select);

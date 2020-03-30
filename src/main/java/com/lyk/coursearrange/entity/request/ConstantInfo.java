@@ -11,7 +11,7 @@ public class ConstantInfo {
     public static final String IS_FIX = "isFix";
 
     // 年级编号 2位
-    public static final String Grade_NO = "graderNo";
+    public static final String GRADE_NO = "graderNo";
 
     // 班级编号 位
     public static final String CLASS_NO = "classNo";
@@ -38,6 +38,28 @@ public class ConstantInfo {
     public static final String DEFAULT_CLASS_TIME = "00";
 
     // 设置各种类型的课程的适应度(码值)
+    // 语数英
+    public static final String MAIN_COURSE = "01";
 
+    // 物理化学生物 政治历史地理
+    public static final String SECONDARY_COURSE = "02";
+
+    // 实验课
+    public static final String EXPERIMENT_COURSE = "03";
+
+    // 体育课
+    public static final String PHYSICAL_COURSE = "04";
+
+    // 音乐课
+    public static final String MUSIC_COURSE = "05";
+
+    // 舞蹈课
+    public static final String DANCE_COURSE = "06";
+
+    // 信息技术
+    public static final String TECHNOLOGY_COURSE = "07";
+
+    // 设置遗传代数
+    public static final int GENERATION = 100;
 
 }

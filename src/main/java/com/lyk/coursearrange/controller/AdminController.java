@@ -16,7 +16,10 @@ import com.lyk.coursearrange.service.TeacherService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -207,6 +210,21 @@ public class AdminController {
             return ServerResponse.ofSuccess(list);
         }
         return ServerResponse.ofError("查询不到数据");
+    }
+
+    // 查询系统数据，学生人数，讲师人数，课程数
+    @GetMapping("/getsystemdata")
+    public ServerResponse getSystemData() {
+        // 学生数量
+        int students = studentService.count();
+        // 讲师数量
+        int teachers = teacherService.count();
+        // 课程数量
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("students", students);
+        map.put("teachers", teachers);
+        return ServerResponse.ofSuccess(map);
     }
 
 
