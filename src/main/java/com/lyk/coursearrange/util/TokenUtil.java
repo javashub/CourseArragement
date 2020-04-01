@@ -1,14 +1,10 @@
-package com.lyk.coursearrange.common;
+package com.lyk.coursearrange.util;
 
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.lyk.coursearrange.entity.Admin;
-import com.lyk.coursearrange.entity.Student;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
 
 /**
  * @author: 15760

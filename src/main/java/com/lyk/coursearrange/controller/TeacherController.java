@@ -2,6 +2,7 @@ package com.lyk.coursearrange.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Teacher;
@@ -79,17 +80,13 @@ public class TeacherController {
     }
 
     // 查询所有讲师，分页
-    @GetMapping("/queryteacher")
-    public ServerResponse queryTeacher(@RequestParam(defaultValue = "1") Integer page,
+    @GetMapping("/queryteacher/{page}")
+    public ServerResponse queryTeacher(@PathVariable(value = "page") Integer page,
                                        @RequestParam(defaultValue = "10") Integer limit) {
         Page<Teacher> pages = new Page<>(page, limit);
         QueryWrapper<Teacher> wrapper = new QueryWrapper<Teacher>().orderByDesc("update_time");
-        teacherService.page(pages, wrapper);
-        List<Teacher> list = pages.getRecords();
-        if (list != null) {
-            return ServerResponse.ofSuccess(list);
-        }
-        return ServerResponse.ofError("查询不到数据");
+        IPage<Teacher> iPage = teacherService.page(pages, wrapper);
+        return ServerResponse.ofSuccess(iPage);
     }
 
     /**
@@ -103,10 +100,9 @@ public class TeacherController {
         wrapper.orderByDesc("update_time");
         wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
         Page<Teacher> pages = new Page<>(page, limit);
-        teacherService.page(pages, wrapper);
-        List<Teacher> list = pages.getRecords();
-        if (list != null) {
-            return ServerResponse.ofSuccess(list);
+        IPage<Teacher> iPage = teacherService.page(pages, wrapper);
+        if (page != null) {
+            return ServerResponse.ofSuccess(iPage);
         }
         return ServerResponse.ofError("查询失败!");
     }

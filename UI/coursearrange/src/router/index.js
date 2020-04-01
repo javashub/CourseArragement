@@ -7,6 +7,8 @@ import Admin from '@/pages/Admin';
 import ManagerMain from '@/manager/ManagerMain';
 import TeacherList from '@/manager/components/TeacherList';
 import AddTeacher from '@/manager/components/AddTeacher';
+import SystemData from '@/manager/SystemData';
+import AddClassroom from '@/manager/components/AddClassroom';
 
 Vue.use(Router)
 
@@ -37,6 +39,18 @@ export default new Router({
       name: 'Admin',
       component: ManagerMain,
       children: [
+        {
+          // 登录成功跳转到该路径
+          path: '/addclassroom',
+          name: 'AddClassroom',
+          component: AddClassroom
+        },
+        {
+          // 登录成功跳转到该路径
+          path: '/systemdata',
+          name: 'SystemData',
+          component: SystemData
+        },
         {
           path: '/teacherList',
           name: 'TeacherList',

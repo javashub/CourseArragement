@@ -2,6 +2,7 @@ package com.lyk.coursearrange.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Classroom;
@@ -11,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.stereotype.Controller;
-
-import java.util.List;
 
 /**
  * <p>
@@ -34,16 +33,15 @@ public class ClassroomController {
      * 带分页显示教室列表
      * @return
      */
-    @GetMapping("/queryclassroom")
-    public ServerResponse queryClassroom(@RequestParam(defaultValue = "1")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
+    @GetMapping("/queryclassroom/{page}")
+    public ServerResponse queryClassroom(@PathVariable("page")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
         QueryWrapper<Classroom> wrapper = new QueryWrapper<>();
         wrapper.orderByDesc("update_time");
         Page<Classroom> pages = new Page<>(page, limit);
         // 调用分页查询
-        classroomService.page(pages, wrapper);
-        List<Classroom> list = classroomService.list();
-        if (list != null) {
-            return ServerResponse.ofSuccess(list);
+        IPage<Classroom> ipage = classroomService.page(pages, wrapper);
+        if (ipage != null) {
+            return ServerResponse.ofSuccess(ipage);
         }
         return ServerResponse.ofError("查询不到数据");
     }
@@ -67,6 +65,11 @@ public class ClassroomController {
         return ServerResponse.ofError("添加失败");
     }
 
+    /**
+     * 删除教室
+     * @param id
+     * @return
+     */
     @DeleteMapping("/deleteclassroom/{id}")
     public ServerResponse deleteClassroomById(@PathVariable("id") Integer id) {
         boolean b = classroomService.removeById(id);

@@ -44,7 +44,7 @@ public class AdminController {
     // ↓↓↓↓↓↓↓↓↓    管理员对自己的操作       ↓↓↓↓↓↓↓↓
 
     /**
-     * 普通管理员登录
+     * 管理员登录
      * @param adminLoginRequest
      * @return
      */
@@ -147,29 +147,6 @@ public class AdminController {
         teacherService.updateById(teacher);
         return ServerResponse.ofSuccess("操作成功！");
     }
-
-
-//    /**
-//     * 查询所有讲师，带分页
-//     * @return
-//     */
-//    @GetMapping("/queryteacher")
-//    public ServerResponse queryTeacher(@RequestParam(defaultValue = "1")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
-//        QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
-//        wrapper.orderByDesc("update_time");
-//        Page<Teacher> pages = new Page<>(page, limit);
-//        // 调用分页查询
-//        teacherService.page(pages, wrapper);
-//        List<Teacher> list = pages.getRecords();
-////        Long total = pages.getTotal();
-////        Map<String, Object> map = new HashMap<>();
-////        map.put("total", total);
-////        map.put("data", list);
-//        if (list != null) {
-//            return ServerResponse.ofSuccess(list);
-//        }
-//        return ServerResponse.ofError("查询不到数据！");
-//    }
 
 
 

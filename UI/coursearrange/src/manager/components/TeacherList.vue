@@ -2,7 +2,7 @@
   <div>
     <!-- 功能 -->
     <div class="header-menu">
-      <el-input placeholder="搜索讲师" v-model="keyword">
+      <el-input placeholder="搜索讲师" v-model="keyword" @clear="inputListener" clearable>
       <el-button slot="append" type="primary" icon="el-icon-search" @click="searchTeacher">搜索</el-button>
       </el-input>
     </div>
@@ -25,11 +25,19 @@
     </el-table>
     <!-- 上一页，当前页，下一页 -->
     <div class="footer-button">
-      <el-button-group>
+      <!-- <el-button-group>
         <el-button type="primary" icon="el-icon-arrow-left" @click="prePage">上一页</el-button>
         
         <el-button type="primary" @click="nextPage">下一页<i class="el-icon-arrow-right el-icon--right" ></i></el-button>
-      </el-button-group>
+      </el-button-group> -->
+      <el-pagination
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+      :current-page.sync="page"
+      :page-size="pageSize"
+      layout="total, prev, pager, next"
+      :total="total">
+    </el-pagination>
     </div>
   </div>
 </template>
@@ -41,7 +49,9 @@ export default {
     return {
       teacherData: [],
       keyword: '',
-      page: 1
+      page: 1,
+      pageSize:10,
+      total:0
     }
   },
   mounted(){
@@ -50,17 +60,16 @@ export default {
 
   methods: {
 
-    prePage() {
-      if (this.page >1) {
-        this.page --;
-        console.log(this.page)
-      }
+    inputListener() {
+      this.allTeacher()
     },
+    
+    handleSizeChange(){
 
-    nextPage() {
-      if (this.page < this.teacherData.length)
-      this.page ++;
-      console.log(this.page)
+    },
+    handleCurrentChange(v){
+      this.page = v;
+      this.allTeacher()
     },
 
     deleteById() {
@@ -73,21 +82,25 @@ export default {
     searchTeacher() {
       this.$axios.get('http://localhost:8080/teacher/searchteacher/' + this.keyword)
       .then(res => {
-        
-        this.teacherData = res.data.data
         console.log(this.teacherData)
+        this.teacherData = res.data.data.records
+        
+        
       })
       .catch(error => {
         console.log('找不到相关讲师')
       })
     },
-    // 获取所有讲师
+
+    // 获取所有讲师，带分页
     allTeacher() {
       this.$axios
-        .get("http://localhost:8080/teacher/queryteacher")
+        .get("http://localhost:8080/teacher/queryteacher/" + this.page)
         .then(res => {
-          // console.log(res.data);
-          this.teacherData = res.data.data;
+          console.log(res.data);
+          let ret = res.data.data;
+          this.teacherData = ret.records;
+          this.total = ret.total;
         })
         .catch(error => {
           console.log("查询讲师失败");

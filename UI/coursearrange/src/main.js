@@ -10,7 +10,7 @@ import 'element-ui/lib/theme-chalk/index.css';
 import '@/assets/iconfonts/fonts/iconfont.css';
 // 引入全局样式
 import './assets/css/global.css';
-import { Button, Select, Form, Radio, Table, Container, Message } from 'element-ui';
+import { Button, Select, Form, Radio, Table, Container } from 'element-ui';
 
 Vue.config.productionTip = false;
 Vue.prototype.$axios = axios;
