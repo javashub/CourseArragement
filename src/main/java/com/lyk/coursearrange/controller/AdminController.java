@@ -91,18 +91,7 @@ public class AdminController {
         return null;
     }
 
-    /**
-     * 管理员根据ID删除讲师
-     * @return
-     */
-    @DeleteMapping("/deleteteacher/{id}")
-    public ServerResponse deleteTeacher(@PathVariable Integer id) {
-        boolean b = teacherService.removeById(id);
-        if(b) {
-            return ServerResponse.ofSuccess("删除成功！");
-        }
-        return ServerResponse.ofError("删除失败！");
-    }
+
 
 
     /**
@@ -152,25 +141,7 @@ public class AdminController {
 
     // ↓↓↓↓↓↓↓↓↓    管理员对学生的操作       ↓↓↓↓↓↓↓↓
 
-    /**
-     * 获取所有学生，带分页
-     * @param page
-     * @param limit
-     * @return
-     */
-    @GetMapping("/querystudent")
-    public ServerResponse queryStudent(@RequestParam(defaultValue = "1")Integer page,
-                                       @RequestParam(defaultValue = "10")Integer limit) {
-        Page<Student> pages = new Page<>(page, limit);
-        QueryWrapper<Student> wrapper = new QueryWrapper<>();
-        wrapper.orderByDesc("update_time");
-        studentService.page(pages, wrapper);
-        List<Student> list = pages.getRecords();
-        if (list != null) {
-            return ServerResponse.ofSuccess(list);
-        }
-        return ServerResponse.ofError("查询不到数据");
-    }
+
 
     // 根据班级查询学生，学生表中班级字段已经是String类型的班级编号了，因此可以直接查询
     @GetMapping("/querystudentbyclassno/{classno}")

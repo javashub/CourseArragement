@@ -8,7 +8,7 @@ import lombok.Data;
  * @Descripe:
  */
 @Data
-public class TeachbuildingAddRequest {
+public class TeachbuildAddRequest {
 
     private String teachBuildNo;
 

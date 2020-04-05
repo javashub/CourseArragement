@@ -3,29 +3,54 @@
 import Vue from 'vue';
 import App from './App';
 import router from './router';
-import ElementUI from 'element-ui';
+// import ElementUI from 'element-ui';
 import axios from 'axios';
 import 'element-ui/lib/theme-chalk/index.css';
+
 // 引入图标
 import '@/assets/iconfonts/fonts/iconfont.css';
+
 // 引入全局样式
 import './assets/css/global.css';
-import { Button, Select, Form, Radio, Table, Container } from 'element-ui';
+import { Button, Select, Form, Radio, Table, Container, Message, Pagination, Dialog, Autocomplete,
+         Submenu, Menu, MenuItem, MenuItemGroup, Input, Option, FormItem, TableColumn, Row,
+         Icon, Dropdown, DropdownMenu, DropdownItem, Header, Aside, Main, Footer} from 'element-ui';
 
 Vue.config.productionTip = false;
 Vue.prototype.$axios = axios;
-// 配置axios请求的根路径
-// axios.defaults.baseURL = 'http://127.0.0.1:8080/'
-Vue.use(ElementUI);
+Vue.prototype.$message = Message;
+
+
+// Vue.use(ElementUI);
 Vue.use(Button);
+Vue.use(Footer);
+Vue.use(Main);
+Vue.use(Main);
+Vue.use(Aside);
+Vue.use(Header);
+Vue.use(DropdownItem);
+Vue.use(DropdownMenu);
+Vue.use(Dropdown);
+Vue.use(Icon);
+Vue.use(Row);
+Vue.use(TableColumn);
+Vue.use(FormItem);
+Vue.use(Option);
 Vue.use(Select);
 Vue.use(Form);
 Vue.use(Radio);
 Vue.use(Table);
 Vue.use(Container);
-//Vue.use(Message);
+Vue.use(Pagination);
+Vue.use(Dialog);
+Vue.use(Autocomplete);
+Vue.use(Submenu);
+Vue.use(Menu);
+Vue.use(MenuItem);
+Vue.use(MenuItemGroup);
+Vue.use(Input);
 
-/* eslint-disable no-new */
+
 new Vue({
   el: '#app',
   render: h => h(App),

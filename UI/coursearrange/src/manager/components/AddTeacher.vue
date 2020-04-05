@@ -1,8 +1,11 @@
 <template>
   <div>
     <!-- 添加讲师组件 -->
-
+    <!-- 讲师姓名 -->
+    <el-input placeholder="讲师姓名" v-model="realname" clearable/>
+    <el-input placeholder="讲师职称" v-model="jobtitle" clearable/>
     
+ 
   </div>
 </template>
 
@@ -11,7 +14,9 @@ export default {
   name: 'AddTeacher',
   data() {
     return {
-      teacherData: [],
+      teacherData: {
+
+      }
     }
   },
   mounted(){

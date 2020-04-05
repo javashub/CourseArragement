@@ -2,64 +2,64 @@ package com.lyk.coursearrange.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.io.Serializable;
 
 /**
- * <p>
- * 
- * </p>
- *
  * @author lequal
- * @since 2020-03-23
+ * @since 2020-03-20
+ * 教学楼信息
  */
-@TableName("tb_classroom")
+@TableName("tb_teach_build_info")
 @Data
-public class Classroom extends Model<Classroom> {
+@AllArgsConstructor
+@NoArgsConstructor
+public class TeachbuildInfo extends Model<TeachbuildInfo> {
 
     private static final long serialVersionUID=1L;
 
     /**
-     * 教室id
+     * id,教学楼信息表
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
-     * 教室编号
+     * 教学楼编号
      */
-    private String classroomNo;
+    private String teachBuildNo;
 
     /**
-     * 教室名称
+     * 教学楼名称
      */
-    private String classroomName;
+    private String teachBuildName;
 
     /**
-     * 所在教学楼编号
+     * 教学楼位置
      */
-    private String teachbuildNo;
+    private String teachBuildLocation;
 
     /**
-     * 教室人数容量
-     */
-    private Integer capacity;
-
-    /**
-     * 逻辑删除（默认0显示，1删除）
+     * 逻辑删除
      */
     @TableLogic
-    @TableField("deleted")
     private Integer deleted;
 
+    /**
+     * 创建时间
+     */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
+    /**
+     * 更新时间
+     */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-
 
 
     @Override

@@ -9,6 +9,11 @@ import TeacherList from '@/manager/components/TeacherList';
 import AddTeacher from '@/manager/components/AddTeacher';
 import SystemData from '@/manager/SystemData';
 import AddClassroom from '@/manager/components/AddClassroom';
+import ClassroomList from '@/manager/components/ClassroomList';
+import TeachBuildingList from '@/manager/components/TeachBuildingList';
+import CourseTable from '@/manager/components/CourseTable';
+import CourseInfoList from '@/manager/components/CourseInfoList';
+import StudentList from '@/manager/components/StudentList';
 
 Vue.use(Router)
 
@@ -52,14 +57,39 @@ export default new Router({
           component: SystemData
         },
         {
-          path: '/teacherList',
+          path: '/teacherlist',
           name: 'TeacherList',
           component: TeacherList
         },
         {
-          path: '/addTeacher',
+          path: '/studentlist',
+          name: 'StudentList',
+          component: StudentList
+        },
+        {
+          path: '/teachbuildinglist',
+          name: 'TeachBuildingList',
+          component: TeachBuildingList
+        },
+        {
+          path: '/addteacher',
           name: 'AddTeacher',
           component: AddTeacher
+        },
+        {
+          path: '/classroomList',
+          name: 'ClassroomList',
+          component: ClassroomList
+        },
+        {
+          path: '/courseTable',
+          name: 'CourseTable',
+          component: CourseTable
+        },
+        {
+          path: '/courseInfoList',
+          name: 'CourseInfoList',
+          component: CourseInfoList
         }
       ]
     }

@@ -14,14 +14,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.stereotype.Controller;
 
 /**
- * <p>
- *  前端控制器
- * </p>
  *
  * @author lequal
  * @since 2020-03-23
  */
-@Controller
+@RestController
 @RequestMapping("/classroom")
 public class ClassroomController {
 
@@ -34,16 +31,15 @@ public class ClassroomController {
      * @return
      */
     @GetMapping("/queryclassroom/{page}")
-    public ServerResponse queryClassroom(@PathVariable("page")Integer page, @RequestParam(defaultValue = "10")Integer limit) {
-        QueryWrapper<Classroom> wrapper = new QueryWrapper<>();
-        wrapper.orderByDesc("update_time");
+    public ServerResponse queryClassroom(@PathVariable("page")Integer page,
+                                         @RequestParam(defaultValue = "10")Integer limit) {
         Page<Classroom> pages = new Page<>(page, limit);
-        // 调用分页查询
+        QueryWrapper<Classroom> wrapper = new QueryWrapper<Classroom>().orderByDesc("update_time");
+
         IPage<Classroom> ipage = classroomService.page(pages, wrapper);
-        if (ipage != null) {
-            return ServerResponse.ofSuccess(ipage);
-        }
-        return ServerResponse.ofError("查询不到数据");
+
+        return ServerResponse.ofSuccess(ipage);
+
     }
 
     /**

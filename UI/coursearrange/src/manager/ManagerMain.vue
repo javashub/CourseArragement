@@ -19,10 +19,9 @@
       <el-container>
         <el-aside width="200px">
           <!-- 侧边 -->
-          <!-- 默认展开的索引 -->
-
+          <!-- 默认展开的索引default-active -->
           <el-menu :default-active="default_active" @select="handleSelect" unique-opened>
-            <el-menu-item index="1">
+            <el-menu-item index="0">
               <template slot="title">
                 <router-link to="SystemData" class="links">
                   <i class="el-icon-setting"></i>系统数据
@@ -30,15 +29,28 @@
               </template>
             </el-menu-item>
 
+            <el-submenu index="1">
+              <template slot="title">
+                <i class="el-icon-setting"></i>排课管理
+              </template>
+
+              <el-menu-item index="1-1">课程计划</el-menu-item>
+              <!-- <el-menu-item index="1-1">添加计划</el-menu-item> -->
+              <el-menu-item index="1-2">排课页面</el-menu-item>
+              <el-menu-item index="1-3">
+                <router-link to="courseTable" class="links">查看课表</router-link>
+              </el-menu-item>
+            </el-submenu>
+
             <el-submenu index="2">
               <template slot="title">
                 <i class="el-icon-message"></i>讲师管理
               </template>
               <el-menu-item-group>
-                <el-menu-item index="1-1">
-                  <router-link to="teacherList" class="links">所有讲师</router-link>
+                <el-menu-item index="2-1">
+                  <router-link to="teacherlist" class="links">所有讲师</router-link>
                 </el-menu-item>
-                <el-menu-item index="1-2">添加讲师</el-menu-item>
+                <el-menu-item index="2-2">添加讲师</el-menu-item>
               </el-menu-item-group>
             </el-submenu>
 
@@ -47,8 +59,10 @@
                 <i class="el-icon-menu"></i>学生管理
               </template>
               <el-menu-item-group>
-                <el-menu-item index="2-1">所有学生</el-menu-item>
-                <el-menu-item index="2-2">添加学生</el-menu-item>
+                <el-menu-item index="3-1">
+                  <router-link to="studentlist" class="links">所有学生</router-link>
+                </el-menu-item>
+                <el-menu-item index="3-2">添加学生</el-menu-item>
               </el-menu-item-group>
             </el-submenu>
 
@@ -56,11 +70,11 @@
               <template slot="title">
                 <i class="el-icon-setting"></i>课程管理
               </template>
-              <el-menu-item-group>
-                <template slot="title">分组一</template>
-                <el-menu-item index="3-1">选项1</el-menu-item>
-                <el-menu-item index="3-2">选项2</el-menu-item>
-              </el-menu-item-group>
+
+              <el-menu-item index="4-1">
+                <router-link class="links" to="courseInfoList">教材列表</router-link>
+              </el-menu-item>
+              <el-menu-item index="4-2">添加教材</el-menu-item>
             </el-submenu>
 
             <el-submenu index="5">
@@ -68,26 +82,13 @@
                 <i class="el-icon-setting"></i>教学设施
               </template>
 
-              <el-menu-item index="3-1">教学楼管理</el-menu-item>
+              <el-menu-item index="5-1">
+                <router-link class="links" to="teachbuildinglist">教学楼管理</router-link>
+              </el-menu-item>
 
-              <el-submenu index="3-4">
-                <template slot="title">教室管理</template>
-                <el-menu-item index="3-4-1">教室列表</el-menu-item>
-                <el-menu-item index="3-4-1">添加教室</el-menu-item>
-              </el-submenu>
-            </el-submenu>
-            <el-submenu index="6">
-              <template slot="title">
-                <i class="el-icon-setting"></i>年级管理
-              </template>
-              <el-menu-item-group>
-                <template slot="title">分组一</template>
-                <el-menu-item index="3-1">选项1</el-menu-item>
-              </el-menu-item-group>
-              <el-submenu index="3-4">
-                <template slot="title">选项4</template>
-                <el-menu-item index="3-4-1">选项4-1</el-menu-item>
-              </el-submenu>
+              <el-menu-item index="5-2">
+                <router-link to="classroomlist" class="links">教室列表</router-link>
+              </el-menu-item>
             </el-submenu>
           </el-menu>
         </el-aside>
@@ -109,7 +110,7 @@ export default {
   data() {
     return {
       time: "",
-      default_active: "1"
+      default_active: "0"
     };
   },
 

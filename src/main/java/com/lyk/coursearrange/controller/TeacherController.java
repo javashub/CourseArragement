@@ -18,10 +18,6 @@ import org.springframework.stereotype.Controller;
 import java.util.List;
 
 /**
- * <p>
- *  前端控制器
- * </p>
- *
  * @author lequal
  * @since 2020-03-13
  */
@@ -60,31 +56,44 @@ public class TeacherController {
     }
 
     /**
-     * 根据id查询讲师个人信息
+     * 根据id查询讲师
      * @param id
      * @return
      */
-    @GetMapping("/queryteacherbyid/{id}")
+    @GetMapping("/{id}")
     public ServerResponse queryTeacherById(@PathVariable("id") Integer id) {
 
         return ServerResponse.ofSuccess(teacherService.getById(id));
     }
 
-    @PostMapping("/modifyteacher")
-    public ServerResponse modifyTeacher(@RequestBody Teacher teacher) {
-        boolean b = teacherService.save(teacher);
+    /**
+     * 更新讲师
+     * @param teacher
+     * @return
+     */
+    @PostMapping("/modifyteacher/{id}")
+    public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody Teacher teacher) {
+
+        QueryWrapper<Teacher> wrapper = new QueryWrapper<Teacher>().eq("id", id);
+        boolean b = teacherService.update(teacher, wrapper);
+
         if (b) {
             return ServerResponse.ofSuccess("更新成功");
         }
         return ServerResponse.ofError("更新失败");
     }
 
-    // 查询所有讲师，分页
+    /**
+     * 分页查询讲师
+     * @param page
+     * @param limit
+     * @return
+     */
     @GetMapping("/queryteacher/{page}")
     public ServerResponse queryTeacher(@PathVariable(value = "page") Integer page,
                                        @RequestParam(defaultValue = "10") Integer limit) {
         Page<Teacher> pages = new Page<>(page, limit);
-        QueryWrapper<Teacher> wrapper = new QueryWrapper<Teacher>().orderByDesc("update_time");
+        QueryWrapper<Teacher> wrapper = new QueryWrapper<Teacher>().orderByDesc("teacher_no");
         IPage<Teacher> iPage = teacherService.page(pages, wrapper);
         return ServerResponse.ofSuccess(iPage);
     }
@@ -107,7 +116,18 @@ public class TeacherController {
         return ServerResponse.ofError("查询失败!");
     }
 
-
+    /**
+     * 管理员根据ID删除讲师
+     * @return
+     */
+    @DeleteMapping("/delete/{id}")
+    public ServerResponse deleteTeacher(@PathVariable Integer id) {
+        boolean b = teacherService.removeById(id);
+        if(b) {
+            return ServerResponse.ofSuccess("删除成功！");
+        }
+        return ServerResponse.ofError("删除失败！");
+    }
 
     // 查询讲师的课表
 

@@ -2,6 +2,8 @@ package com.lyk.coursearrange.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.request.StudentLoginRequest;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -103,7 +106,7 @@ public class StudentController {
      * @param id
      * @return
      */
-    @GetMapping("/querystudent/{id}")
+    @GetMapping("/{id}")
     public ServerResponse queryStudent(@PathVariable("id")Integer id){
         // 查询出来需要修改的学生实体
         return ServerResponse.ofSuccess(studentService.getById(id));
@@ -147,6 +150,23 @@ public class StudentController {
         } while(true);
     }
 
+
+    /**
+     * 获取所有学生，带分页
+     * @param page
+     * @param limit
+     * @return
+     */
+    @GetMapping("/querystudent/{page}")
+    public ServerResponse queryStudent(@PathVariable("page")Integer page,
+                                       @RequestParam(defaultValue = "10")Integer limit) {
+        Page<Student> pages = new Page<>(page, limit);
+        QueryWrapper<Student> wrapper = new QueryWrapper<Student>().orderByDesc("update_time");
+        IPage<Student> ipage = studentService.page(pages, wrapper);
+
+        return ServerResponse.ofSuccess(ipage);
+
+    }
 
 
 

@@ -10,56 +10,72 @@ import java.time.LocalDateTime;
 import java.io.Serializable;
 
 /**
+ *
  * @author lequal
- * @since 2020-03-20
- * 教学楼信息
+ * @since 2020-04-03
  */
-@TableName("tb_teach_building_info")
+@TableName("tb_course_info")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TeachBuildingInfo extends Model<TeachBuildingInfo> {
+public class CourseInfo extends Model<CourseInfo> {
 
     private static final long serialVersionUID=1L;
 
     /**
-     * id,教学楼信息表
+     * id
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
-     * 教学楼编号
+     * 课程编号
      */
-    private String teachBuildNo;
+    private String courseNo;
 
     /**
-     * 教学楼名称
+     * 课程名
      */
-    private String teachBuildName;
+    private String courseName;
 
     /**
-     * 教学楼位置
+     * 课程属性
      */
-    private String teachBuildLocation;
+    private String courseAttr;
+
+    /**
+     * 出版社
+     */
+    private String publisher;
+
+    /**
+     * 课程状态
+     */
+    private Integer status;
+
+    /**
+     * 优先级
+     */
+    private Integer piority;
+
+    /**
+     * 备注
+     */
+    private String remark;
 
     /**
      * 逻辑删除
      */
     @TableLogic
+    @TableField("deleted")
     private Integer deleted;
 
-    /**
-     * 创建时间
-     */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    /**
-     * 更新时间
-     */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
 
 
     @Override
