@@ -6,16 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.io.Serializable;
 
 /**
- * <p>
- * 
- * </p>
- *
  * @author lequal
- * @since 2020-04-03
+ * @since 2020-04-06
  */
 @TableName("tb_class_task")
 @Data
@@ -30,6 +26,11 @@ public class ClassTask extends Model<ClassTask> {
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
+
+    /**
+     * 学期
+     */
+    private String semester;
 
     /**
      * 年级编号
@@ -91,9 +92,8 @@ public class ClassTask extends Model<ClassTask> {
     @TableField("classTime")
     private String classTime;
 
-    @TableField("deleted")
     @TableLogic
-    private int deleted;
+    private Boolean deleted;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
@@ -103,9 +103,11 @@ public class ClassTask extends Model<ClassTask> {
 
 
 
+
     @Override
     protected Serializable pkVal() {
         return this.id;
     }
+
 
 }

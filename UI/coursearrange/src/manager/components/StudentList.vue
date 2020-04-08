@@ -27,11 +27,11 @@
       </el-table-column>
     </el-table>
 
-    <!-- 弹出表单编辑讲师 -->
+    <!-- 弹出表单编辑学生 -->
     <el-dialog title="编辑学生" :visible.sync="visibleForm">
       <el-form :model="editFormData" label-position="left" label-width="80px">
         <el-form-item label="学号">
-          <el-input v-model="editFormData.teacherNo" autocomplete="off" disabled></el-input>
+          <el-input v-model="editFormData.studentNo" autocomplete="off" disabled></el-input>
         </el-form-item>
         <el-form-item label="昵称">
           <el-input v-model="editFormData.username" autocomplete="off"></el-input>
@@ -40,10 +40,10 @@
           <el-input v-model="editFormData.realname" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="年级">
-          <el-input v-model="editFormData.jobtitle" autocomplete="off"></el-input>
+          <el-input v-model="editFormData.grade" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="班级">
-          <el-input v-model="editFormData.teach" autocomplete="off"></el-input>
+          <el-input v-model="editFormData.classNo" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="手机">
           <el-input v-model="editFormData.telephone" autocomplete="off"></el-input>
@@ -100,7 +100,7 @@ export default {
      * 编辑提交
      */
     commit() {
-
+      this.modifyStudent(this.editFormData)
     },
 
     inputListener() {
@@ -113,27 +113,75 @@ export default {
     allStudent() {
       this.$axios.get('http://localhost:8080/student/querystudent/' + this.page)
       .then(res => {
-        // this.$message({message:'查询成功', type: 'success'})
+        
         console.log(res)
         let ret = res.data.data;
         this.studentData = ret.records;
         this.total = ret.total;
+        // this.$message({message:'查询成功', type: 'success'})
       })
       .catch(error => {
         this.$message.error('查询学生列表失败')
       })
     },
 
+    /**
+     * 关键字查询学生
+     */
     searchStudent() {
-
+      this.$axios
+        .get("http://localhost:8080/student/searchstudent/" + this.keyword)
+        .then(res => {
+          this.studentData = res.data.data.records;
+          this.$message({message:'查询成功', type: 'success'})
+        })
+        .catch(error => {
+          this.$message.error('查询失败')
+        });
     },
 
-    deleteById() {
-
+    /**
+     * 根据id删除学生
+     */
+    deleteById(index, row) {
+      this.deleteStudentById(row.id)
     },
 
-    editById() {
+    deleteStudentById(id) {
+      this.$axios
+      .delete("http://localhost:8080/student/delete/" + id)
+      .then(res => {
+        this.$message({message:'删除成功', type: 'success'})
+        this.allStudent();
+      })
+      .catch(error => {
+          this.$message.error('删除失败')
+      });
+    },
 
+    /**
+     * 编辑学生
+     */
+    editById(index, row) {
+      let modifyId = row.id;
+      this.editFormData = row;
+      this.visibleForm = true;
+    },
+
+    /**
+     * 更新学生
+     */
+    modifyStudent(modifyData) {
+      this.$axios
+        .post("http://localhost:8080/student/modifystudent/" + this.editFormData.id, modifyData)
+        .then(res => {
+          this.$message({ message: "更新成功", type: "success" });
+          this.allStudent();
+          this.visibleForm = false;
+        })
+        .catch(error => {
+          this.$message.error("更新失败");
+        });
     },
 
     handleSizeChange() {
@@ -142,7 +190,7 @@ export default {
 
     handleCurrentChange(v) {
       this.page = v;
-      this.allTeacher();
+      this.allStudent();
     }
   }
 }

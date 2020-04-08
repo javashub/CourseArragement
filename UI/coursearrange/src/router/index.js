@@ -14,6 +14,7 @@ import TeachBuildingList from '@/manager/components/TeachBuildingList';
 import CourseTable from '@/manager/components/CourseTable';
 import CourseInfoList from '@/manager/components/CourseInfoList';
 import StudentList from '@/manager/components/StudentList';
+import ClassTaskList from '@/manager/components/ClassTaskList';
 
 Vue.use(Router)
 
@@ -90,6 +91,11 @@ export default new Router({
           path: '/courseInfoList',
           name: 'CourseInfoList',
           component: CourseInfoList
+        },
+        {
+          path: '/classTaskList',
+          name: 'ClassTaskList',
+          component: ClassTaskList
         }
       ]
     }

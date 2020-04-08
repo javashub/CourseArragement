@@ -34,7 +34,9 @@
                 <i class="el-icon-setting"></i>排课管理
               </template>
 
-              <el-menu-item index="1-1">课程计划</el-menu-item>
+              <el-menu-item index="1-1">
+                <router-link to="classTaskList" class="links">课程计划</router-link>
+              </el-menu-item>
               <!-- <el-menu-item index="1-1">添加计划</el-menu-item> -->
               <el-menu-item index="1-2">排课页面</el-menu-item>
               <el-menu-item index="1-3">

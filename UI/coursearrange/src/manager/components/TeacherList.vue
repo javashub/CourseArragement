@@ -9,7 +9,6 @@
     <!-- 数据显示 -->
     <el-table :data="teacherData" size="mini">
       <el-table-column label="序号" type="selection"></el-table-column>
-      <!-- <el-table-column prop="id" label="ID"></el-table-column> -->
       <el-table-column prop="teacherNo" label="编号" fixed width="100"></el-table-column>
       <el-table-column prop="username" label="用户名" fixed width="100"></el-table-column>
       <el-table-column prop="realname" label="姓名" fixed width="100"></el-table-column>
@@ -122,7 +121,9 @@ export default {
       this.visibleForm = true;
     },
 
-    // 更新讲师
+    /**
+     * 根据ID更新讲师
+     */
     modifyTeacher(modifyData) {
       this.$axios
         .post("http://localhost:8080/teacher/modifyteacher/" + this.editFormData.id, modifyData)
@@ -136,32 +137,39 @@ export default {
         });
     },
 
-    // 关键词搜索讲师
+    /**
+     * 关键词搜索讲师
+     */
     searchTeacher() {
       this.$axios
         .get("http://localhost:8080/teacher/searchteacher/" + this.keyword)
         .then(res => {
           this.teacherData = res.data.data.records;
+          this.$message({message:'查询成功', type: 'success'})
         })
         .catch(error => {
-          console.log("找不到相关讲师");
+          this.$message.error('查询失败')
         });
     },
 
-    // 根据ID删除讲师
+    /**
+     * 根据ID删除讲师
+     */
     deleteTeacherById(id) {
       this.$axios
         .delete("http://localhost:8080/teacher/delete/" + id)
         .then(res => {
-          alert("删除成功！");
           this.allTeacher();
+          this.$message({message:'删除成功', type: 'success'})
         })
         .catch(error => {
-          console.log("删除失败");
+          this.$message.error("删除失败");
         });
     },
 
-    // 获取所有讲师，带分页
+    /**
+     * 获取所有讲师，带分页
+     */
     allTeacher() {
       this.$axios
         .get("http://localhost:8080/teacher/queryteacher/" + this.page)
@@ -169,9 +177,10 @@ export default {
           let ret = res.data.data;
           this.teacherData = ret.records;
           this.total = ret.total;
+          // this.$message({message:'查询成功', type: 'success'})
         })
         .catch(error => {
-          this.$message.error("查询讲师失败");
+          this.$message.error("查询讲师列表失败");
         });
     }
   }

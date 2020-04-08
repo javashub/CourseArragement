@@ -10,6 +10,7 @@ import com.lyk.coursearrange.entity.request.StudentLoginRequest;
 import com.lyk.coursearrange.entity.request.StudentRegisterRequest;
 import com.lyk.coursearrange.service.StudentService;
 import com.lyk.coursearrange.service.impl.TokenService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -113,6 +114,23 @@ public class StudentController {
     }
 
     /**
+     * 更新学生
+     * @param student
+     * @return
+     */
+    @PostMapping("/modifystudent/{id}")
+    public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody Student student) {
+
+        QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("id", id);
+        boolean b = studentService.update(student, wrapper);
+
+        if (b) {
+            return ServerResponse.ofSuccess("更新成功");
+        }
+        return ServerResponse.ofError("更新失败");
+    }
+
+    /**
      * 学生查询自己的课表,一人一课表
      * @return
      */
@@ -161,13 +179,43 @@ public class StudentController {
     public ServerResponse queryStudent(@PathVariable("page")Integer page,
                                        @RequestParam(defaultValue = "10")Integer limit) {
         Page<Student> pages = new Page<>(page, limit);
-        QueryWrapper<Student> wrapper = new QueryWrapper<Student>().orderByDesc("update_time");
+        QueryWrapper<Student> wrapper = new QueryWrapper<Student>().orderByDesc("student_no");
         IPage<Student> ipage = studentService.page(pages, wrapper);
 
         return ServerResponse.ofSuccess(ipage);
 
     }
 
+    /**
+     * 根据姓名关键字搜学生
+     * @return
+     */
+    @GetMapping("/searchstudent/{keyword}")
+    public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @RequestParam(defaultValue = "1") Integer page,
+                                        @RequestParam(defaultValue = "10") Integer limit) {
+        QueryWrapper<Student> wrapper = new QueryWrapper<>();
+        wrapper.orderByDesc("update_time");
+        wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
+        Page<Student> pages = new Page<>(page, limit);
+        IPage<Student> iPage = studentService.page(pages, wrapper);
+        if (page != null) {
+            return ServerResponse.ofSuccess(iPage);
+        }
+        return ServerResponse.ofError("查询失败!");
+    }
+
+    /**
+     * 管理员根据ID删除学生
+     * @return
+     */
+    @DeleteMapping("/delete/{id}")
+    public ServerResponse deleteTeacher(@PathVariable Integer id) {
+        boolean b = studentService.removeById(id);
+        if(b) {
+            return ServerResponse.ofSuccess("删除成功！");
+        }
+        return ServerResponse.ofError("删除失败！");
+    }
 
 
 }

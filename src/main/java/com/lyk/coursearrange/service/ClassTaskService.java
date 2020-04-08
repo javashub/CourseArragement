@@ -9,8 +9,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * </p>
  *
  * @author lequal
- * @since 2020-04-03
+ * @since 2020-04-06
  */
 public interface ClassTaskService extends IService<ClassTask> {
+
+    Boolean classScheduling(ClassTask classTask);
 
 }
