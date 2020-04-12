@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * @Date: 2020/3/6
  * @Descripe:
  */
-public class TestAdmin {
+public class AdminTest {
 
     @Autowired
     private AdminDao adminDao;

@@ -1,5 +1,7 @@
 <template>
   <div>
+    <!-- 添加教学楼 -->
+    
     <!-- 教学楼列表 -->
     <el-table :data="teachBuildData" size="mini">
       <el-table-column label="序号" type="selection"></el-table-column>
@@ -71,7 +73,7 @@ export default {
      * 提交更新
      */
     commit() {
-      this.modifyTeachBuild(this.editFormData);
+      this.modifyTeachBuild(this.editFormData)
     },
 
     handleSizeChange() {
@@ -83,9 +85,9 @@ export default {
     },
 
     editById(index, row) {
-      let modifyId = row.id;
-      this.editFormData = row;
-      this.visibleForm = true;
+      let modifyId = row.id
+      this.editFormData = row
+      this.visibleForm = true
     },
 
     handleCurrentChange(v) {
@@ -100,12 +102,12 @@ export default {
       this.$axios
         .post("http://localhost:8080/teachbuildinfo/modify/" + this.editFormData.id, modifyData)
         .then(res => {
-          this.$message({ message: "更新成功", type: "success" });
-          this.allTeachBuilding();
-          this.visibleForm = false;
+          this.$message({ message: "更新成功", type: "success" })
+          this.allTeachBuilding()
+          this.visibleForm = false
         })
         .catch(error => {
-          this.$message.error("更新失败");
+          this.$message.error("更新失败")
         });
     },
 
@@ -131,11 +133,11 @@ export default {
       this.$axios
         .delete("http://localhost:8080/teachbuildinfo/delete/" + id)
         .then(res => {
-          this.allTeachBuilding();
+          this.allTeachBuilding()
           this.$message({message:'删除成功', type: 'success'})
         })
         .catch(error => {
-          this.$message.error("删除失败");
+          this.$message.error("删除失败")
         });
     }
   }

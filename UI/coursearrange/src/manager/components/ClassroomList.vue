@@ -17,6 +17,32 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 弹出表单编辑教室 -->
+    <el-dialog title="编辑教学楼" :visible.sync="visibleForm">
+      <el-form :model="editFormData" label-position="left" label-width="80px">
+        <el-form-item label="编号">
+          <el-input v-model="editFormData.classroomNo" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="名称">
+          <el-input v-model="editFormData.classroomName" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="所在楼栋">
+          <el-input v-model="editFormData.teachbuildNo" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="容量">
+          <el-input v-model="editFormData.capacity" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="editFormData.remark" autocomplete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="visibleForm = false">取 消</el-button>
+        <el-button type="primary" @click="commit()">提 交</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 分页 -->
     <div class="footer-button">
       <el-pagination
@@ -39,34 +65,72 @@ export default {
       classroomData: [],
       page: 1,
       pageSize: 10,
-      total: 0
+      total: 0,
+      editFormData: [],
+      visibleForm: false
     };
   },
   mounted() {
-    this.allClassroom();
+    this.allClassroom()
   },
   methods: {
-    deleteById(val) {
-      console.log(val);
+    commit() {
+      this.modifyClassroom(this.editFormData)
+    },
+
+    deleteById(index, row) {
+      this.deleteClassroomById(row.id)
     },
     editById(index, row) {
-      alert(index);
-      alert(row);
+      let modifyId = row.id
+      this.editFormData = row
+      this.visibleForm = true
     },
 
     handleSizeChange() {},
 
     handleCurrentChange(v) {
       this.page = v;
-      this.allClassroom();
+      this.allClassroom()
+    },
+
+    /**
+     * 根据ID更新教室
+     */
+    modifyClassroom(modifyData) {
+      this.$axios
+        .post("http://localhost:8080/modifyclassroom/", modifyData)
+        .then(res => {
+          this.$message({ message: "更新成功", type: "success" })
+          this.allClassroom()
+          this.visibleForm = false
+        })
+        .catch(error => {
+          this.$message.error("更新失败")
+        });
+    },
+
+    /**
+     * 根据ID删除教室
+     */
+    deleteClassroomById(id) {
+      this.$axios
+        .delete("http://localhost:8080/deleteclassroom/" + id)
+        .then(res => {
+          this.allClassroom();
+          this.$message({message:'删除成功', type: 'success'})
+        })
+        .catch(error => {
+          this.$message.error("删除失败");
+        });
     },
 
     // 获取所有教室，带分页
     allClassroom() {
       this.$axios
-        .get("http://localhost:8080/classroom/queryclassroom/" + this.page)
+        .get("http://localhost:8080/queryclassroom/" + this.page)
         .then(res => {
-          console.log(res.data);
+          
           let ret = res.data.data;
           this.classroomData = ret.records;
           this.total = ret.total;

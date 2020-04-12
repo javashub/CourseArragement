@@ -48,6 +48,11 @@ public class Classroom extends Model<Classroom> {
     private Integer capacity;
 
     /**
+     * 备注
+     */
+    private String remark;
+
+    /**
      * 逻辑删除（默认0显示，1删除）
      */
     @TableLogic

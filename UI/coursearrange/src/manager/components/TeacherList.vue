@@ -126,7 +126,7 @@ export default {
      */
     modifyTeacher(modifyData) {
       this.$axios
-        .post("http://localhost:8080/teacher/modifyteacher/" + this.editFormData.id, modifyData)
+        .post("http://localhost:8080/teacher/modifyteacher/" , modifyData)
         .then(res => {
           this.$message({ message: "更新成功", type: "success" });
           this.allTeacher();

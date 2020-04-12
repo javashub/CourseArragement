@@ -86,9 +86,22 @@ public class TeachBuildInfoController {
         return ServerResponse.ofSuccess(teachBuildInfoService.getById(id));
     }
 
-    @PostMapping("/modify")
-    public ServerResponse modifyTeachBuilding(@RequestBody TeachbuildInfo t) {
-        return teachBuildInfoService.updateById(t) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");
+
+    /**
+     * 更新教学楼
+     * @param t
+     * @return
+     */
+    @PostMapping("/modify/{id}")
+    public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody TeachbuildInfo t) {
+
+        QueryWrapper<TeachbuildInfo> wrapper = new QueryWrapper<TeachbuildInfo>().eq("id", id);
+        boolean b = teachBuildInfoService.update(t, wrapper);
+
+        if (b) {
+            return ServerResponse.ofSuccess("更新成功");
+        }
+        return ServerResponse.ofError("更新失败");
     }
 
 

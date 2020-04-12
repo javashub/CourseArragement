@@ -2,7 +2,6 @@ package com.lyk.coursearrange.util;
 
 import com.lyk.coursearrange.entity.request.ConstantInfo;
 import org.apache.commons.lang3.ArrayUtils;
-import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 
 import java.util.*;
 
@@ -214,6 +213,47 @@ public class ClassUtil {
     }
 
     /**
+     * 计算每个个体的适应值
+     * @param individualList
+     * @return
+     */
+    public static double calculatExpectedValue(List<String> individualList) {
+        double K1 = 0.3; // 专业课所占权重
+        double K2 = 0.1; // 选修课所占权重
+        double K3 = 0.1; // 体育课所占权重
+        double K4 = 0.3; // 实验课所占权重
+        double K5 = 0.2; // 课程离散程度所占权重
+
+        int F1 = 0; // 主要课程期望总值
+        int F2 = 0; // 次要课程期望总值
+        int F3 = 0; // 体育课期望总值
+        int F4 = 0; // 实验课期望总值
+        int F5; // 课程离散程度期望总值
+
+        double Fx; // 适应度值
+
+        for (String gene : individualList) {
+            // 获得课程属性
+            String courseAttr = cutGene(ConstantInfo.COURSE_ATTR, gene);
+            // 获得该课程的开课时间
+            String classTime = cutGene(ConstantInfo.CLASS_TIME, gene);
+            if (courseAttr.equals(ConstantInfo.MAIN_COURSE)) {
+                F1 = F1 + calculateMainExpect(classTime);
+            } else if (courseAttr.equals(ConstantInfo.SECONDARY_COURSE)) {
+                F2 = F2 + calculateSecondaryExpect(classTime);
+            } else if (courseAttr.equals(ConstantInfo.PHYSICAL_COURSE)) {
+                F3 = F3 + calculatePhysicalExpect(classTime);
+            } else {
+                F4 = F4 + calculateExperimentExpect(classTime);
+            }
+        }
+        F5 = calculateDiscreteExpect(individualList);
+        // 总适应度
+        Fx = K1 * F1 + K2 * F2 + K3 * F3 + K4 * F4 + K5 * F5;
+        return Fx;
+    }
+
+    /**
      * 将一个个体（班级课表）的同一门课程的所有上课时间进行一个统计，并且进行一个分组
      *  每个班级的课表都算是一个个体
      * @param individualList
@@ -273,7 +313,9 @@ public class ClassUtil {
      * @return
      */
     private static int calculateDiscreteExpect(List<String> individualList) {
-        int F5 = 0;//离散程度期望值
+        // 离散程度期望值
+        int F5 = 0;
+
         Map<String, List<String>> classTimeMap = courseGrouping(individualList);
         for (List<String> classTimeList : classTimeMap.values()) {
             if (classTimeList.size() > 1) {
@@ -287,42 +329,6 @@ public class ClassUtil {
     }
 
 
-    /**
-     * 计算每个个体的适应值
-     * @param individualList
-     * @return
-     */
-    public static double alculateExpectedValue(List<String> individualList) {
-        double K1 = 0.3; // 专业课所占权重
-        double K2 = 0.1; // 选修课所占权重
-        double K3 = 0.1; // 体育课所占权重
-        double K4 = 0.3; // 实验课所占权重
-        double K5 = 0.2; // 课程离散程度所占权重
 
-        int F1 = 0; // 主要课程期望总值
-        int F2 = 0; // 次要课程期望总值
-        int F3 = 0; // 体育课期望总值
-        int F4 = 0; // 实验课期望总值
-        int F5; // 课程离散程度期望总值
-
-        double Fx; // 适应度值
-
-        for (String gene : individualList) {
-            String courseAttr = cutGene(ConstantInfo.COURSE_ATTR, gene); // 获得课程属性
-            String classTime = cutGene(ConstantInfo.CLASS_TIME, gene); // 获得该课程的开课时间
-            if (courseAttr.equals(ConstantInfo.MAIN_COURSE)) {
-                F1 = F1 + calculateMainExpect(classTime);
-            } else if (courseAttr.equals(ConstantInfo.SECONDARY_COURSE)) {
-                F2 = F2 + calculateSecondaryExpect(classTime);
-            } else if (courseAttr.equals(ConstantInfo.PHYSICAL_COURSE)) {
-                F3 = F3 + calculatePhysicalExpect(classTime);
-            } else {
-                F4 = F4 + calculateExperimentExpect(classTime);
-            }
-        }
-        F5 = calculateDiscreteExpect(individualList);
-        Fx = K1 * F1 + K2 * F2 + K3 * F3 + K4 * F4 + K5 * F5;
-        return Fx;
-    }
 
 }

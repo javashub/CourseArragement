@@ -71,11 +71,10 @@ public class TeacherController {
      * @param teacher
      * @return
      */
-    @PostMapping("/modifyteacher/{id}")
-    public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody Teacher teacher) {
+    @PostMapping("/modifyteacher")
+    public ServerResponse modifyTeacher(@RequestBody Teacher teacher) {
 
-        QueryWrapper<Teacher> wrapper = new QueryWrapper<Teacher>().eq("id", id);
-        boolean b = teacherService.update(teacher, wrapper);
+        boolean b = teacherService.updateById(teacher);
 
         if (b) {
             return ServerResponse.ofSuccess("更新成功");

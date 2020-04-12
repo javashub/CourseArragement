@@ -41,7 +41,23 @@ public class AdminController {
     private StudentService studentService;
 
 
-    // ↓↓↓↓↓↓↓↓↓    管理员对自己的操作       ↓↓↓↓↓↓↓↓
+    /**
+     * 获得系统数据
+     * @return
+     */
+    @GetMapping("/systemdata")
+    public ServerResponse systemData() {
+        // 学生数量
+        int students = studentService.count();
+        // 讲师数量
+        int teachers = teacherService.count();
+        // 课程数量
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("students", students);
+        map.put("teachers", teachers);
+        return ServerResponse.ofSuccess(map);
+    }
 
     /**
      * 管理员登录
@@ -79,7 +95,7 @@ public class AdminController {
     }
 
 
-    // ↓↓↓↓↓↓↓↓↓    管理员对讲师的操作       ↓↓↓↓↓↓↓↓
+
 
     /**
      * 管理员添加讲师
@@ -92,30 +108,6 @@ public class AdminController {
     }
 
 
-
-
-    /**
-     * 管理员根据ID修改讲师信息
-     * 修改后的讲师信息回写给数据库
-     * @return
-     */
-    @PostMapping("/modifyteacher")
-    public ServerResponse modifyTeacher(@RequestBody Teacher teacher) {
-        // 先调用这里下面那个方法:/queryTeacher/{id}
-        return teacherService.updateById(teacher) ? ServerResponse.ofSuccess("修改成功！") : ServerResponse.ofError("修改失败！");
-    }
-
-
-    /**
-     * 根据id获取讲师实体的信息
-     * 先将讲师的信息查询出来返回给前端界面
-     * @param id
-     * @return
-     */
-    @GetMapping("/queryteacher/{id}")
-    public ServerResponse queryTeacherById(@PathVariable("id")Integer id){
-        return ServerResponse.ofSuccess(teacherService.getById(id));
-    }
 
     /**
      * 根据ID封禁、解封讲师账号，状态为0时正常，1时封禁
@@ -138,12 +130,13 @@ public class AdminController {
     }
 
 
-
-    // ↓↓↓↓↓↓↓↓↓    管理员对学生的操作       ↓↓↓↓↓↓↓↓
-
-
-
-    // 根据班级查询学生，学生表中班级字段已经是String类型的班级编号了，因此可以直接查询
+    /**
+     * 根据班级查询学生
+     * @param classno
+     * @param page
+     * @param limit
+     * @return
+     */
     @GetMapping("/querystudentbyclassno/{classno}")
     public ServerResponse queryStudentByClassno(@PathVariable("classno") String classno,
                                                 @RequestParam(defaultValue = "1") Integer page,
@@ -160,20 +153,8 @@ public class AdminController {
         return ServerResponse.ofError("查询不到数据");
     }
 
-    // 查询系统数据，学生人数，讲师人数，课程数
-    @GetMapping("/getsystemdata")
-    public ServerResponse getSystemData() {
-        // 学生数量
-        int students = studentService.count();
-        // 讲师数量
-        int teachers = teacherService.count();
-        // 课程数量
 
-        Map<String, Object> map = new HashMap<>();
-        map.put("students", students);
-        map.put("teachers", teachers);
-        return ServerResponse.ofSuccess(map);
-    }
+
 
 
     // 封禁学生

@@ -87,7 +87,7 @@ public class ClassTask extends Model<ClassTask> {
     private String isFix;
 
     /**
-     * 固定时间的话,2位为一个时间位置
+     * 2位为一个时间编号
      */
     @TableField("classTime")
     private String classTime;

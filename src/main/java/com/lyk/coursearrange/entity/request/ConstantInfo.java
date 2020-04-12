@@ -11,22 +11,22 @@ public class ConstantInfo {
     public static final String IS_FIX = "isFix";
 
     // 年级编号 2位
-    public static final String GRADE_NO = "graderNo";
+    public static final String GRADE_NO = "grader_no";
 
     // 班级编号 位
-    public static final String CLASS_NO = "classNo";
+    public static final String CLASS_NO = "class_no";
 
     // 教师编号  位
-    public static final String TEACHER_NO = "teacherNo";
+    public static final String TEACHER_NO = "teacher_no";
 
     // 课程编号  位
-    public static final String COURSE_NO = "courseNo";
+    public static final String COURSE_NO = "course_no";
 
     // 课程属性 1位
     public static final String COURSE_ATTR = "courseAttr";
 
     // 教室编号
-    public static final String CLASSROOM_NO = "classroomNo";
+    public static final String CLASSROOM_NO = "classroom_no";
 
     // 上课时间
     public static final String CLASS_TIME = "classTime";

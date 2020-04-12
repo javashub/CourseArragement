@@ -19,7 +19,6 @@ import org.springframework.stereotype.Controller;
  * @since 2020-03-23
  */
 @RestController
-@RequestMapping("/classroom")
 public class ClassroomController {
 
 
@@ -34,7 +33,7 @@ public class ClassroomController {
     public ServerResponse queryClassroom(@PathVariable("page")Integer page,
                                          @RequestParam(defaultValue = "10")Integer limit) {
         Page<Classroom> pages = new Page<>(page, limit);
-        QueryWrapper<Classroom> wrapper = new QueryWrapper<Classroom>().orderByDesc("update_time");
+        QueryWrapper<Classroom> wrapper = new QueryWrapper<Classroom>().orderByAsc("classroom_no");
 
         IPage<Classroom> ipage = classroomService.page(pages, wrapper);
 
@@ -49,13 +48,13 @@ public class ClassroomController {
      */
     @PostMapping("/addclassroom")
     public ServerResponse addClassroom(@RequestBody ClassroomAddRequest car) {
-        Classroom classroom = new Classroom();
-        classroom.setClassroomNo(car.getClassroomNo());
-        classroom.setClassroomName(car.getClassroomName());
-        classroom.setTeachbuildNo(car.getTeachbuildingNo());
-        classroom.setCapacity(car.getCapacity());
-        boolean b = classroomService.save(classroom);
-        if (b) {
+//        Classroom classroom = new Classroom();
+//        classroom.setClassroomNo(car.getClassroomNo());
+//        classroom.setClassroomName(car.getClassroomName());
+//        classroom.setTeachbuildNo(car.getTeachbuildingNo());
+//        classroom.setCapacity(car.getCapacity());
+//        boolean b = classroomService.save(car);
+        if (true) {
             return ServerResponse.ofSuccess("添加成功");
         }
         return ServerResponse.ofError("添加失败");
@@ -87,14 +86,14 @@ public class ClassroomController {
     }
 
     /**
-     * 更新教室信息，要先查询出来再插回去
+     * 更新教室
      * @param classroom
      * @return
      */
     @PostMapping("/modifyclassroom")
     public ServerResponse modifyClassroom(@RequestBody Classroom classroom) {
 
-        return classroomService.save(classroom) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");
+        return classroomService.updateById(classroom) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");
     }
 
 }

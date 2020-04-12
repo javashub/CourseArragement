@@ -24,4 +24,7 @@ public interface ClassTaskDao extends BaseMapper<ClassTask> {
 //    @Select("SELECT * FROM tb_class_task where semester = #{semester}")
     List<ClassTask> selectBySemester(ClassTask classTask);
 
+    @Select("SELECT distinct class_no FROM tb_class_task")
+    List<String> selectClassNo();
+
 }
