@@ -35,25 +35,25 @@ public class ClassTask extends Model<ClassTask> {
     /**
      * 年级编号
      */
-    @TableField("gradeNo")
+    @TableField("grade_no")
     private String gradeNo;
 
     /**
      * 班级编号
      */
-    @TableField("classNo")
+    @TableField("class_no")
     private String classNo;
 
     /**
      * 课程编号
      */
-    @TableField("courseNo")
+    @TableField("course_no")
     private String courseNo;
 
     /**
      * 教师编号
      */
-    @TableField("teacherNo")
+    @TableField("teacher_no")
     private String teacherNo;
 
     /**
@@ -71,13 +71,13 @@ public class ClassTask extends Model<ClassTask> {
     /**
      * 一周几个学时，偶数
      */
-    @TableField("weeksSum")
+    @TableField("weeks_sum")
     private Integer weeksSum;
 
     /**
      * 要上多少周
      */
-    @TableField("weeksNumber")
+    @TableField("weeks_num")
     private Integer weeksNumber;
 
     /**
@@ -89,7 +89,7 @@ public class ClassTask extends Model<ClassTask> {
     /**
      * 2位为一个时间编号
      */
-    @TableField("classTime")
+    @TableField("class_time")
     private String classTime;
 
     @TableLogic

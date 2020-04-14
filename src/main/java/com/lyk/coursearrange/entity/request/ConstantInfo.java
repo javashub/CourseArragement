@@ -11,7 +11,7 @@ public class ConstantInfo {
     public static final String IS_FIX = "isFix";
 
     // 年级编号 2位
-    public static final String GRADE_NO = "grader_no";
+    public static final String GRADE_NO = "grade_no";
 
     // 班级编号 位
     public static final String CLASS_NO = "class_no";

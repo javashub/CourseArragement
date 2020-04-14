@@ -48,6 +48,11 @@ public class Classroom extends Model<Classroom> {
     private Integer capacity;
 
     /**
+     * 教室属性
+     */
+    private String attr;
+
+    /**
      * 备注
      */
     private String remark;

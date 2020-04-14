@@ -1,14 +1,15 @@
 package com.lyk.coursearrange.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.lyk.coursearrange.dao.ClassInfoDao;
+import com.lyk.coursearrange.dao.ClassroomDao;
+import com.lyk.coursearrange.dao.TeachBuildInfoDao;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.dao.ClassTaskDao;
+import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.request.ConstantInfo;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.util.ClassUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,12 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     @Autowired
     private ClassTaskDao classTaskDao;
     @Autowired
-    private ClassTaskService classTaskService;
+    private TeachBuildInfoDao teachBuildInfoDao;
+    @Autowired
+    private ClassroomDao classroomDao;
+    @Autowired
+    private ClassInfoDao classInfoDao;
+
 
 
     // 不固定上课时间
@@ -47,10 +53,13 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     @Transactional
     @Override
     public Boolean classScheduling(ClassTask classTask) {
+        System.out.println("来到classScheduling了");
         try {
             // 1、获得开课任务，知道要上什么课，等下要排什么课
-            QueryWrapper<ClassTask> wrapper = new QueryWrapper<ClassTask>().eq("semester", classTask.getSemester());
-            List<ClassTask> classTaskList = classTaskDao.selectList(wrapper);
+            List<ClassTask> classTaskList = classTaskDao.selectBySemester(classTask);
+//            QueryWrapper<ClassTask> wrapper = new QueryWrapper<ClassTask>().eq("semester", classTask.getSemester());
+//            List<ClassTask> classTaskList = classTaskDao.selectList(wrapper);
+
             // 测试输出
             for (ClassTask c : classTaskList) {
                 System.out.println(c);
@@ -86,18 +95,200 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         return null;
     }
 
+    /**
+     * 开始给进化完的基因编码分配教室，即在原来的编码中加上教室编号
+     * @param individualMap
+     * @return
+     */
     private List<String> finalResult(Map<String, List<String>> individualMap) {
-        return null;
+        // 存放编上教室编号的完整基因编码
+        List<String> resultList = new ArrayList<>();
+        // 将map集合中的基因编码再次全部混合
+        List<String> resultGeneList = collectGene(individualMap);
+        String classroomNo;
+        // 得到课程任务的年级列表
+        List<String> gradeList = classTaskDao.selectByColumnName(ConstantInfo.GRADE_NO);
+        // 将基因编码按照年级分配
+        Map<String, List<String>> gradeMap = collectGeneByGrade(resultGeneList, gradeList);
+        // 这里需要根据安排教学区域时选的教学楼进行安排课程
+        for (String gradeNo : gradeMap.keySet()) {
+            // 找到当前年级对应的教学楼编号
+            String teachBuildNo = teachBuildInfoDao.selectBuildNo(gradeNo);
+            // 得到不同年级的课程基因编码
+            List<String> gradeGeneList = gradeMap.get(gradeNo);
+            // 看看对应教学楼下有多少教室，在设定的教学楼下开始随机分配教室
+            List<Classroom> classroomList = classroomDao.selectByTeachbuildNo(teachBuildNo);
+            for (String gene : gradeGeneList) {
+                classroomNo = issueClassroom(gene, classroomList, resultList);
+                // 基因编码中加入教室编号，至此所有基因信息编码完成，得到染色体
+                gene = gene + classroomNo;
+                // 将最终的编码加入集合中
+                resultList.add(gene);
+            }
+        }
+        // 完整的基因编码
+        return resultList;
+    }
+
+    /**
+     * 给不同的基因编码分配教室
+     * @param gene 需要分配教室的基因编码
+     * @param classroomList 教室
+     * @param resultList
+     * @return
+     */
+    private String issueClassroom(String gene, List<Classroom> classroomList, List<String> resultList) {
+        // 处理特殊课程，实验课，体育课
+        // 体育课
+        List<Classroom> sportBuilding = classroomDao.selectByTeachbuildNo("12");
+        // 实验课
+        List<Classroom> experimentBuilding = classroomDao.selectByTeachbuildNo("08");
+        // 获得班级编号
+        String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
+        // 得到该班级的学生人数
+        int studentNum = classInfoDao.selectStuNum(classNo);
+        // 得到课程属性
+        String courseAttr = ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene);
+
+        if (courseAttr.equals(ConstantInfo.EXPERIMENT_COURSE)) {
+            // 03为实验课
+            return chooseClassroom(studentNum, gene, experimentBuilding, resultList);
+        } else if (courseAttr.equals(ConstantInfo.PHYSICAL_COURSE)) {
+            // 04为体育课
+            return chooseClassroom(studentNum, gene, sportBuilding, resultList);
+        } else {
+            // 剩下主要课程、次要课程都放在普通的教室
+            return chooseClassroom(studentNum, gene, classroomList, resultList);
+        }
+    }
+
+    /**
+     * 给不同课程的基因编码选择相应的教室
+     * @param studentNum 开课的班级的学生人数
+     * @param gene 需要安排教室的基因编码
+     * @param classroomList 教室
+     * @param resultList
+     * @return
+     */
+    private String chooseClassroom(int studentNum, String gene, List<Classroom> classroomList, List<String> resultList) {
+        // 使用随机分配教室的方式，只要可以放下所有学生即可满足条件
+        int min = 0;
+        int max = classroomList.size() - 1;
+        // 用于随机选取教室
+        int temp = min + (int)(Math.random() * (max + 1 - min));
+        // 随机教室
+        Classroom classroom = classroomList.get(temp);
+        // 判断是否满足条件
+        if (judgeClassroom(studentNum, gene, classroom, resultList)) {
+            // 该教室满足条件
+            return classroom.getClassroomNo();
+        } else {
+            // 不满足，继续找教室
+            return chooseClassroom(studentNum, gene, classroomList, resultList);
+        }
+    }
+
+    /**
+     * 判断教室是否符合上课班级所需
+     * 即：不同属性的课要放在对应属性的教室上课
+     * @param studentNum
+     * @param gene
+     * @param classroom
+     * @param resultList
+     * @return
+     */
+    private Boolean judgeClassroom(int studentNum, String gene, Classroom classroom, List<String> resultList) {
+        String courseAttr = ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene);
+        // 只要是语数英物化生政史地这些课程都是放在普通教室上课
+        if (courseAttr.equals(ConstantInfo.MAIN_COURSE) || courseAttr.equals(ConstantInfo.SECONDARY_COURSE)) {
+            // 找到普通教室，普通教室的属性都是01
+            if (classroom.getAttr().equals("01")) {
+                // 判断上课人数与教室容量
+                if (classroom.getCapacity() >= studentNum) {
+                    // 还要判断该教室是否在同一时间有别的班级使用了
+                    return isFree(gene, resultList, classroom);
+                } else {
+                    // 教室容量不够
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } else {
+            // 剩余的课程应该要放在相对应的教室上课
+            if (ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene).equals(classroom.getAttr())) {
+                // 判断人数
+                if (classroom.getCapacity() >= studentNum) {
+                    // 判断该教室上课时间是否重复
+                    return isFree(gene, resultList, classroom);
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * 判断同一时间同一个教室是否有多个班级使用
+     * @param gene
+     * @param resultList
+     * @param classroom
+     * @return
+     */
+    private Boolean isFree(String gene, List<String> resultList, Classroom classroom) {
+        // 如果resultList为空说明还没有教室被分配,直接返回true
+        if (resultList.size() == 0) {
+            return true;
+        } else {
+            for (String resultGene : resultList) {
+                // 如果当前教室在之前分配了则需要去判断时间是否有冲突
+                if (ClassUtil.cutGene(ConstantInfo.CLASSROOM_NO, resultGene).equals(classroom.getClassroomNo())) {
+                    // 判断时间是否一样，一样则表示有冲突
+                    if (ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene).equals(ClassUtil.cutGene(ConstantInfo.CLASS_TIME, resultGene))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 将所有的基因编码按照年级分类
+     * @param resultGeneList
+     * @param gradeList
+     * @return
+     */
+    private Map<String, List<String>> collectGeneByGrade(List<String> resultGeneList, List<String> gradeList) {
+        Map<String, List<String>> map = new HashMap<>();
+        for (String gradeNo : gradeList) {
+            List<String> geneList = new ArrayList<>();
+            // 找到基因编码集合中相应的年级并归类
+            for (String gene : resultGeneList) {
+                if (ClassUtil.cutGene(ConstantInfo.GRADE_NO, gene).equals(gradeNo)) {
+                    // 将当前的年级的基因编码加入集合
+                    geneList.add(gene);
+                }
+            }
+            // 将当前年级对应的编码集合放入集合
+            if (geneList.size() > 0) {
+                map.put(gradeNo, geneList);
+            }
+        }
+        // 得到不同年级的基因编码(年级，编码集合)
+        return map;
     }
 
     /**
      * 遗传进化(每个班级中多条基因编码)
      * 步骤：
      * 1、初始化种群
-     * 2、
-     * 3、
-     * 4、
-     * 5、
+     * 2、交叉
+     * 3、变异
+     * 4、重复2,3步骤
+     * 5、直到达到终止条件
      * @param individualMap
      * @return
      */
@@ -370,12 +561,17 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                     geneList.add(gene);
                 }
             }
-
+            // 根据班级分配基因编码集合
             if (geneList.size() > 1) {
                 individualMap.put(classNo, geneList);
             }
         }
         // 得到不同班级的初始课表(未进行冲突检测)
         return individualMap;
+    }
+
+
+    private List<> decoding() {
+
     }
 }
