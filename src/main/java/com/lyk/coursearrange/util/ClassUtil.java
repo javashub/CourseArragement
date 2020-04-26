@@ -43,7 +43,7 @@ public class ClassUtil {
             case ConstantInfo.CLASS_TIME:
                 return source.substring(24, 26); // 上课时间
             case ConstantInfo.CLASSROOM_NO:
-                return source.substring(26); // 教室编号
+                return source.substring(26, 32); // 教室编号
             default:
                 return "";
         }

@@ -28,6 +28,15 @@
             <version>1.7.30</version>
         </dependency>
 
+        <!-- slf4j-log4j12 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.30</version>
+            <scope>test</scope>
+        </dependency>
+
+
         <!-- 权限认证 -->
         <dependency>
             <groupId>com.auth0</groupId>

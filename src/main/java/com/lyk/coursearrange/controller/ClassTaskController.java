@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.service.ClassTaskService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +16,6 @@ import org.springframework.stereotype.Controller;
 import java.util.*;
 
 /**
- * <p>
- *  前端控制器
- * </p>
- *
  * @author lequal
  * @since 2020-04-06
  */
@@ -28,6 +25,9 @@ public class ClassTaskController {
 
     @Autowired
     private ClassTaskService classTaskService;
+
+    @Autowired
+    private ClassTaskDao classTaskDao;
 
     /**
      * 查询开课任务
@@ -81,6 +81,17 @@ public class ClassTaskController {
         }
 
         return ServerResponse.ofSuccess(set);
+    }
+
+    // 排课
+    @PostMapping("/arrange")
+    public ServerResponse arrange() {
+        boolean b = classTaskService.classScheduling("2019-2020-1");
+
+        if (b) {
+            return ServerResponse.ofSuccess("排课完成");
+        }
+        return ServerResponse.ofError("排课失败");
     }
 }
 

@@ -5,33 +5,27 @@ import com.baomidou.mybatisplus.extension.activerecord.Model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.io.Serializable;
 
 /**
  * @author lequal
- * @since 2020-04-06
+ * @since 2020-04-15
  */
-@TableName("tb_class_task")
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ClassTask extends Model<ClassTask> {
+@TableName("tb_course_plan")
+public class CoursePlan extends Model<CoursePlan> {
 
     private static final long serialVersionUID=1L;
 
     /**
-     * id，即将要上课的，需要进行排课的
+     * id
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
-
-    /**
-     * 学期
-     */
-    @TableField("semester")
-    private String semester;
 
     /**
      * 年级编号
@@ -52,49 +46,37 @@ public class ClassTask extends Model<ClassTask> {
     private String courseNo;
 
     /**
-     * 教师编号
+     * 讲师编号
      */
     @TableField("teacher_no")
     private String teacherNo;
 
     /**
-     * 课程属性
+     * 教室编号
      */
-    @TableField("courseAttr")
-    private String courseAttr;
+    @TableField("classroom_no")
+    private String classroomNo;
 
     /**
-     * 学生人数
+     * 上课时间
      */
-    @TableField("studentNum")
-    private Integer studentNum;
+    @TableField("class_time")
+    private String classTime;
 
     /**
-     * 一周几个学时，偶数
+     * 周数
      */
     @TableField("weeks_sum")
     private Integer weeksSum;
 
     /**
-     * 要上多少周
+     * 学期
      */
-    @TableField("weeks_number")
-    private Integer weeksNumber;
-
-    /**
-     * 是否固定上课时间
-     */
-    @TableField("isFix")
-    private String isFix;
-
-    /**
-     * 2位为一个时间编号
-     */
-    @TableField("class_time")
-    private String classTime;
+    @TableField("semester")
+    private String semester;
 
     @TableLogic
-    private Boolean deleted;
+    private Integer deleted;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
@@ -109,6 +91,5 @@ public class ClassTask extends Model<ClassTask> {
     protected Serializable pkVal() {
         return this.id;
     }
-
 
 }

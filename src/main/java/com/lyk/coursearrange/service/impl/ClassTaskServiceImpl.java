@@ -1,23 +1,22 @@
 package com.lyk.coursearrange.service.impl;
 
-import com.lyk.coursearrange.dao.ClassInfoDao;
-import com.lyk.coursearrange.dao.ClassroomDao;
-import com.lyk.coursearrange.dao.TeachBuildInfoDao;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.lyk.coursearrange.dao.*;
 import com.lyk.coursearrange.entity.ClassTask;
-import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.Classroom;
+import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.request.ConstantInfo;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.util.ClassUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author lequal
@@ -26,6 +25,7 @@ import java.util.Map;
 @Service
 public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> implements ClassTaskService {
 
+    Logger LOG = LoggerFactory.getLogger(ClassTaskServiceImpl.class);
 
     @Autowired
     private ClassTaskDao classTaskDao;
@@ -35,7 +35,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private ClassroomDao classroomDao;
     @Autowired
     private ClassInfoDao classInfoDao;
-
+    @Autowired
+    private CoursePlanDao coursePlanDao;
 
 
     // 不固定上课时间
@@ -47,23 +48,18 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
     /**
      * 先对全校内已经分配用于上课的教学楼信息做一个查询(针对有特殊要求的教室)
-     * @param classTask
+     * @param
      * @return
      */
     @Transactional
     @Override
-    public Boolean classScheduling(ClassTask classTask) {
-        System.out.println("来到classScheduling了");
+    public Boolean classScheduling(String semester) {
         try {
             // 1、获得开课任务，知道要上什么课，等下要排什么课
-            List<ClassTask> classTaskList = classTaskDao.selectBySemester(classTask);
-//            QueryWrapper<ClassTask> wrapper = new QueryWrapper<ClassTask>().eq("semester", classTask.getSemester());
-//            List<ClassTask> classTaskList = classTaskDao.selectList(wrapper);
+//            List<ClassTask> classTaskList = classTaskDao.selectBySemester(classTask);
+            QueryWrapper<ClassTask> wrapper = new QueryWrapper<ClassTask>().eq("semester", semester);
+            List<ClassTask> classTaskList = classTaskDao.selectList(wrapper);
 
-            // 测试输出
-            for (ClassTask c : classTaskList) {
-                System.out.println(c);
-            }
             // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间的课程集合
             List<Map<String, List<String>>>  geneList = coding(classTaskList);
             // 3、给初始基因编码随机分配时间
@@ -75,25 +71,22 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             // 6、给新个体分配教室，同时要进行冲突检测
             List<String> resultList = finalResult(individualMap);
             // 7、解码最终的染色体获取其中的基因信息
-            List<String> classPlan = decoding(resultList);
-            // 8、写入tb_classplan数据表中供前端查询课程表使用
-
-            // 9、
+            List<CoursePlan> coursePlanList = decoding(resultList);
+            // 8、写入tb_course_plan数据表中供前端查询课程表使用
+            for (CoursePlan coursePlan : coursePlanList) {
+                coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
+                        coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime());
+            }
+            // 9、TODO 更新有学期，上课周数的
+//            for (ClassTask classTask1)
+            return true;
         } catch (Exception e) {
+            LOG.error("the error message is:" + "    " + e.getMessage());
             e.printStackTrace();
             return false;
         }
-        return true;
     }
 
-    /**
-     * 解码染色体
-     * @param resultList
-     * @return
-     */
-    private List decoding(List<String> resultList) {
-        return null;
-    }
 
     /**
      * 开始给进化完的基因编码分配教室，即在原来的编码中加上教室编号
@@ -108,6 +101,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         String classroomNo;
         // 得到课程任务的年级列表
         List<String> gradeList = classTaskDao.selectByColumnName(ConstantInfo.GRADE_NO);
+//        List<String> gradeList = classTaskDao.selectByGradeNo();
         // 将基因编码按照年级分配
         Map<String, List<String>> gradeMap = collectGeneByGrade(resultGeneList, gradeList);
         // 这里需要根据安排教学区域时选的教学楼进行安排课程
@@ -158,6 +152,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             return chooseClassroom(studentNum, gene, sportBuilding, resultList);
         } else {
             // 剩下主要课程、次要课程都放在普通的教室
+            // 如果还有其他课程另外加判断课程属性，暂时设定4种：主要，次要，实验，体育。音乐舞蹈那些不算
             return chooseClassroom(studentNum, gene, classroomList, resultList);
         }
     }
@@ -174,9 +169,11 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         // 使用随机分配教室的方式，只要可以放下所有学生即可满足条件
         int min = 0;
         int max = classroomList.size() - 1;
+//        Random random = new Random();
         // 用于随机选取教室
         int temp = min + (int)(Math.random() * (max + 1 - min));
         // 随机教室
+//        int temp = random.nextInt(max) % (max - min + 1) + min;
         Classroom classroom = classroomList.get(temp);
         // 判断是否满足条件
         if (judgeClassroom(studentNum, gene, classroom, resultList)) {
@@ -571,7 +568,40 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     }
 
 
-    private List<> decoding() {
-
+    /**
+     * 解码染色体中的基因，按照之前的编码解
+     * 编码:
+     *  固定时间：1
+     * 	年级编号：2
+     * 	班级编号：8
+     * 	讲师编号：5
+     * 	课程编号：6
+     * 	课程属性：2
+     * 	上课时间：2
+     * 	教室编号：6
+     * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间(固定) + 教室编号(最后才分配)
+     * 其中如果不固定开课时间默认填充为"00"
+     * @param resultList 全部上课计划实体
+     * @return
+     */
+    private List<CoursePlan> decoding(List<String> resultList) {
+        List<CoursePlan> coursePlanList = new ArrayList<>();
+        for (String gene : resultList) {
+            CoursePlan coursePlan = new CoursePlan();
+            // 年级
+            coursePlan.setGradeNo(ClassUtil.cutGene(ConstantInfo.GRADE_NO, gene));
+            // 班级
+            coursePlan.setClassNo(ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene));
+            // 课程
+            coursePlan.setCourseNo(ClassUtil.cutGene(ConstantInfo.COURSE_NO, gene));
+            // 讲师
+            coursePlan.setTeacherNo(ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene));
+            // 教室
+            coursePlan.setClassroomNo(ClassUtil.cutGene(ConstantInfo.CLASSROOM_NO, gene));
+            // 上课时间
+            coursePlan.setClassTime(ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene));
+            coursePlanList.add(coursePlan);
+        }
+        return coursePlanList;
     }
 }

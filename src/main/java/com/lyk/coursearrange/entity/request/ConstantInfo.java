@@ -29,7 +29,7 @@ public class ConstantInfo {
     public static final String CLASSROOM_NO = "classroom_no";
 
     // 上课时间
-    public static final String CLASS_TIME = "classTime";
+    public static final String CLASS_TIME = "class_time";
 
     // 开课学期
     public static final String SEMESTER = "semester";

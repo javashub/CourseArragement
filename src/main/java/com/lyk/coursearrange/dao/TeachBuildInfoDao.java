@@ -6,10 +6,6 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 /**
- * <p>
- *  Mapper 接口
- * </p>
- *
  * @author lequal
  * @since 2020-03-20
  */

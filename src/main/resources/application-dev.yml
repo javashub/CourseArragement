@@ -36,3 +36,5 @@ mybatis-plus:
       logic-delete-value: 1 #删除
       logic-not-delete-value: 0 #不删除
 
+server:
+  port: 8080

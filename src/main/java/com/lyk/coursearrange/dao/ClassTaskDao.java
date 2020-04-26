@@ -10,10 +10,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * <p>
- *  Mapper 接口
- * </p>
- *
  * @author lequal
  * @since 2020-04-06
  */
@@ -28,7 +24,11 @@ public interface ClassTaskDao extends BaseMapper<ClassTask> {
     @Select("SELECT distinct class_no FROM tb_class_task")
     List<String> selectClassNo();
 
-    @Select("select distinct #{columnName} from tb_class_task")
+    // 可能这里是columnName没传进来
+    @Select("select distinct ${columnName} from tb_class_task")
     List<String> selectByColumnName(@Param("columnName") String columnName);
+
+    @Select("select distinct grade_no from tb_class_task")
+    List<String> selectByGradeNo();
 
 }
