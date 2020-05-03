@@ -16,7 +16,7 @@
         </el-form-item>
         <!-- 密码 -->
         <el-form-item prop="password">
-          <el-input v-model="studentLoginForm.password" placeholder="请输入密码" prefix-icon="iconfont iconmima" type="password"></el-input>
+          <el-input v-model="studentLoginForm.password" placeholder="请输入密码" @keyup.enter.native="login" prefix-icon="iconfont iconmima" type="password"></el-input>
         </el-form-item>        
         <!-- 按钮 -->
         <el-form-item class="button">
@@ -65,15 +65,14 @@ export default {
           username: this.studentLoginForm.username,
           password: this.studentLoginForm.password
         })
-        .then((response) => {
+        .then((res) => {
           // 成功响应,得到token
-          console.log(response)
-          window.localStorage.setItem('token', response.data.message)
-
+          console.log(res)
+          window.localStorage.setItem('token', res.data.message)
+          this.$message({message: "登录成功", type: "success"})
         }).catch((error) => {
           // 失败
-          alert('失败！');
-          console.log(error)
+          this.$message.error("登录失败")
         });
       })
     }

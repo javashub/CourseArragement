@@ -64,9 +64,11 @@ export default {
       visibleForm: false
     };
   },
+
   mounted() {
     this.allTeachBuilding()
   },
+
   methods: {
 
     /**
@@ -76,9 +78,7 @@ export default {
       this.modifyTeachBuild(this.editFormData)
     },
 
-    handleSizeChange() {
-
-    },
+    handleSizeChange() {},
 
     deleteById(index, row) {
       this.deleteTeachBuildingById(row.id)

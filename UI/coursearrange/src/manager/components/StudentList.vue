@@ -114,10 +114,9 @@ export default {
       this.$axios.get('http://localhost:8080/student/querystudent/' + this.page)
       .then(res => {
         
-        console.log(res)
-        let ret = res.data.data;
-        this.studentData = ret.records;
-        this.total = ret.total;
+        let ret = res.data.data
+        this.studentData = ret.records
+        this.total = ret.total
         // this.$message({message:'查询成功', type: 'success'})
       })
       .catch(error => {
@@ -132,7 +131,7 @@ export default {
       this.$axios
         .get("http://localhost:8080/student/searchstudent/" + this.keyword)
         .then(res => {
-          this.studentData = res.data.data.records;
+          this.studentData = res.data.data.records
           this.$message({message:'查询成功', type: 'success'})
         })
         .catch(error => {

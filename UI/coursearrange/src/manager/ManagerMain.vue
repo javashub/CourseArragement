@@ -12,7 +12,7 @@
               <el-dropdown-item>个人中心</el-dropdown-item>
               <el-dropdown-item>退出</el-dropdown-item>
             </el-dropdown-menu>
-          </el-dropdown>你好，
+          </el-dropdown>您好，
           <span>梁同学</span>
         </el-header>
       </el-header>

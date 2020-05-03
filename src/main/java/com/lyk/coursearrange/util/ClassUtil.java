@@ -87,7 +87,7 @@ public class ClassUtil {
         int min = 1;
         int max = 25;
         String time;
-        //随机生成1到25范围的数字，并将其转化为字符串，方便进行编码
+        //随机生成1到25范围的数字，并将其转化为字符串，方便进行时间编码
         int temp = min + (int) (Math.random() * (max + 1 - min));
         // 转化成2位字符串
         if (temp < 10) {
@@ -100,7 +100,7 @@ public class ClassUtil {
             // 冲突
             return time;
         } else {
-            // 重新生成
+            // 重新生成随机时间
             return randomTime(gene, geneList);
         }
     }

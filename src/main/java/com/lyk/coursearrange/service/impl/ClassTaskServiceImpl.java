@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Service
 public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> implements ClassTaskService {
 
-    Logger LOG = LoggerFactory.getLogger(ClassTaskServiceImpl.class);
+    Logger log = LoggerFactory.getLogger(ClassTaskServiceImpl.class);
 
     @Autowired
     private ClassTaskDao classTaskDao;
@@ -81,7 +81,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 //            for (ClassTask classTask1)
             return true;
         } catch (Exception e) {
-            LOG.error("the error message is:" + "    " + e.getMessage());
+            log.error("the error message is:" + "    " + e.getMessage());
             e.printStackTrace();
             return false;
         }
