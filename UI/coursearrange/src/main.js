@@ -10,6 +10,10 @@ import 'element-ui/lib/theme-chalk/index.css';
 // 引入图标
 import '@/assets/iconfonts/fonts/iconfont.css';
 
+// 引入echarts
+import echarts from 'echarts'
+
+
 // 引入全局样式
 import './assets/css/global.css';
 import { Button, Select, Form, Radio, Table, Container, Message, Pagination, Dialog, Autocomplete,
@@ -19,6 +23,7 @@ import { Button, Select, Form, Radio, Table, Container, Message, Pagination, Dia
 Vue.config.productionTip = false;
 Vue.prototype.$axios = axios;
 Vue.prototype.$message = Message;
+Vue.prototype.$echarts = echarts
 
 
 // Vue.use(ElementUI);

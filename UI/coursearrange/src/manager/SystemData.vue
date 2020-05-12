@@ -1,13 +1,14 @@
 <template>
-  <div>
+  <div class="wrapper">
     <!-- 系统数据 -->
-    hhhhhhhhhhhhhh
+    系统数据，Echarts图表
+
   </div>
 </template>
 
 <script>
 export default {
-  name: 'AddClassroom',
+  name: 'SystemData',
   data() {
     return {
 
@@ -20,5 +21,9 @@ export default {
 </script>
 
 <style lang="less" scoped>
-
+  .wrapper {
+    height: 400px;
+    width: 600px;
+    background-color: aqua;
+  }
 </style>
