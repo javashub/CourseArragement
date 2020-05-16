@@ -6,23 +6,34 @@
       @change="handleSelectChange"
       clearable
       v-model="value"
-      placeholder="选择学期"
+      placeholder="2019-2020-1"
     >
       <el-option v-for="(item,index) in semesterData" :key="index" :value="item"></el-option>
     </el-select>
 
     <!-- 添加课程计划 -->
-    <el-button class="addButton" type="primary" @click="btnAddClassTask()">添加课程计划</el-button>
-    <!-- 提示信息 -->
-
-    <!-- <el-popover
-    class="tips"
-    placement="top-start"
-    width="200"
-    trigger="hover"
-    content="这是一段内容,这是一段内容,这是一段内容,这是一段内容。">
-    <el-button slot="reference" icon="el-icon-question" type="info" circle></el-button>
-    </el-popover>-->
+    <el-upload
+      class="add-button"
+      ref="upload"
+      accept=".xls,.xlsx"
+      action="http://localhost:8080/upload"
+      :on-preview="handlePreview"
+      :on-remove="handleRemove"
+      :on-error="handleError"
+      :on-success="uploadSuccess"
+      :file-list="fileList"
+      :auto-upload="false"
+      :limit="1"
+    >
+      <el-button slot="trigger" size="small" type="primary">选取课程任务</el-button>
+      <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器<i class="el-icon-upload el-icon--right"></i></el-button>
+      <div slot="tip" class="el-upload__tip">只能上传xls/xlsx文件</div>
+    </el-upload>
+    <!-- 下载模板 <a class="atag" href="http://localhost:8080/download">-->
+    <el-button class="add-button" size="small" type="primary" @click="downloadTemplate()">
+      下载模板
+      <i class="el-icon-download el-icon--right"></i>
+    </el-button>
 
     <!-- 开课任务，等待排课的课程 -->
     <el-table class="ckasstask-table" :data="classTaskData" size="mini">
@@ -49,23 +60,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- 添加开课任务表单 -->
-    <!-- 年级，班级，课程，讲师，课程属性，学生人数，周数，周学时，是否固定时间，时间 -->
-    <el-dialog title="添加课程计划" :visible.sync="visibleForm" show-close="true">
-      <el-form :model="classAddForm">
-        <el-form-item label="学期" :label-width="formLabelWidth">
-          <el-select placeholder="请选择学期">
-            <el-option label="2019-2020-1" value="2019-2020-1"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="年级" :label-width="formLabelWidth">
-          <el-select placeholder="请选择年级" clearable>
-            <el-option ></el-option>
-          </el-select>
-        </el-form-item>
-      </el-form>
-    </el-dialog>
-
     <!-- 分页 -->
     <div class="footer-button">
       <el-pagination
@@ -88,7 +82,7 @@ export default {
       // 数据库中课程任务
       classTaskData: [],
       semesterData: [],
-      classAddForm: [], // 添加课程计划的窗口
+
       page: 1,
       pageSize: 10,
       total: 0,
@@ -96,19 +90,8 @@ export default {
       value: "",
       // 当前选择的学期
       semester: "",
-      visibleForm: false,
-      formLabelWidth: '80px',
-      // 添加课程计划表单的年级下拉值
-      options: [{
-        value: '01',
-        label: '高一'
-      }, {
-        value: '02',
-        label: ''
-      }, {
-        value: '',
-        label: ''
-      }]
+
+      fileList: []
     };
   },
 
@@ -121,16 +104,40 @@ export default {
   },
 
   methods: {
-    // 添加课程计划按钮响应事件
-    btnAddClassTask() {
-      this.visibleForm = true;
+
+    // 下载模板
+    downloadTemplate() {
+      window.location.href='http://localhost:8080/download'
+ 
+    },
+
+    // 上传成功
+    uploadSuccess(response, file, fileList) {
+      // location.reload()
+    },
+
+    handleError(error, file, fileList) {
+      alert("文件上传失败" + error)
+    },
+
+    // 提交上传文件事件
+    submitUpload() {
+      this.$refs.upload.submit()
+    },
+
+    handleRemove(file, fileList) {
+      console.log(file, fileList)
+    },
+
+    handlePreview(file) {
+      console.log(file)
     },
 
     // 得到对应选中的年级
     handleSelectChange(val) {
       // 这里的V就是选择的学期了
-      this.semester = val;
-      alert(v);
+      this.semester = val
+      alert(v)
     },
 
     deleteById(index, row) {
@@ -138,15 +145,15 @@ export default {
     },
 
     editById(index, row) {
-      alert(index);
-      alert(row);
+      alert(index)
+      alert(row)
     },
 
     handleSizeChange() {},
 
     handleCurrentChange(v) {
-      this.page = v;
-      this.allClassroom();
+      this.page = v
+      this.allClassTask()
     },
 
     /**
@@ -157,10 +164,10 @@ export default {
       this.$axios
         .get("http://localhost:8080/semester")
         .then(res => {
-          console.log(res);
-          let ret = res.data.data;
-          this.semesterData = ret;
-          console.log(ret);
+          console.log(res)
+          let ret = res.data.data
+          this.semesterData = ret
+          console.log(ret)
         })
         .catch(error => {
           console.log("查询教室失败");
@@ -172,11 +179,16 @@ export default {
      */
     allClassTask() {
       this.$axios
-        .get("http://localhost:8080/classtask/" + 1 + "/" + "2019-2020-1")
+        .get(
+          "http://localhost:8080/classtask/" + this.page + "/" + "2019-2020-1"
+        )
         .then(res => {
-          let ret = res.data.data;
-          this.classTaskData = ret.records;
-          this.total = ret.total;
+          let ret = res.data.data
+          this.classTaskData = ret.records
+          this.total = ret.total
+          if (this.total == 0) {
+            this.$message({message: '查询不到开课任务', type: 'success'})
+          }
         })
         .catch(error => {
           this.$message.error("查询开课任务失败");
@@ -191,10 +203,10 @@ export default {
         .delete("http://localhost:8080/deleteclasstask/" + id)
         .then(res => {
           this.allClassTask();
-          this.$message({ message: "删除成功", type: "success" });
+          this.$message({ message: "删除成功", type: "success" })
         })
         .catch(error => {
-          this.$message.error("删除失败");
+          this.$message.error("删除失败")
         });
     }
   }
@@ -202,6 +214,12 @@ export default {
 </script>
 
 <style lang="less" scoped>
+
+// .atag {
+//   text-decoration: none;
+//   text-decoration-color: aliceblue;
+// }
+
 .footer-button {
   margin-top: 10px;
 }
@@ -218,11 +236,10 @@ export default {
 
 .ckasstask-table {
   margin-top: 10px;
-  background-color: aqua;
 }
 
-.addButton {
+.add-button {
   float: left;
-  margin-left: 30px;
+  margin-left: 15px;
 }
 </style>

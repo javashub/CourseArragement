@@ -16,7 +16,7 @@ import java.util.*;
  * 	课程编号：6
  * 	课程属性：2
  * 	上课时间：2
- * 	教室编号：1-6
+ * 	教室编号：6
  */
 public class ClassUtil {
 
@@ -327,8 +327,4 @@ public class ClassUtil {
         }
         return F5;
     }
-
-
-
-
 }

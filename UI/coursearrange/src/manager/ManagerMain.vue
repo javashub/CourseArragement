@@ -52,43 +52,52 @@
                 <el-menu-item index="2-1">
                   <router-link to="teacherlist" class="links">所有讲师</router-link>
                 </el-menu-item>
-                <el-menu-item index="2-2">添加讲师</el-menu-item>
               </el-menu-item-group>
             </el-submenu>
 
             <el-submenu index="3">
               <template slot="title">
-                <i class="el-icon-menu"></i>学生管理
+                <i class="el-icon-menu"></i>班级管理
               </template>
               <el-menu-item-group>
                 <el-menu-item index="3-1">
-                  <router-link to="studentlist" class="links">所有学生</router-link>
+                  <router-link to="classManager" class="links">所有班级</router-link>
                 </el-menu-item>
-                <el-menu-item index="3-2">添加学生</el-menu-item>
               </el-menu-item-group>
             </el-submenu>
 
             <el-submenu index="4">
               <template slot="title">
-                <i class="el-icon-setting"></i>课程管理
+                <i class="el-icon-menu"></i>学生管理
               </template>
-
-              <el-menu-item index="4-1">
-                <router-link class="links" to="courseInfoList">教材列表</router-link>
-              </el-menu-item>
-              <el-menu-item index="4-2">添加教材</el-menu-item>
+              <el-menu-item-group>
+                <el-menu-item index="4-1">
+                  <router-link to="studentlist" class="links">所有学生</router-link>
+                </el-menu-item>
+                <el-menu-item index="4-2">添加学生</el-menu-item>
+              </el-menu-item-group>
             </el-submenu>
 
             <el-submenu index="5">
               <template slot="title">
-                <i class="el-icon-setting"></i>教学设施
+                <i class="el-icon-setting"></i>课程管理
               </template>
 
               <el-menu-item index="5-1">
+                <router-link class="links" to="courseInfoList">教材列表</router-link>
+              </el-menu-item>
+            </el-submenu>
+
+            <el-submenu index="6">
+              <template slot="title">
+                <i class="el-icon-setting"></i>教学设施
+              </template>
+
+              <el-menu-item index="6-1">
                 <router-link class="links" to="teachbuildinglist">教学楼管理</router-link>
               </el-menu-item>
 
-              <el-menu-item index="5-2">
+              <el-menu-item index="6-2">
                 <router-link to="classroomlist" class="links">教室列表</router-link>
               </el-menu-item>
             </el-submenu>

@@ -1,6 +1,5 @@
 package com.lyk.coursearrange.entity.response;
 
-import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.CourseInfo;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.Teacher;

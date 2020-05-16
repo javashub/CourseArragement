@@ -501,6 +501,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             if (classTask.getIsFix().equals("2")) {
                 int size = classTask.getWeeksNumber() / 2;
                 for (int i = 0; i < size; i++) {
+                    // 获得设定的固定时间
                     String classTime = classTask.getClassTime().substring(i * 2, (i + 1) * 2);
                     // 编码
                     String gene = classTask.getIsFix() + classTask.getGradeNo() + classTask.getClassNo()

@@ -83,7 +83,7 @@ public class ClassTaskController {
         return ServerResponse.ofSuccess(set);
     }
 
-    // 排课
+    // 排课接口，最核心的了
     @PostMapping("/arrange")
     public ServerResponse arrange() {
         boolean b = classTaskService.classScheduling("2019-2020-1");

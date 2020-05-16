@@ -18,7 +18,7 @@ import echarts from 'echarts'
 import './assets/css/global.css';
 import { Button, Select, Form, Radio, Table, Container, Message, Pagination, Dialog, Autocomplete,
          Submenu, Menu, MenuItem, MenuItemGroup, Input, Option, FormItem, TableColumn, Row,
-         Icon, Dropdown, DropdownMenu, DropdownItem, Header, Aside, Main, Footer, Popover} from 'element-ui';
+         Icon, Dropdown, DropdownMenu, DropdownItem, Header, Aside, Main, Footer, Popover, Upload} from 'element-ui';
 
 Vue.config.productionTip = false;
 Vue.prototype.$axios = axios;
@@ -31,7 +31,7 @@ Vue.use(Button);
 Vue.use(Popover);
 Vue.use(Footer);
 Vue.use(Main);
-Vue.use(Main);
+Vue.use(Upload);
 Vue.use(Aside);
 Vue.use(Header);
 Vue.use(DropdownItem);

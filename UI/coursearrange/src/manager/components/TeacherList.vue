@@ -5,6 +5,9 @@
       <el-input placeholder="搜索讲师" v-model="keyword" @clear="inputListener" clearable>
         <el-button slot="append" type="primary" icon="el-icon-search" @click="searchTeacher">搜索</el-button>
       </el-input>
+      <el-button type="primary" @click="addTeacher()" class="addbtn">
+        添加讲师
+      </el-button>
     </div>
     <!-- 数据显示 -->
     <el-table :data="teacherData" size="mini">
@@ -60,6 +63,40 @@
       </div>
     </el-dialog>
 
+    <!-- 弹出表单添加讲师 -->
+    <el-dialog title="编辑讲师" :visible.sync="visibleAddForm">
+      <el-form :model="addTeacherForm" label-position="left" label-width="80px">
+        <el-form-item label="编号">
+          <el-input v-model="addTeacherForm.teacherNo" autocomplete="off" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="昵称">
+          <el-input v-model="addTeacherForm.username" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="姓名">
+          <el-input v-model="addTeacherForm.realname" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="职称">
+          <el-input v-model="addTeacherForm.jobtitle" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="科目">
+          <el-input v-model="addTeacherForm.teach" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="手机">
+          <el-input v-model="addTeacherForm.telephone" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="地址">
+          <el-input v-model="addTeacherForm.address" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="年龄">
+          <el-input v-model="addTeacherForm.age" autocomplete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="visibleForm = false">取 消</el-button>
+        <el-button type="primary" @click="commit()">提 交</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 上一页，当前页，下一页 -->
     <div class="footer-button">
       <el-pagination
@@ -85,8 +122,18 @@ export default {
       pageSize: 10,
       total: 0,
       visibleForm: false,
-      editFormData: []
-      
+      visibleAddForm: false,
+      editFormData: [],
+      addTeacherForm: {
+        teacherNo: '',
+        username: '',
+        realname: '',
+        jobtitle: '',
+        teach: '',
+        telephone: '',
+        address: '',
+        age: ''
+      }
     };
   },
   mounted() {
@@ -94,6 +141,18 @@ export default {
   },
 
   methods: {
+
+      addTeacher() {
+        this.$axios.post("http://localhost:8080/teacher/addteacher",)
+        .then(res => {
+
+          this.$message({ message: "添加讲师成功", type: "success" });
+        })
+        .catch(error => {
+          this.$message.error("添加讲师失败")
+        })
+      },
+
     // 提交更新讲师信息
     commit() {
       // let modifyData = this.editFormData
@@ -188,6 +247,11 @@ export default {
 </script>
 
 <style lang="less" scoped>
+
+.addbtn {
+  margin-left: 15px;
+}
+
 .el-input-group {
   width: 40%;
 }
