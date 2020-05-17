@@ -8,6 +8,8 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.service.ClassTaskService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +24,7 @@ import java.util.*;
 @RestController
 public class ClassTaskController {
 
+    Logger log = LoggerFactory.getLogger(ClassTaskController.class);
 
     @Autowired
     private ClassTaskService classTaskService;
@@ -84,9 +87,10 @@ public class ClassTaskController {
     }
 
     // 排课接口，最核心的了
-    @PostMapping("/arrange")
-    public ServerResponse arrange() {
-        boolean b = classTaskService.classScheduling("2019-2020-1");
+    @PostMapping("/arrange/{semester}")
+    public ServerResponse arrange(@PathVariable("semester") String semester) {
+        log.debug("排课的学期：" + semester);
+        boolean b = classTaskService.classScheduling(semester);
 
         if (b) {
             return ServerResponse.ofSuccess("排课完成");

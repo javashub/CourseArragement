@@ -131,7 +131,10 @@ export default {
       this.$axios
         .get("http://localhost:8080/student/searchstudent/" + this.keyword)
         .then(res => {
-          this.studentData = res.data.data.records
+          //this.studentData = res.data.data.records
+          let ret = res.data.data
+          this.studentData = ret.records
+          this.total = ret.total
           this.$message({message:'查询成功', type: 'success'})
         })
         .catch(error => {

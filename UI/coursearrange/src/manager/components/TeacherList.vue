@@ -167,7 +167,11 @@ export default {
 
     handleCurrentChange(v) {
       this.page = v;
-      this.allTeacher();
+      if (this.keyword == '') {
+        this.allTeacher()
+      } else {
+        this.searchTeacher()
+      }
     },
 
     deleteById(index, row) {
@@ -201,9 +205,12 @@ export default {
      */
     searchTeacher() {
       this.$axios
-        .get("http://localhost:8080/teacher/searchteacher/" + this.keyword)
+        .get("http://localhost:8080/teacher/searchteacher/" + this.page + "/" + this.keyword)
         .then(res => {
-          this.teacherData = res.data.data.records;
+          console.log(res)
+          let ret = res.data.data
+          this.teacherData = ret.records
+          this.total = ret.total
           this.$message({message:'查询成功', type: 'success'})
         })
         .catch(error => {

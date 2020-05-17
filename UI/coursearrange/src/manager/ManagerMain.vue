@@ -6,14 +6,14 @@
         <!-- 头 -->
         <el-header style="text-align: right; font-size: 12px">
           <!-- 系统标题 -->
-          <el-dropdown>
+          <el-dropdown @command="handleCommand">
             <i class="el-icon-setting" style="margin-right: 15px"></i>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item>个人中心</el-dropdown-item>
-              <el-dropdown-item>退出</el-dropdown-item>
+              <el-dropdown-item command="center">个人中心</el-dropdown-item>
+              <el-dropdown-item command="exit">退出</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>您好，
-          <span>梁同学</span>
+          <span>{{name}}</span>
         </el-header>
       </el-header>
       <el-container>
@@ -23,7 +23,7 @@
           <el-menu :default-active="default_active" @select="handleSelect" unique-opened>
             <el-menu-item index="0">
               <template slot="title">
-                <router-link to="SystemData" class="links">
+                <router-link to="systemdata" class="links">
                   <i class="el-icon-setting"></i>系统数据
                 </router-link>
               </template>
@@ -35,12 +35,10 @@
               </template>
 
               <el-menu-item index="1-1">
-                <router-link to="classTaskList" class="links">课程计划</router-link>
+                <router-link to="classtasklist" class="links">课程计划</router-link>
               </el-menu-item>
-              <!-- <el-menu-item index="1-1">添加计划</el-menu-item> -->
-              <el-menu-item index="1-2">排课页面</el-menu-item>
-              <el-menu-item index="1-3">
-                <router-link to="courseTable" class="links">查看课表</router-link>
+              <el-menu-item index="1-2">
+                <router-link to="coursetable" class="links">查看课表</router-link>
               </el-menu-item>
             </el-submenu>
 
@@ -61,7 +59,7 @@
               </template>
               <el-menu-item-group>
                 <el-menu-item index="3-1">
-                  <router-link to="classManager" class="links">所有班级</router-link>
+                  <router-link to="classmanager" class="links">所有班级</router-link>
                 </el-menu-item>
               </el-menu-item-group>
             </el-submenu>
@@ -74,17 +72,21 @@
                 <el-menu-item index="4-1">
                   <router-link to="studentlist" class="links">所有学生</router-link>
                 </el-menu-item>
-                <el-menu-item index="4-2">添加学生</el-menu-item>
               </el-menu-item-group>
             </el-submenu>
 
             <el-submenu index="5">
               <template slot="title">
-                <i class="el-icon-setting"></i>课程管理
+                <i class="el-icon-setting"></i>教学资料
               </template>
-
               <el-menu-item index="5-1">
-                <router-link class="links" to="courseInfoList">教材列表</router-link>
+                <router-link class="links" to="courseinfolist">教材列表</router-link>
+              </el-menu-item>
+              <el-menu-item index="5-2">
+                <router-link class="links" to="">学习文档</router-link>
+              </el-menu-item>
+              <el-menu-item index="5-3">
+                <router-link class="links" to="">作业</router-link>
               </el-menu-item>
             </el-submenu>
 
@@ -121,7 +123,8 @@ export default {
   data() {
     return {
       time: "",
-      default_active: "0"
+      default_active: "0",
+      name: '用户名'
     };
   },
 
@@ -129,9 +132,27 @@ export default {
     setInterval(() => {
       this.getTime();
     }, 1000);
+    
+    let u = window.localStorage.getItem('user')
+    if(u != null){
+      this.name = (JSON.parse(u)).realname
+    }
   },
 
   methods: {
+    // 下拉菜单功能，退出、个人中心
+    handleCommand(command) {
+      // alert(command)
+      if (command == 'exit') {
+        localStorage.removeItem('token')
+        // 判断，返回指定页面
+        this.$router.push('/student/login')
+      } else if (command == 'center') {
+        // 跳转到个人中心
+      }
+      
+    },
+
     // 获取系统时间
     getTime() {
       this.time = new Date().toLocaleString();

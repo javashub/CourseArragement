@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.dao.StudentDao;
 import com.lyk.coursearrange.service.StudentService;
@@ -8,10 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * <p>
- *  服务实现类
- * </p>
- *
  * @author lequal
  * @since 2020-03-13
  */
@@ -23,8 +20,10 @@ public class StudentServiceImpl extends ServiceImpl<StudentDao, Student> impleme
 
     @Override
     public Student studentLogin(String username, String password) {
-
-        return studentDao.studentLogin(username, password);
+        QueryWrapper<Student> wrapper = new QueryWrapper<>();
+        wrapper.eq("student_no", username).eq("password", password);
+        // 查询数据库是否有该学生
+        return studentDao.selectOne(wrapper);
     }
 
 }

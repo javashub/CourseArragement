@@ -100,15 +100,16 @@ public class CourseInfoController {
      * @param keyword
      * @return
      */
-    @GetMapping("/search/{keyword}")
-    public ServerResponse searchCourseInfo(@RequestParam(defaultValue = "1") Integer page, @RequestParam(defaultValue = "10") Integer limit, @PathVariable("keyword") String keyword) {
+    @GetMapping("/search/{page}/{keyword}")
+    public ServerResponse searchCourseInfo(@PathVariable("page") Integer page,
+                                           @RequestParam(defaultValue = "10") Integer limit,
+                                           @PathVariable("keyword") String keyword) {
         QueryWrapper<CourseInfo> wrapper = new QueryWrapper<>();
         wrapper.like(!StringUtils.isEmpty(keyword), "course_name", keyword);
-//        Page<CourseInfo> pages = new Page<>(page, limit);
-//        IPage<CourseInfo> iPage = cis.page(pages, wrapper);
-        List<CourseInfo> courseInfoList = cis.list(wrapper);
-        if (courseInfoList != null) {
-            return ServerResponse.ofSuccess(courseInfoList);
+        Page<CourseInfo> pages = new Page<>(page, limit);
+        IPage<CourseInfo> iPage = cis.page(pages, wrapper);
+        if (iPage != null) {
+            return ServerResponse.ofSuccess(iPage);
         }
         return ServerResponse.ofError("查询失败!");
     }

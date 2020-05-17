@@ -2,12 +2,15 @@ package com.lyk.coursearrange.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.service.ClassInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -28,14 +31,25 @@ public class ClassInfoController {
     public ServerResponse queryClass(@PathVariable("grade") String grade) {
         QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>().eq("remark", grade);
         List<ClassInfo> classInfoList = classInfoService.list(wrapper);
-        for(ClassInfo c : classInfoList) {
-            System.out.println(c);
-        }
+
         return ServerResponse.ofSuccess(classInfoList);
     }
 
 
-
+    /**
+     * 分页查询所有班级
+     * @param page
+     * @param limit
+     * @return
+     */
+    @GetMapping("/queryclassinfobypage/{page}")
+    public ServerResponse queryClassInfo(@PathVariable(value = "page") Integer page,
+                                         @RequestParam(defaultValue = "10") Integer limit) {
+        Page<ClassInfo> pages = new Page<>(page, limit);
+        QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>().orderByDesc("remark");
+        IPage<ClassInfo> iPage = classInfoService.page(pages, wrapper);
+        return ServerResponse.ofSuccess(iPage);
+    }
 
 
 }

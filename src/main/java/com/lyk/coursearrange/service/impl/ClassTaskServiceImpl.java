@@ -55,6 +55,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     @Override
     public Boolean classScheduling(String semester) {
         try {
+            log.debug("开始排课,时间：" + System.currentTimeMillis());
             // 1、获得开课任务，知道要上什么课，等下要排什么课
 //            List<ClassTask> classTaskList = classTaskDao.selectBySemester(classTask);
             QueryWrapper<ClassTask> wrapper = new QueryWrapper<ClassTask>().eq("semester", semester);

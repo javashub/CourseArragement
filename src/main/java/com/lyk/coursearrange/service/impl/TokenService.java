@@ -26,7 +26,7 @@ public class TokenService {
     public String getToken(Student student) {
         Date start = new Date();
         // 一小时有效时间
-        long currentTime = System.currentTimeMillis() + 60* 60 * 1000;
+        long currentTime = System.currentTimeMillis() + 60* 60 * 500;
         Date end = new Date(currentTime);
         String token = "";
 
@@ -42,7 +42,7 @@ public class TokenService {
      */
     public String getToken(Admin admin) {
         Date start = new Date();
-        long currentTime = System.currentTimeMillis() + 60* 60 * 1000;
+        long currentTime = System.currentTimeMillis() + 60* 60 * 500;
         Date end = new Date(currentTime);
         String token = "";
 
@@ -58,7 +58,7 @@ public class TokenService {
      */
     public String getToken(Teacher teacher) {
         Date start = new Date();
-        long currentTime = System.currentTimeMillis() + 60* 60 * 1000;
+        long currentTime = System.currentTimeMillis() + 60* 60 * 500;
         Date end = new Date(currentTime);
         String token = "";
 

@@ -17,5 +17,4 @@ public interface ClassTaskService extends IService<ClassTask> {
 //    Boolean classScheduling(ClassTask classTask);
     Boolean classScheduling(@Param("semester") String semester);
 
-
 }

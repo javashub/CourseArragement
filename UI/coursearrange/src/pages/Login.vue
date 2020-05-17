@@ -67,8 +67,12 @@ export default {
         })
         .then((res) => {
           // 成功响应,得到token
-          console.log(res)
-          window.localStorage.setItem('token', res.data.message)
+          let ret = res.data.data
+          console.log(ret)
+          // console.log(res)
+          window.localStorage.setItem('token', ret.token)
+          window.localStorage.setItem('user', JSON.stringify(ret.student))
+          this.$router.push('/admin')
           this.$message({message: "登录成功", type: "success"})
         }).catch((error) => {
           // 失败

@@ -96,17 +96,17 @@ public class ClassTask extends Model<ClassTask> {
     private Integer studentNum;
 
     /**
-     * 一周几个学时，偶数
+     * 周数
      */
     @TableField("weeks_sum")
-    @Excel(name = "周学时")
+    @Excel(name = "周数")
     private Integer weeksSum;
 
     /**
-     * 要上多少周
+     * 周学时，偶数
      */
     @TableField("weeks_number")
-    @Excel(name = "周数")
+    @Excel(name = "周学时")
     private Integer weeksNumber;
 
     /**

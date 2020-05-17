@@ -6,16 +6,11 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Teacher;
-import com.lyk.coursearrange.entity.request.TeacherLoginRequest;
+import com.lyk.coursearrange.entity.request.UserLoginRequest;
 import com.lyk.coursearrange.service.TeacherService;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import org.springframework.stereotype.Controller;
-
-import java.util.List;
 
 /**
  * @author lequal
@@ -30,13 +25,13 @@ public class TeacherController {
 
     /**
      * 讲师登录
-     * @param teacherLoginRequest
+     * @param userLoginRequest
      * @return
      */
     @PostMapping("/login")
-    public ServerResponse teacherLogin(@RequestBody TeacherLoginRequest teacherLoginRequest) {
+    public ServerResponse teacherLogin(@RequestBody UserLoginRequest userLoginRequest) {
         QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
-        wrapper.eq("teacher_no", teacherLoginRequest.getUsername());
+        wrapper.eq("teacher_no", userLoginRequest.getUsername());
         // 先查询是否有该账号
         Teacher teacher2 = teacherService.getOne(wrapper);
         if (teacher2 == null) {
@@ -45,7 +40,7 @@ public class TeacherController {
             return ServerResponse.ofError("账号状态异常，请联系管理员");
         }
         // 登录,使用编号登录
-        Teacher teacher = teacherService.teacherLogin(teacherLoginRequest.getUsername(), teacherLoginRequest.getPassword());
+        Teacher teacher = teacherService.teacherLogin(userLoginRequest.getUsername(), userLoginRequest.getPassword());
         // 判断
         if (teacher != null) {
             // 允许登录
@@ -101,8 +96,8 @@ public class TeacherController {
      * 根据姓名关键字搜索讲师
      * @return
      */
-    @GetMapping("/searchteacher/{keyword}")
-    public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @RequestParam(defaultValue = "1") Integer page,
+    @GetMapping("/searchteacher/{page}/{keyword}")
+    public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @PathVariable("page") Integer page,
                                         @RequestParam(defaultValue = "10") Integer limit) {
         QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
         wrapper.orderByDesc("update_time");

@@ -8,12 +8,11 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Admin;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.Teacher;
-import com.lyk.coursearrange.entity.request.AdminLoginRequest;
+import com.lyk.coursearrange.entity.request.UserLoginRequest;
 import com.lyk.coursearrange.entity.request.TeacherAddRequest;
 import com.lyk.coursearrange.service.AdminService;
 import com.lyk.coursearrange.service.StudentService;
 import com.lyk.coursearrange.service.TeacherService;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -65,11 +64,13 @@ public class AdminController {
      * @return
      */
     @PostMapping("/login")
-    public ServerResponse adminLogin(@RequestBody AdminLoginRequest adminLoginRequest) {
-
+    public ServerResponse adminLogin(@RequestBody UserLoginRequest adminLoginRequest) {
+        Map<String, Object> map = new HashMap();
         Admin admin = adminService.adminLogin(adminLoginRequest.getUsername(), adminLoginRequest.getPassword());
         if (admin != null){
-            return ServerResponse.ofSuccess(admin);
+            map.put("admin", admin);
+            map.put("role", 1);
+            return ServerResponse.ofSuccess(map);
         }
         return ServerResponse.ofError("用户名或密码错误!");
     }

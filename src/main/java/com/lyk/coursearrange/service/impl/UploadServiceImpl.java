@@ -44,13 +44,6 @@ public class UploadServiceImpl implements UploadService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("===================================================");
-        System.out.println(list.get(0));
-        System.out.println("===================================================");
-        System.out.println(list.get(1));
-        System.out.println("===================================================");
-        System.out.println(list.get(2));
-        System.out.println("===================================================");
         // 调用课程任务存入数据库方法
         boolean b = save(list);
         if (b) {

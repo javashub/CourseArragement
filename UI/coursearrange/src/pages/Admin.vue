@@ -22,7 +22,7 @@
         <el-form-item >
           <template >
             <el-radio v-model="radio" label="1" @change="getType()">管理员</el-radio>
-            <el-radio v-model="radio" label="2" @change="getType()">超级管理员</el-radio>
+            <el-radio v-model="radio" label="2" @change="getType()">讲师</el-radio>
           </template>
         </el-form-item>
         
@@ -38,8 +38,6 @@
 
 <script>
 export default {
-  
-
   name: "Admin",
   data() {
     return {
@@ -69,9 +67,11 @@ export default {
     },
     getType() {
       // 调用这个方法直接获取到了类型
+      console.log(this.radio)
     },
-    // 表单预验证
+    
     login() {
+      // 表单预验证
       // 此处可以直接获取选中的类型值
       console.log(this.radio);
       

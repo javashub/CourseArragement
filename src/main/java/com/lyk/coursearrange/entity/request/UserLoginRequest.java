@@ -5,20 +5,18 @@ import lombok.Data;
 /**
  * @author: 15760
  * @Date: 2020/3/14
- * @Descripe: 封装管理员登录请求体
+ * @Descripe: 封装用户(管理员，讲师)登录请求体
  */
 @Data
-public class AdminLoginRequest {
-
-    private Integer id;
+public class UserLoginRequest {
 
     private String username;
 
     private String password;
 
     /**
-     * 1普通管理员，0超级管理员
+     * 1管理员，2讲师
      */
-    private Integer power;
+    private Integer type;
 
 }

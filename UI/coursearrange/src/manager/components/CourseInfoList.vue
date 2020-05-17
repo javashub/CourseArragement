@@ -93,7 +93,11 @@ export default {
 
     handleCurrentChange(v) {
       this.page = v;
-      this.allCourseInfo()
+      if (this.keyword == '') {
+        this.allCourseInfo()
+      } else {
+        this.searchCourse()
+      }
     },
 
     // 监听搜索框
@@ -104,12 +108,11 @@ export default {
     // 根据关键字搜索交材信息,有问题呀
     searchCourse() {
       this.$axios
-        .get("http://localhost:8080/courseinfo/search/" + this.keyword)
+        .get("http://localhost:8080/courseinfo/search/" + this.page + "/" + this.keyword)
         .then(res => {
-          this.courseInfoData = res.data.data
-          // let ret = res.data.data
-          // this.courseInfoData = ret.records
-          // this.total = ret.total
+          let ret = res.data.data
+          this.courseInfoData = ret.records
+          this.total = ret.total
           this.$message({message:'查询成功', type: 'success'})
         })
         .catch(error => {

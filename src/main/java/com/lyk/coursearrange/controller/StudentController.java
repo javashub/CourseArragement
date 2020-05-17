@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.UserLoginToken;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.request.StudentLoginRequest;
 import com.lyk.coursearrange.entity.request.StudentRegisterRequest;
@@ -16,13 +17,12 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
- *  前端控制器
- *
- *
  * @author lequal
  * @since 2020-03-13
  */
@@ -33,7 +33,6 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
-
     @Autowired
     private TokenService tokenService;
     /**
@@ -43,8 +42,8 @@ public class StudentController {
      */
     @PostMapping("/login")
     public ServerResponse studentLogin(@RequestBody StudentLoginRequest studentLoginRequest) {
-        // 构造查询该学生帐号状态的条件，直接使用学号登录，用户名，真实姓名可能出现相同的
-        // 或者干脆用用户名登录好了
+        Map<String, Object> map = new HashMap<>();
+        // 先判断是否有该学号，该学生
         QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("student_no", studentLoginRequest.getUsername());
         // 查询是否有该学生
         Student student2 = studentService.getOne(wrapper);
@@ -61,9 +60,10 @@ public class StudentController {
         if (student != null) {
             //允许登录,返回token
             String token = tokenService.getToken(student);
-            return ServerResponse.ofSuccess(token);
+            map.put("student", student);
+            map.put("token", token);
+            return ServerResponse.ofSuccess(map);
         }
-
         return ServerResponse.ofSuccess("密码错误！");
     }
 
@@ -96,6 +96,7 @@ public class StudentController {
      * @return
      */
     @PostMapping("/modifystudent")
+    @UserLoginToken
     public ServerResponse modifyStudent(@RequestBody Student student) {
         // 修改操作
         return studentService.updateById(student) ? ServerResponse.ofSuccess("修改成功") : ServerResponse.ofError("修改失败");
@@ -108,6 +109,7 @@ public class StudentController {
      * @return
      */
     @GetMapping("/{id}")
+    @UserLoginToken
     public ServerResponse queryStudent(@PathVariable("id")Integer id){
         // 查询出来需要修改的学生实体
         return ServerResponse.ofSuccess(studentService.getById(id));

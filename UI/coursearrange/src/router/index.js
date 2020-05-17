@@ -80,27 +80,27 @@ export default new Router({
           component: AddTeacher
         },
         {
-          path: '/classroomList',
+          path: '/classroomlist',
           name: 'ClassroomList',
           component: ClassroomList
         },
         {
-          path: '/courseTable',
+          path: '/coursetable',
           name: 'CourseTable',
           component: CourseTable
         },
         {
-          path: '/courseInfoList',
+          path: '/courseinfolist',
           name: 'CourseInfoList',
           component: CourseInfoList
         },
         {
-          path: '/classTaskList',
+          path: '/classtasklist',
           name: 'ClassTaskList',
           component: ClassTaskList
         },
         {
-          path: '/classManager',
+          path: '/classmanager',
           name: 'ClasssManager',
           component: ClassManager
         }

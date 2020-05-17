@@ -48,7 +48,7 @@ public class UploadController {
     @GetMapping(value = "/download", consumes = MediaType.ALL_VALUE)
     public void downloadTemplate(final HttpServletResponse response) {
         // 获取文件
-        File file = new File("D:/excel/课程任务导入模板.xls");
+        File file = new File("D:/arrange/excel/课程任务导入模板.xls");
         if (!file.exists()) {
             // 没有该模板文件就调用创建模板文件方法
             log.info("创建模板文件");
@@ -102,6 +102,9 @@ public class UploadController {
         }
     }
 
+    /**
+     * 如果没有模板文件就创建模板文件
+     */
     private void createTemplate() {
         ExportParams params = new ExportParams();
         params.setTitle("课程任务导入模板(请严格对照数据库信息填写)");
@@ -110,7 +113,7 @@ public class UploadController {
         Workbook workbook = ExcelExportUtil.exportExcel(params, ClassTask.class, list);
         try {
             // 输出模板到本地
-            FileOutputStream fos = new FileOutputStream("D:/excel/课程任务导入模板.xls");
+            FileOutputStream fos = new FileOutputStream("D:/arrange/excel/课程任务导入模板.xls");
             workbook.write(fos);
         } catch (Exception e) {
             e.printStackTrace();
