@@ -138,7 +138,6 @@ export default {
         .then(res => {
           //alert(this.value2)
           let r = res.data.data;
-          console.log(r)
           this.classNo.splice(0,this.classNo.length); 
           this.value3 = ''
           r.map(v=>{
@@ -147,7 +146,6 @@ export default {
               lable:v.className
             })
           })
-          // this.$message({ message: "更新成功", type: "success" })
         })
         .catch(error => {
           this.$message.error("失败")
@@ -162,6 +160,7 @@ export default {
       this.$axios
         .get("http://localhost:8080/querycourseplan/" + this.value3)
         .then(res => {
+          console.log(res)
           let courseData = res.data.data;
           let level = 0;
           let times = 0;
@@ -175,7 +174,7 @@ export default {
             else{
               console.log(index,level,times);
               
-              this.classTableData.courses[level].push(item.teacher.realname + ":"+item.courseInfo.courseName);
+              this.classTableData.courses[level].push(item.teacher.realname + "-" + item.courseInfo.courseName + "(" + item.classroomNo + ")");
             }
             if(times % 5 == 0){
               level = level + 1;

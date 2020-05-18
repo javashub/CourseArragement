@@ -31,7 +31,7 @@
 
     <!-- 弹出表单编辑讲师 -->
     <el-dialog title="编辑讲师" :visible.sync="visibleForm">
-      <el-form :model="editFormData" label-position="left" label-width="80px">
+      <el-form :model="editFormData" label-position="left" label-width="80px" :rules="addTeacherRules">
         <el-form-item label="编号">
           <el-input v-model="editFormData.teacherNo" autocomplete="off" disabled></el-input>
         </el-form-item>
@@ -65,35 +65,35 @@
 
     <!-- 弹出表单添加讲师 -->
     <el-dialog title="编辑讲师" :visible.sync="visibleAddForm">
-      <el-form :model="addTeacherForm" label-position="left" label-width="80px">
-        <el-form-item label="编号">
+      <el-form :model="addTeacherForm" label-position="left" label-width="80px" :rules="addTeacherRules">
+        <el-form-item label="编号" prop="teacherNo">
           <el-input v-model="addTeacherForm.teacherNo" autocomplete="off" disabled></el-input>
         </el-form-item>
-        <el-form-item label="昵称">
+        <el-form-item label="昵称" prop="username">
           <el-input v-model="addTeacherForm.username" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="姓名">
+        <el-form-item label="姓名" prop="realname">
           <el-input v-model="addTeacherForm.realname" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="职称">
+        <el-form-item label="职称" prop="jobtitle">
           <el-input v-model="addTeacherForm.jobtitle" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="科目">
+        <el-form-item label="科目" prop="teach">
           <el-input v-model="addTeacherForm.teach" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="手机">
+        <el-form-item label="手机" prop="telephone">
           <el-input v-model="addTeacherForm.telephone" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="地址">
+        <el-form-item label="地址" prop="address">
           <el-input v-model="addTeacherForm.address" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="年龄">
+        <el-form-item label="年龄" prop="age">
           <el-input v-model="addTeacherForm.age" autocomplete="off"></el-input>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="visibleForm = false">取 消</el-button>
-        <el-button type="primary" @click="commit()">提 交</el-button>
+        <el-button @click="visibleAddForm = false">取 消</el-button>
+        <el-button type="primary" @click="addCommit()">提 交</el-button>
       </div>
     </el-dialog>
 
@@ -124,6 +124,30 @@ export default {
       visibleForm: false,
       visibleAddForm: false,
       editFormData: [],
+      addTeacherRules: {
+        username: [
+          { required: true, message: '请输入昵称', trigger: 'blur' },
+          { min: 3, max: 12, message: '长度在 3 到 12 个字符', trigger: 'blur' }
+        ],
+        realname: [
+          { required: true, message: '请输入真实姓名', trigger: 'blur' },
+        ],
+        jobtitle: [
+          { required: true, message: '请输入职称', trigger: 'blur' },
+        ],
+        teach: [
+          { required: true, message: '请输入教授科目', trigger: 'blur' },
+        ],
+        telephone: [
+          { required: true, message: '请输入手机号码', trigger: 'blur' },
+        ],
+        address: [
+          { required: true, message: '请输入地址', trigger: 'blur' },
+        ],
+        age: [
+          { required: true, message: '请输入年龄', trigger: 'blur' },
+        ],
+      },
       addTeacherForm: {
         teacherNo: '',
         username: '',
@@ -142,16 +166,38 @@ export default {
 
   methods: {
 
-      addTeacher() {
-        this.$axios.post("http://localhost:8080/teacher/addteacher",)
-        .then(res => {
+    addTeacher() {
+      // 在弹出添加表单之前从后台获取讲师的编号
+      this.$axios.get("http://localhost:8080/teacher/teacherno")
+      .then(res => {
+        if (res.data.code == 0) {
+          let number = parseInt(res.data.message) + 1
+          // 给讲师编号赋值
+          this.addTeacherForm.teacherNo = number.toString()
+        }
+      })
+      .catch(error => {
+       
+      })
+      this.visibleAddForm = true
+    },
 
-          this.$message({ message: "添加讲师成功", type: "success" });
-        })
-        .catch(error => {
-          this.$message.error("添加讲师失败")
-        })
-      },
+    // 提交添加讲师的表单
+    addCommit() {
+      console.log(this.addTeacherForm)
+      this.$axios.post("http://localhost:8080/teacher/addteacher", this.addTeacherForm)
+      .then(res => {
+        
+        if (res.data.code == 0) {
+          this.allTeacher()
+          this.visibleAddForm = false
+          this.$message({ message: "添加讲师成功", type: "success" })
+        }
+      })
+      .catch(error => {
+        this.$message.error("添加讲师失败")
+      })
+    },
 
     // 提交更新讲师信息
     commit() {
