@@ -10,6 +10,7 @@
             <i class="el-icon-setting" style="margin-right: 15px"></i>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item command="center">个人中心</el-dropdown-item>
+              <el-dropdown-item command="updatePassword">修改密码</el-dropdown-item>
               <el-dropdown-item command="exit">退出</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>您好，
@@ -86,7 +87,10 @@
                 <router-link class="links" to="">学习文档</router-link>
               </el-menu-item>
               <el-menu-item index="5-3">
-                <router-link class="links" to="">作业</router-link>
+                <router-link class="links" to="">作业文档</router-link>
+              </el-menu-item>
+              <el-menu-item index="5-4">
+                <router-link class="links" to="">在线测试</router-link>
               </el-menu-item>
             </el-submenu>
 
@@ -149,6 +153,9 @@ export default {
         this.$router.push('/student/login')
       } else if (command == 'center') {
         // 跳转到个人中心
+      } else if (command == 'updatePassword') {
+        // 修改密码页面
+        
       }
       
     },

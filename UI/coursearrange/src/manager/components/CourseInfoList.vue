@@ -28,17 +28,17 @@
 
     <!-- 弹出表单编辑教材信息 -->
     <el-dialog title="编辑教材" :visible.sync="visibleForm">
-      <el-form :model="editFormData" label-position="left" label-width="80px">
+      <el-form :model="editFormData" label-position="left" label-width="80px" :rules="editFormRules">
         <el-form-item label="课程编号">
           <el-input v-model="editFormData.courseNo" autocomplete="off" disabled></el-input>
         </el-form-item>
-        <el-form-item label="课程名称">
+        <el-form-item label="课程名称" prop="courseName">
           <el-input v-model="editFormData.courseName" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="课程属性">
+        <el-form-item label="课程属性" prop="courseAttr">
           <el-input v-model="editFormData.courseAttr" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="出版社">
+        <el-form-item label="出版社" prop="publisher">
           <el-input v-model="editFormData.publisher" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="备注">
@@ -77,7 +77,15 @@ export default {
       page: 1,
       pageSize: 10,
       total: 0,
-      visibleForm: false
+      visibleForm: false,
+      editFormRules: {
+        courseName: [
+           { required: true, message: '请输入教材名', trigger: 'blur' },
+        ],
+        courseAttr: [
+           { required: true, message: '课程属性，01:语数英，02:物化生政史地,03:实验课,04:体育课', trigger: 'blur' },
+        ]
+      }
     };
   },
   mounted() {

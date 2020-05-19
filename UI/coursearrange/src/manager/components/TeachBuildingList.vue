@@ -20,14 +20,14 @@
 
     <!-- 弹出表单编辑教学楼 -->
     <el-dialog title="编辑教学楼" :visible.sync="visibleForm">
-      <el-form :model="editFormData" label-position="left" label-width="80px">
+      <el-form :model="editFormData" label-position="left" label-width="80px" :rules="editFormRules">
         <el-form-item label="编号">
           <el-input v-model="editFormData.teachBuildNo" autocomplete="off" disabled></el-input>
         </el-form-item>
-        <el-form-item label="名称">
+        <el-form-item label="名称" prop="teachBuildName">
           <el-input v-model="editFormData.teachBuildName" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="所在区域">
+        <el-form-item label="所在区域" prop="teachBuildLocation">
           <el-input v-model="editFormData.teachBuildLocation" autocomplete="off"></el-input>
         </el-form-item>
       </el-form>
@@ -61,7 +61,15 @@ export default {
       pageSize: 10,
       total: 0,
       editFormData: [],
-      visibleForm: false
+      visibleForm: false,
+      editFormRules: {
+        teachBuildLocation: [
+           { required: true, message: '请输入教学楼位置', trigger: 'blur' },
+        ],
+        teachBuildName: [
+           { required: true, message: '请输入教学楼名称', trigger: 'blur' },
+        ]
+      }
     };
   },
 

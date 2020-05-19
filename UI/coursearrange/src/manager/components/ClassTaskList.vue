@@ -27,7 +27,7 @@
     >
       <el-button slot="trigger" size="small" type="primary">选取课程任务<i class="el-icon-upload2 el-icon--right"></i></el-button>
       <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器<i class="el-icon-upload el-icon--right"></i></el-button>
-      <div slot="tip" class="el-upload__tip">只能上传xls/xlsx文件</div>
+      <div slot="tip" class="el-upload__tip">只能上传xls/xlsx文件,导入新任务后将清空原来的任务,请一次性将本学期课程导入完毕</div>
     </el-upload>
     <!-- 下载模板 <a class="atag" href="http://localhost:8080/download">-->
     <el-button class="add-button" size="small" type="primary" @click="downloadTemplate()">
@@ -37,10 +37,10 @@
 
     <el-button class="add-button" size="small" type="primary" @click="arrangeCourse()">
       排课
-      <i class="el-icon-finished el-icon--right"></i>
+      <i class="el-icon-thumb el-icon--right"></i>
     </el-button>
 
-        <!-- 开课任务，等待排课的课程 -->
+    <!-- 开课任务，等待排课的课程 -->
     <el-table class="ckasstask-table" :data="classTaskData" size="mini">
       <el-table-column label="序号" type="selection"></el-table-column>
       <el-table-column prop="semester" label="学期" ></el-table-column>
@@ -141,7 +141,6 @@ export default {
 
     // 点击开始提交学期到系统后台排课
     arrangeCourse() {
-      alert(this.semester)
       this.$axios.post("http://localhost:8080/arrange/" + this.semester)
       .then(res => {
         console.log(res)
@@ -162,6 +161,11 @@ export default {
     // 上传成功
     uploadSuccess(response, file, fileList) {
       // location.reload()
+      handleRemove(file, fileList)
+    },
+
+    handleRemove(file, fileList) {
+
     },
 
     handleError(error, file, fileList) {
@@ -173,19 +177,15 @@ export default {
       this.$refs.upload.submit()
     },
 
-    handleRemove(file, fileList) {
-      console.log(file, fileList)
-    },
-
     handlePreview(file) {
-      console.log(file)
+      
     },
 
     // 得到对应选中的年级
     handleSelectChange(val) {
       // 这里的V就是选择的学期了
       this.semester = val
-      // alert(v)
+      
     },
 
     deleteById(index, row) {
@@ -193,8 +193,7 @@ export default {
     },
 
     editById(index, row) {
-      alert(index)
-      alert(row)
+      
     },
 
     handleSizeChange() {},
@@ -260,11 +259,6 @@ export default {
 </script>
 
 <style lang="less" scoped>
-
-// .atag {
-//   text-decoration: none;
-//   text-decoration-color: aliceblue;
-// }
 
 .footer-button {
   margin-top: 10px;

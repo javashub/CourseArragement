@@ -32,28 +32,28 @@
     <!-- 弹出表单编辑讲师 -->
     <el-dialog title="编辑讲师" :visible.sync="visibleForm">
       <el-form :model="editFormData" label-position="left" label-width="80px" :rules="addTeacherRules">
-        <el-form-item label="编号">
+        <el-form-item label="编号" prop="teacherNo">
           <el-input v-model="editFormData.teacherNo" autocomplete="off" disabled></el-input>
         </el-form-item>
-        <el-form-item label="昵称">
+        <el-form-item label="昵称" prop="username">
           <el-input v-model="editFormData.username" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="姓名">
+        <el-form-item label="姓名" prop="realname">
           <el-input v-model="editFormData.realname" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="职称">
+        <el-form-item label="职称" prop="jobtitle">
           <el-input v-model="editFormData.jobtitle" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="科目">
+        <el-form-item label="科目" prop="teach">
           <el-input v-model="editFormData.teach" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="手机">
+        <el-form-item label="手机" prop="telephone">
           <el-input v-model="editFormData.telephone" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="地址">
+        <el-form-item label="地址" prop="address">
           <el-input v-model="editFormData.address" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="年龄">
+        <el-form-item label="年龄" prop="age">
           <el-input v-model="editFormData.age" autocomplete="off"></el-input>
         </el-form-item>
       </el-form>

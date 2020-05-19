@@ -20,20 +20,20 @@
 
     <!-- 弹出表单编辑教室 -->
     <el-dialog title="编辑教学楼" :visible.sync="visibleForm">
-      <el-form :model="editFormData" label-position="left" label-width="80px">
-        <el-form-item label="编号">
+      <el-form :model="editFormData" label-position="left" label-width="80px" :rules="editFormRules">
+        <el-form-item label="编号" prop="classroomNo">
           <el-input v-model="editFormData.classroomNo" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="名称">
+        <el-form-item label="名称" prop="classroomName">
           <el-input v-model="editFormData.classroomName" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="所在楼栋">
+        <el-form-item label="所在楼栋" prop="teachbuildNo">
           <el-input v-model="editFormData.teachbuildNo" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="容量">
+        <el-form-item label="容量" prop="capacity">
           <el-input v-model="editFormData.capacity" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="备注">
+        <el-form-item label="备注" prop="remark">
           <el-input v-model="editFormData.remark" autocomplete="off"></el-input>
         </el-form-item>
       </el-form>
@@ -67,7 +67,21 @@ export default {
       pageSize: 10,
       total: 0,
       editFormData: [],
-      visibleForm: false
+      visibleForm: false,
+      editFormRules: {
+        classroomNo: [
+           { required: true, message: '请输入教室编号', trigger: 'blur' },
+        ],
+        classroomName: [
+           { required: true, message: '请输入教室名称', trigger: 'blur' },
+        ],
+        teachbuildNo: [
+           { required: true, message: '请输入所在教学楼', trigger: 'blur' },
+        ],
+        capacity: [
+           { required: true, message: '请输入教教室容量', trigger: 'blur' },
+        ]
+      }
     };
   },
   mounted() {
