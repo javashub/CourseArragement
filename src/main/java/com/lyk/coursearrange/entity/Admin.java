@@ -13,9 +13,6 @@ import java.time.LocalDateTime;
 import java.io.Serializable;
 
 /**
- * <p>
- * 
- * </p>
  *
  * @author lequal
  * @since 2020-03-06
@@ -60,14 +57,39 @@ public class Admin extends Model<Admin> {
     private String jobtitle;
 
     /**
+     * 教授科目
+     */
+    private String teach;
+
+    /**
+     * 联系电话
+     */
+    private String telephone;
+
+    /**
+     * 电子邮件
+     */
+    private String email;
+
+    /**
      * 证件
      */
     private String license;
 
     /**
+     * 年龄
+     */
+    private Integer age;
+
+    /**
      * 头像
      */
     private String avatar;
+
+    /**
+     * 地址
+     */
+    private String address;
 
     /**
      * 签名
@@ -88,6 +110,11 @@ public class Admin extends Model<Admin> {
      * 权限,默认为1(普通管理员) 0为超级管理员，登录的时候需要进行验证
      */
     private Integer power;
+
+    /**
+     * 类型
+     */
+    private Integer type;
 
     /**
      * 账号状态

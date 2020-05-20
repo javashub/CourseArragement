@@ -2,7 +2,9 @@ package com.lyk.coursearrange.service.impl;
 
 import cn.afterturn.easypoi.excel.ExcelImportUtil;
 import cn.afterturn.easypoi.excel.entity.ImportParams;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.service.UploadService;
@@ -21,6 +23,8 @@ public class UploadServiceImpl implements UploadService {
 
     @Autowired
     private ClassTaskService classTaskService;
+    @Autowired
+    private ClassTaskDao classTaskDao;
 
     /**
      * 文件上传实现并解析Excel存入数据库
@@ -58,6 +62,8 @@ public class UploadServiceImpl implements UploadService {
      * @return
      */
     private boolean save(List<ClassTask> list) {
+        // 清空旧任务
+        clearClassTaskOld();
         int i = 0;
         // 遍历课程任务插入数据库
         for (ClassTask classTask : list) {
@@ -84,6 +90,13 @@ public class UploadServiceImpl implements UploadService {
             return true;
         }
         return false;
+    }
+
+    /**
+     * 清空旧的课程任务
+     */
+    private void clearClassTaskOld() {
+        classTaskDao.clearClassTaskOld();
     }
 
 }

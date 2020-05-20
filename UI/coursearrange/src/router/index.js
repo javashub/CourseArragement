@@ -6,9 +6,13 @@ import Register from '@/pages/Register';
 import Admin from '@/pages/Admin';
 import ManagerMain from '@/manager/ManagerMain';
 import TeacherList from '@/manager/components/TeacherList';
-import AddTeacher from '@/manager/components/AddTeacher';
+import TeachAreaSetting from '@/manager/components/TeachAreaSetting';
 import SystemData from '@/manager/SystemData';
-import AddClassroom from '@/manager/components/AddClassroom';
+import OnlineCourse from '@/manager/components/OnlineCourse';
+import TeacherMain from '@/pages/TeacherMain';
+import StudyDocs from '@/manager/components/StudyDocs';
+import HomeWork from '@/manager/components/HomeWork';
+import Exercise from '@/manager/components/Exercise';
 import ClassroomList from '@/manager/components/ClassroomList';
 import TeachBuildingList from '@/manager/components/TeachBuildingList';
 import CourseTable from '@/manager/components/CourseTable';
@@ -16,7 +20,6 @@ import CourseInfoList from '@/manager/components/CourseInfoList';
 import StudentList from '@/manager/components/StudentList';
 import ClassTaskList from '@/manager/components/ClassTaskList';
 import ClassManager from '@/manager/components/ClassManager';
-
 
 Vue.use(Router)
 
@@ -43,16 +46,15 @@ export default new Router({
       component: Admin
     },
     {
+      path: '/teachermain',
+      name: 'TeacherMain',
+      component: TeacherMain,
+    },
+    {
       path: '/admin',
       name: 'Admin',
       component: ManagerMain,
       children: [
-        {
-          // 登录成功跳转到该路径
-          path: '/addclassroom',
-          name: 'AddClassroom',
-          component: AddClassroom
-        },
         {
           // 登录成功跳转到该路径
           path: '/systemdata',
@@ -73,11 +75,6 @@ export default new Router({
           path: '/teachbuildinglist',
           name: 'TeachBuildingList',
           component: TeachBuildingList
-        },
-        {
-          path: '/addteacher',
-          name: 'AddTeacher',
-          component: AddTeacher
         },
         {
           path: '/classroomlist',
@@ -103,6 +100,31 @@ export default new Router({
           path: '/classmanager',
           name: 'ClasssManager',
           component: ClassManager
+        },
+        {
+          path: '/setteacharea',
+          name: 'TeachAreaSetting',
+          component: TeachAreaSetting
+        },
+        {
+          path: '/onlinecourse',
+          name: 'OnlineCourse',
+          component: OnlineCourse
+        },
+        {
+          path: '/studydocs',
+          name: 'StudyDocs',
+          component: StudyDocs
+        },
+        {
+          path: '/homework',
+          name: 'HomeWork',
+          component: HomeWork
+        },
+        {
+          path: '/exercise',
+          name: 'Exercise',
+          component: Exercise
         }
       ]
     }

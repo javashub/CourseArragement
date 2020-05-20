@@ -144,10 +144,12 @@ export default {
       this.$axios
         .get("http://localhost:8080/queryclassroom/" + this.page)
         .then(res => {
-          
-          let ret = res.data.data;
-          this.classroomData = ret.records;
-          this.total = ret.total;
+          console.log(res)
+          if (res.data.code == 0) {
+            let ret = res.data.data;
+            this.classroomData = ret.records;
+            this.total = ret.total;
+          }
         })
         .catch(error => {
           console.log("查询教室失败");

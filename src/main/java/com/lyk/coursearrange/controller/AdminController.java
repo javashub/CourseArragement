@@ -13,6 +13,7 @@ import com.lyk.coursearrange.entity.request.TeacherAddRequest;
 import com.lyk.coursearrange.service.AdminService;
 import com.lyk.coursearrange.service.StudentService;
 import com.lyk.coursearrange.service.TeacherService;
+import com.lyk.coursearrange.service.impl.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +39,8 @@ public class AdminController {
     private TeacherService teacherService;
     @Autowired
     private StudentService studentService;
+    @Autowired
+    private TokenService tokenService;
 
 
     /**
@@ -68,8 +71,9 @@ public class AdminController {
         Map<String, Object> map = new HashMap();
         Admin admin = adminService.adminLogin(adminLoginRequest.getUsername(), adminLoginRequest.getPassword());
         if (admin != null){
+            String token = tokenService.getToken(admin);
             map.put("admin", admin);
-            map.put("role", 1);
+            map.put("token", token);
             return ServerResponse.ofSuccess(map);
         }
         return ServerResponse.ofError("用户名或密码错误!");

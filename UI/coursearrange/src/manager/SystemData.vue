@@ -11,11 +11,19 @@ export default {
   name: 'SystemData',
   data() {
     return {
-
+      
     }
   },
+  mounted() {
+    this.systemData()
+  },
   methods: {
-
+    // 获取系统数据
+    systemData() {
+      this.$axios.get("http://localhost:8080/systemdata")
+      .then()
+      .catch()
+    }
   }
 }
 </script>

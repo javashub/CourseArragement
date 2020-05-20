@@ -82,6 +82,11 @@ public class Teacher extends Model<Teacher> {
     private String telephone;
 
     /**
+     * 电子邮件
+     */
+    private String email;
+
+    /**
      * 地址
      */
     private String address;

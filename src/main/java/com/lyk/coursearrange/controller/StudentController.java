@@ -76,13 +76,13 @@ public class StudentController {
     public ServerResponse studentRegister(@RequestBody StudentRegisterRequest stu) {
         System.out.println(stu);
         Student student = new Student();
-        student.setStudentNo(stu.getStudentNo()); // 学号
-        student.setUsername(stu.getUsername()); // 用户名
-        student.setPassword(stu.getPassword()); // 密码
-        student.setRealname(stu.getRealname()); // 真实姓名
-        student.setGrade(stu.getGrade()); // 年级
-        student.setAddress(stu.getAddress()); // 地址
-        student.setTelephone(stu.getTelephone()); // 联系方式
+        student.setStudentNo(stu.getStudentNo());
+        student.setUsername(stu.getUsername());
+        student.setPassword(stu.getPassword());
+        student.setRealname(stu.getRealname());
+        student.setGrade(stu.getGrade());
+        student.setAddress(stu.getAddress());
+        student.setTelephone(stu.getTelephone());
         boolean b = studentService.save(student);
         if (b) {
             return ServerResponse.ofSuccess("注册成功", student);
@@ -91,7 +91,7 @@ public class StudentController {
     }
 
     /**
-     * 修改学生信息(先查询出来再修改)
+     * 修改学生信息
      * @param student
      * @return
      */
@@ -104,7 +104,7 @@ public class StudentController {
 
 
     /**
-     * 根据学生id获取实体信息再进行修改
+     * 根据学生id获取
      * @param id
      * @return
      */
@@ -182,9 +182,9 @@ public class StudentController {
                                        @RequestParam(defaultValue = "10")Integer limit) {
         Page<Student> pages = new Page<>(page, limit);
         QueryWrapper<Student> wrapper = new QueryWrapper<Student>().orderByDesc("student_no");
-        IPage<Student> ipage = studentService.page(pages, wrapper);
+        IPage<Student> iPage = studentService.page(pages, wrapper);
 
-        return ServerResponse.ofSuccess(ipage);
+        return ServerResponse.ofSuccess(iPage);
 
     }
 
@@ -203,7 +203,7 @@ public class StudentController {
         if (page != null) {
             return ServerResponse.ofSuccess(iPage);
         }
-        return ServerResponse.ofError("查询失败!");
+        return ServerResponse.ofError("查询不到数据!");
     }
 
     /**

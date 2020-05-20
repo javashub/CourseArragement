@@ -111,7 +111,7 @@ export default {
       studentRegRules: {
         username: [
           { required: true, message: '请输入账号', trigger: 'blur' },
-          { min: 5, max: 15, message: '长度在 5 到 15 个字符', trigger: 'blur' }
+          { min: 3, max: 15, message: '长度在 3 到 15 个字符', trigger: 'blur' }
         ],
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
@@ -153,11 +153,13 @@ export default {
       this.$axios.post('http://localhost:8080/student/createno/' + this.studentRegForm.grade,{
       })
       .then(res => {
-        this.studentRegForm.studentNo = res.data.message
-        alert('申请学号成功，请牢记您的学号：' + this.studentRegForm.studentNo)
+        if (res.data.code == 0) {
+          this.studentRegForm.studentNo = res.data.message
+          alert('申请学号成功，请牢记您的学号：' + this.studentRegForm.studentNo)
+        }
       })
       .catch(error => {
-          alert('请先选择你的年级')
+          alert(res.data.message)
       })
     },
 
@@ -179,9 +181,10 @@ export default {
         })
         .then(res => {
           // 注册成功
-          console.log(res);
-          alert('注册成功，请用你的学号'+res.data.data.studentNo+'登录系统')
-          window.location.href="http://localhost:8081/#/student/login"
+          if (res.data.code == 0) {
+            alert('注册成功，请用你的学号'+res.data.data.studentNo+'登录系统')
+            this.$router.push('/student/login')
+          }
         })
         .catch(error => {
           alert('注册失败，请重试')

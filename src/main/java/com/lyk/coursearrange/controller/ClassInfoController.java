@@ -5,15 +5,18 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.dao.ClassInfoDao;
 import com.lyk.coursearrange.entity.ClassInfo;
+import com.lyk.coursearrange.entity.Student;
+import com.lyk.coursearrange.entity.response.ClassInfoVO;
 import com.lyk.coursearrange.service.ClassInfoService;
+import com.lyk.coursearrange.service.StudentService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 班级信息
@@ -25,15 +28,10 @@ public class ClassInfoController {
 
     @Autowired
     private ClassInfoService classInfoService;
-
-    //根据年级查询所有班级
-    @GetMapping("/queryclassbygrade/{grade}")
-    public ServerResponse queryClass(@PathVariable("grade") String grade) {
-        QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>().eq("remark", grade);
-        List<ClassInfo> classInfoList = classInfoService.list(wrapper);
-
-        return ServerResponse.ofSuccess(classInfoList);
-    }
+    @Autowired
+    private StudentService studentService;
+    @Autowired
+    private ClassInfoDao classInfoDao;
 
 
     /**
@@ -51,6 +49,84 @@ public class ClassInfoController {
         return ServerResponse.ofSuccess(iPage);
     }
 
+    /**
+     * 根据年级查询所有班级
+     * @param grade
+     * @return
+     */
+    @GetMapping("/queryclassbygrade/{grade}")
+    public ServerResponse queryClass(@PathVariable("grade") String grade) {
+        QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>().eq("remark", grade);
+        List<ClassInfo> classInfoList = classInfoService.list(wrapper);
+
+        return ServerResponse.ofSuccess(classInfoList);
+    }
+
+    /**
+     * 根据班级查询学生
+     * @param page
+     * @param classNo
+     * @param limit
+     * @return
+     */
+    @GetMapping("/querystudentbyclass/{page}/{classNo}")
+    public ServerResponse queryStudentByClass(@PathVariable("page") Integer page,
+                                              @PathVariable("classNo") String classNo,
+                                              @RequestParam(defaultValue = "10") Integer limit) {
+        QueryWrapper<Student> wrapper = new QueryWrapper<>();
+        wrapper.orderByDesc("student_no");
+        wrapper.like(!StringUtils.isEmpty(classNo), "class_no", classNo);
+        Page<Student> pages = new Page<>(page, limit);
+        IPage<Student> iPage = studentService.page(pages, wrapper);
+        return ServerResponse.ofSuccess(iPage);
+    }
+
+    /**
+     * 查询班级信息带详细信息
+     * @return
+     */
+    @GetMapping("/queryclassinfo/{page}")
+    public ServerResponse queryClassInfos(@PathVariable("page") Integer page, @RequestParam(defaultValue = "10") Integer limit, @RequestParam(defaultValue = "") String gradeNo) {
+        System.out.println("gradeNo = " + gradeNo);
+        Map<String, Object> map = new HashMap();
+        List<ClassInfoVO> classInfoVOS = null;
+        if (gradeNo.equals("")) {
+            classInfoVOS = classInfoDao.queryClassInfos(page, limit);
+            int total = classInfoDao.count2();
+            map.put("records", classInfoVOS);
+            map.put("total", total);
+        } else {
+            classInfoVOS = classInfoDao.queryClassInfo(page, limit, gradeNo);
+            int total = classInfoDao.count1(gradeNo);
+            map.put("records", classInfoVOS);
+            map.put("total", total);
+        }
+        return ServerResponse.ofSuccess(map);
+    }
+
+    /**
+     * 查询每个班级的学生人数000000000000000000000000000000000000000000000000000000000000000000000000000000出大问题
+     * @return
+     */
+//    @GetMapping("/studentnums")
+//    public ServerResponse queryStudentNumByClass() {
+//        // 先获得所有的班级编号
+//        QueryWrapper<ClassInfo> wrapper = new QueryWrapper();
+//        QueryWrapper wrapper2 = new QueryWrapper();
+//
+//        int nums = 0;
+//        List<ClassInfo> classList = classInfoService.list();
+//        // 循环查每个班级的人数
+//        for (ClassInfo classInfo : classList) {
+//            wrapper2.eq("class_no", classInfo.getClassNo());
+//            // 得到该班学生人数
+//            nums = studentService.count(wrapper2);
+//            classInfo.setNum(nums);
+//            // 更新回去
+//            classInfoService.update(classInfo, null);
+//        }
+//        return ServerResponse.ofSuccess();
+//    }
 
 }
 

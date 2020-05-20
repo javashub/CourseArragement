@@ -66,13 +66,16 @@ export default {
           password: this.studentLoginForm.password
         })
         .then((res) => {
-          // 成功响应,得到token
-          let ret = res.data.data
-          // console.log(ret)
-          window.localStorage.setItem('token', ret.token)
-          window.localStorage.setItem('user', JSON.stringify(ret.student))
-          this.$router.push('/admin')
-          this.$message({message: "登录成功", type: "success"})
+          if (res.data.code == 0) {
+            // 成功响应,得到token
+            let ret = res.data.data
+            // window.localStorage.setItem('token', ret.token)
+            // window.localStorage.setItem('user', JSON.stringify(ret.student))
+            this.$router.push('/systemdata')
+            this.$message({message: "登录成功", type: "success"})
+          } else {
+            alert(res.data.message)
+          }
         }).catch((error) => {
           // 失败
           this.$message.error("登录失败")

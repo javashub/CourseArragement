@@ -6,11 +6,17 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Teacher;
+import com.lyk.coursearrange.entity.request.TeacherAddRequest;
 import com.lyk.coursearrange.entity.request.UserLoginRequest;
 import com.lyk.coursearrange.service.TeacherService;
+import com.lyk.coursearrange.service.impl.TokenService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author lequal
@@ -22,7 +28,8 @@ public class TeacherController {
 
     @Autowired
     private TeacherService teacherService;
-
+    @Autowired
+    private TokenService tokenService;
     /**
      * 讲师登录
      * @param userLoginRequest
@@ -30,6 +37,7 @@ public class TeacherController {
      */
     @PostMapping("/login")
     public ServerResponse teacherLogin(@RequestBody UserLoginRequest userLoginRequest) {
+        Map<String, Object> map = new HashMap<>();
         QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
         wrapper.eq("teacher_no", userLoginRequest.getUsername());
         // 先查询是否有该账号
@@ -41,17 +49,20 @@ public class TeacherController {
         }
         // 登录,使用编号登录
         Teacher teacher = teacherService.teacherLogin(userLoginRequest.getUsername(), userLoginRequest.getPassword());
-        // 判断
+
         if (teacher != null) {
             // 允许登录
-            return ServerResponse.ofSuccess(teacher);
+            String token = tokenService.getToken(teacher);
+            map.put("teacher", teacher);
+            map.put("token", token);
+            return ServerResponse.ofSuccess(map);
         }
         // 否则一律视为密码错误
         return ServerResponse.ofError("密码错误");
     }
 
     /**
-     * 根据id查询讲师
+     * 根据id查询讲师，用于更新操作
      * @param id
      * @return
      */
@@ -123,7 +134,69 @@ public class TeacherController {
         return ServerResponse.ofError("删除失败！");
     }
 
-    // 查询讲师的课表
+    /**
+     * 用于给讲师生成讲师编号,返回一个讲师编号
+     * @return
+     */
+    @GetMapping("/teacherno")
+    public ServerResponse getTeacherNo() {
+
+        List<Teacher> teacherList = teacherService.list(new QueryWrapper<Teacher>().select().orderByDesc("teacher_no"));
+
+        // 返回最大编号的讲师编号再+1给新添加的讲师
+        return ServerResponse.ofSuccess(teacherList.get(0).getTeacherNo());
+    }
+
+    /**
+     * 管理员添加讲师,默认密码是123456
+     * @param t
+     * @return
+     */
+    @PostMapping("/addteacher")
+    public ServerResponse addTeacher(@RequestBody TeacherAddRequest t) {
+        Teacher teacher = new Teacher();
+        teacher.setTeacherNo(t.getTeacherNo());
+        teacher.setUsername(t.getUsername());
+        // 每一个新增的讲师密码默认是123456
+        teacher.setPassword("123456");
+        teacher.setRealname(t.getRealname());
+        teacher.setJobtitle(t.getJobtitle());
+        teacher.setTeach(t.getTeach());
+        teacher.setTelephone(t.getTelephone());
+        teacher.setAddress(t.getAddress());
+        teacher.setAge(t.getAge());
+        boolean b = teacherService.save(teacher);
+        if (b) {
+            return ServerResponse.ofSuccess("添加讲师成功！");
+        }
+        return ServerResponse.ofError("添加讲师失败！");
+    }
+
+    // TODO 讲师更新资料
+
+
+    /**
+     * 讲师更新密码
+     * @param id 讲师id
+     * @param oldPassword 旧密码
+     * @param newPassword 新密码
+     * @return
+     */
+    @PostMapping("/updatepassword")
+    public ServerResponse updatePassword(Integer id, String oldPassword, String newPassword) {
+
+        if (!teacherService.getById(id).getPassword().equals(oldPassword)) {
+            return ServerResponse.ofError("旧密码错误!");
+        }
+        Teacher t = teacherService.getById(id);
+        t.setPassword(newPassword);
+        boolean b = teacherService.updateById(t);
+        if (b) {
+            return ServerResponse.ofSuccess();
+        }
+        return ServerResponse.ofError("密码更新失败");
+    }
+
 
 }
 

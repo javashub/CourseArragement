@@ -11,6 +11,8 @@ import com.lyk.coursearrange.service.TeachbuildInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * 测试完成2020.03.22
  *
@@ -27,7 +29,7 @@ public class TeachBuildInfoController {
     private TeachbuildInfoService teachBuildInfoService;
 
     /**
-     * 查询所有教学楼
+     * 分页查询所有教学楼
      * @return
      */
     @GetMapping("/list/{page}")
@@ -40,6 +42,17 @@ public class TeachBuildInfoController {
             return ServerResponse.ofSuccess(ipage);
         }
         return ServerResponse.ofError("查询失败");
+    }
+
+    /**
+     * 查询所有教学楼
+     * @return
+     */
+    @GetMapping("/list")
+    public ServerResponse queryallTeachbuilding() {
+
+        List<TeachbuildInfo> list = teachBuildInfoService.list();
+        return ServerResponse.ofSuccess(list);
     }
 
     /**

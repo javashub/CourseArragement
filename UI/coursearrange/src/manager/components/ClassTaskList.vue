@@ -1,45 +1,50 @@
 <template>
   <div>
-    <!-- 下拉选择学期 -->
-    <el-select
-      class="semester-select"
-      @change="handleSelectChange"
-      clearable
-      v-model="value"
-      placeholder="请选择学期"
-    >
-      <el-option v-for="(item,index) in semesterData" :key="index" :value="item"></el-option>
-    </el-select>
-
-    <!-- 添加课程计划 -->
-    <el-upload
-      class="add-button"
-      ref="upload"
-      accept=".xls,.xlsx"
-      action="http://localhost:8080/upload"
-      :on-preview="handlePreview"
-      :on-remove="handleRemove"
-      :on-error="handleError"
-      :on-success="uploadSuccess"
-      :file-list="fileList"
-      :auto-upload="false"
-      :limit="1"
-    >
-      <el-button slot="trigger" size="small" type="primary">选取课程任务<i class="el-icon-upload2 el-icon--right"></i></el-button>
-      <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器<i class="el-icon-upload el-icon--right"></i></el-button>
-      <div slot="tip" class="el-upload__tip">只能上传xls/xlsx文件,导入新任务后将清空原来的任务,请一次性将本学期课程导入完毕</div>
-    </el-upload>
-    <!-- 下载模板 <a class="atag" href="http://localhost:8080/download">-->
-    <el-button class="add-button" size="small" type="primary" @click="downloadTemplate()">
-      下载模板
-      <i class="el-icon-download el-icon--right"></i>
-    </el-button>
-
-    <el-button class="add-button" size="small" type="primary" @click="arrangeCourse()">
-      排课
-      <i class="el-icon-thumb el-icon--right"></i>
-    </el-button>
-
+    <div>
+      <div>
+        <!-- 下拉选择学期 -->
+        <el-select
+          class="semester-select"
+          @change="handleSelectChange"
+          clearable
+          v-model="value"
+          placeholder="请选择学期"
+        >
+          <el-option v-for="(item,index) in semesterData" :key="index" :value="item"></el-option>
+        </el-select>
+        
+        <!-- 添加课程计划 -->
+        <div>
+          <el-upload
+            class="add-button"
+            ref="upload"
+            accept=".xls,.xlsx"
+            action="http://localhost:8080/upload"
+            :on-preview="handlePreview"
+            :on-remove="handleRemove"
+            :on-error="handleError"
+            :on-success="uploadSuccess"
+            :file-list="fileList"
+            :auto-upload="false"
+            :limit="1"
+          >
+            <el-button style="margin-left: 10px;" slot="trigger" size="small" type="primary">从Excel导入<i class="el-icon-upload2 el-icon--right"></i></el-button>
+            <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器<i class="el-icon-upload el-icon--right"></i></el-button>
+            <el-button class="add-button" size="small" type="primary" @click="addClassTask()">手动添加</el-button>
+            <!-- 下载模板 <a class="atag" href="http://localhost:8080/download">-->
+            <el-button class="add-button" size="small" type="primary" @click="downloadTemplate()">
+              下载模板
+              <i class="el-icon-download el-icon--right"></i>
+            </el-button>
+            <div slot="tip" class="el-upload__tip">只能上传xls/xlsx文件,导入新任务后将清空原来的任务,请一次性将本学期课程导入完毕</div>
+          </el-upload>
+          <el-button class="add-button" size="small" type="primary" @click="arrangeCourse()">
+            排课
+            <i class="el-icon-thumb el-icon--right"></i>
+          </el-button>
+        </div>
+      </div>
+    </div>
     <!-- 开课任务，等待排课的课程 -->
     <el-table class="ckasstask-table" :data="classTaskData" size="mini">
       <el-table-column label="序号" type="selection"></el-table-column>
@@ -67,32 +72,54 @@
       </el-table-column>
     </el-table>
 
-    <!-- 开课任务，等待排课的课程
-    <el-table class="ckasstask-table" :data="classTaskData" size="mini">
-      <el-table-column label="序号" type="selection"></el-table-column>
-      <el-table-column prop="semester" label="学期" width="90"></el-table-column>
-      <el-table-column prop="gradeNo" label="年级" width="45px"></el-table-column>
-      <el-table-column prop="classNo" label="班级" width="80px"></el-table-column>
-      <el-table-column prop="courseNo" label="课号" width="70px"></el-table-column>
-      <el-table-column prop="courseName" label="课名" width="150px"></el-table-column>
-      <el-table-column prop="courseAttr" label="课属性" width="60px"></el-table-column>
-      <el-table-column prop="teacherNo" label="讲师编号" width="80px"></el-table-column>
-      <el-table-column prop="realname" label="讲师" width="60px"></el-table-column>
-      <el-table-column prop="studentNum" label="学生人数" width="80px"></el-table-column>
-      <el-table-column prop="weeksNumber" label="周学时" width="60px"></el-table-column>
-      <el-table-column prop="weeksSum" label="周数" width="45px"></el-table-column>
-       是否固定时间 
-      <el-table-column prop="ixFix" label="固定" width="45px"></el-table-column>
-       只有固定上课时间才会有固定的时间在时间这个列中 
-      <el-table-column prop="classTime" label="时间" width="60px"></el-table-column>
-
-      <el-table-column prop="operation" label="操作" width="150px">
-        <template slot-scope="scope">
-          <el-button type="danger" size="mini" @click="deleteById(scope.$index, scope.row)">删除</el-button>
-          <el-button type="primary" size="mini" @click="editById(scope.$index, scope.row)">编辑</el-button>
-        </template>
-      </el-table-column>
-    </el-table> -->
+    <!-- 弹出表单添加讲师 -->
+    <el-dialog title="添加任务(参照模板填写)" :visible.sync="visible">
+      <el-form :model="addClassTaskForm" label-position="left" label-width="80px" :rules="addClassTaskRules">
+        <el-form-item label="学期" prop="semester">
+          <el-input v-model="addClassTaskForm.semester" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="年级" prop="gradeNo">
+          <el-input v-model="addClassTaskForm.gradeNo" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="班级编号" prop="classNo">
+          <el-input v-model="addClassTaskForm.classNo" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="课程编号" prop="courseNo">
+          <el-input v-model="addClassTaskForm.courseNo" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="课程名" prop="courseName">
+          <el-input v-model="addClassTaskForm.courseName" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="讲师编号" prop="teacherNo">
+          <el-input v-model="addClassTaskForm.teacherNo" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="讲师名字" prop="realname">
+          <el-input v-model="addClassTaskForm.realname" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="课程属性" prop="courseAttr">
+          <el-input v-model="addClassTaskForm.courseAttr" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="学生人数" prop="studentNum">
+          <el-input v-model="addClassTaskForm.studentNum" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="周学时" prop="weeksNumber">
+          <el-input v-model="addClassTaskForm.weeksNumber" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="周数" prop="weeksSum">
+          <el-input v-model="addClassTaskForm.weeksSum" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="是否固定" prop="isFix">
+          <el-input v-model="addClassTaskForm.isFix" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="上课时间" prop="classTime">
+          <el-input v-model="addClassTaskForm.classTime" autocomplete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="visible = false">取 消</el-button>
+        <el-button type="primary" @click="commit()">提 交</el-button>
+      </div>
+    </el-dialog>
 
     <!-- 分页 -->
     <div class="footer-button">
@@ -116,7 +143,22 @@ export default {
       // 数据库中课程任务
       classTaskData: [],
       semesterData: [],
-
+      addClassTaskForm: {
+        semester: '',
+        gradeNo: '',
+        classNo: '',
+        courseNo: '',
+        courseName: '',
+        teacherNo: '',
+        realname: '',
+        courseAttr: '',
+        studentNum: '',
+        weeksNumber: '',
+        weeksSum: '',
+        isFix: '',
+        classTime: ''
+      },
+      visible: false,
       page: 1,
       pageSize: 10,
       total: 0,
@@ -124,8 +166,22 @@ export default {
       value: "",
       // 当前选择的学期
       semester: "2019-2020-1",
-
-      fileList: []
+      fileList: [],
+      addClassTaskRules: {
+        semester: [{ required: true, message: '请输入学期', trigger: 'blur' }],
+        gradeNo: [{ required: true, message: '请输入年级编号', trigger: 'blur' }],
+        classNo: [{ required: true, message: '请输入班级编号', trigger: 'blur' }],
+        courseNo: [{ required: true, message: '请输入课程编号', trigger: 'blur' }],
+        courseName: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
+        teacherNo: [{ required: true, message: '请输入讲师编号', trigger: 'blur' }],
+        realname: [{ required: true, message: '请输入讲师姓名', trigger: 'blur' }],
+        courseAttr: [{ required: true, message: '请输入课程属性', trigger: 'blur' }],
+        studentNum: [{ required: true, message: '请输入班级学生人数', trigger: 'blur' }],
+        weeksNumber: [{ required: true, message: '请输入周学时', trigger: 'blur' }],
+        weeksSum: [{ required: true, message: '请输入上课周数', trigger: 'blur' }],
+        isFix: [{ required: true, message: '是否固定上课时间', trigger: 'blur' }],
+        classTime: []
+      }
     };
   },
 
@@ -138,6 +194,29 @@ export default {
   },
 
   methods: {
+
+    // 提交添加
+    commit() {
+      this.$axios.post("http://localhost:8080/addclasstask", this.addClassTaskForm)
+      .then(res => {
+        if (res.data.code == 0) {
+          // 添加完成
+          this.allClassTask()
+          this.visible = false
+          this.$message({message: "添加课程任务成功！", type: "success"})
+        } else {
+          alert(res.data.message)
+        }
+      })
+      .catch(error => {
+
+      })
+    },
+
+    // 手动添加课程任务
+    addClassTask() {
+      this.visible = true
+    },
 
     // 点击开始提交学期到系统后台排课
     arrangeCourse() {

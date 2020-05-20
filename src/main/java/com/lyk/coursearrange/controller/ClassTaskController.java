@@ -5,16 +5,13 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
-import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.ClassTask;
+import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.service.ClassTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import org.springframework.stereotype.Controller;
-
 import java.util.*;
 
 /**
@@ -28,9 +25,6 @@ public class ClassTaskController {
 
     @Autowired
     private ClassTaskService classTaskService;
-
-    @Autowired
-    private ClassTaskDao classTaskDao;
 
     /**
      * 查询开课任务
@@ -47,6 +41,37 @@ public class ClassTaskController {
             return ServerResponse.ofSuccess(ipage);
         }
         return ServerResponse.ofError("查询开课任务失败！");
+    }
+
+    /**
+     * 手动添加课程任务
+     * @param c
+     * @return
+     */
+    @PostMapping("/addclasstask")
+    public ServerResponse addClassTask(@RequestBody()ClassTaskDTO c) {
+        System.out.println(c);
+        ClassTask classTask = new ClassTask();
+        classTask.setSemester(c.getSemester());
+        classTask.setGradeNo(c.getGradeNo());
+        classTask.setClassNo(c.getClassNo());
+        classTask.setCourseNo(c.getCourseNo());
+        classTask.setCourseName(c.getCourseName());
+        classTask.setTeacherNo(c.getTeacherNo());
+        classTask.setRealname(c.getRealname());
+        classTask.setCourseAttr(c.getCourseAttr());
+        classTask.setStudentNum(c.getStudentNum());
+        classTask.setWeeksNumber(c.getWeeksNumber());
+        classTask.setWeeksSum(c.getWeeksSum());
+        classTask.setIsFix(c.getIsFix());
+        classTask.setClassTime(c.getClassTime());
+
+        boolean b = classTaskService.save(classTask);
+
+        if (b) {
+            return ServerResponse.ofSuccess("添加课程任务成功");
+        }
+        return ServerResponse.ofError("添加课程任务失败");
     }
 
 
@@ -86,7 +111,11 @@ public class ClassTaskController {
         return ServerResponse.ofSuccess(set);
     }
 
-    // 排课接口，最核心的了
+    /**
+     *排课算法接口，传入学期开始去查对应学期的开课任务，进行排课，排完课程后添加到course_plan表
+     * @param semester
+     * @return
+     */
     @PostMapping("/arrange/{semester}")
     public ServerResponse arrange(@PathVariable("semester") String semester) {
         log.debug("排课的学期：" + semester);

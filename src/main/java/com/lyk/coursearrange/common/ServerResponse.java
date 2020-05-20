@@ -35,56 +35,57 @@ public class ServerResponse {
 
     @JsonIgnore
     public boolean isSuccess() {
-        // 0表示成功，1表示失败
+        // 0成功，1失败
         return this.code == ResponseCode.SUCCESS.getCode();
     }
 
-    // 成功: 状态码、提示信息
+
     public static ServerResponse ofSuccess() {
         return new ServerResponse(ResponseCode.SUCCESS.getCode(), ResponseCode.SUCCESS.getDesc());
     }
 
-    // 成功: 状态码、提示信息、数据模型
+
     public static ServerResponse ofSuccess(Object obj) {
         return new ServerResponse(ResponseCode.SUCCESS.getCode(), ResponseCode.SUCCESS.getDesc(), obj);
     }
 
-    // 成功: 状态码、提示信息、数据模型
+
     public static ServerResponse ofSuccess(int code, String msg, Object obj) {
         return new ServerResponse(code, msg, obj);
     }
 
-    // 成功: 提示信息
+
     public static ServerResponse ofSuccess(String msg) {
         return new ServerResponse(ResponseCode.SUCCESS.getCode(), msg);
     }
 
-    // 成功: 提示信息、数据模型
+
     public static ServerResponse ofSuccess(String msg, Object obj) {
         return new ServerResponse(ResponseCode.SUCCESS.getCode(), msg, obj);
     }
 
-    // 失败: 状态码、提示信息、数据模型
+
     public static ServerResponse ofError(int code, String msg, Object obj) {
         return new ServerResponse(code, msg, obj);
     }
 
-    // 失败
+
     public static ServerResponse ofError() {
         return new ServerResponse(ResponseCode.ERROR.getCode(), ResponseCode.ERROR.getDesc());
     }
 
-    // 失败: 状态码、提示信息、数据模型
+
     public static ServerResponse ofError(String msg) {
         return new ServerResponse(ResponseCode.ERROR.getCode(), msg);
     }
 
-    // 失败: 数据模型
+
     public static ServerResponse ofError(Object obj) {
         return new ServerResponse(ResponseCode.ERROR.getCode(),ResponseCode.ERROR.getDesc(), obj);
     }
 
-    // 失败: 提示信息、数据模型
+
+
     public static ServerResponse ofError(String msg, Object obj) {
         return new ServerResponse(ResponseCode.ERROR.getCode(), msg, obj);
     }

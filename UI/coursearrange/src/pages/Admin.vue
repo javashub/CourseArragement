@@ -9,10 +9,10 @@
 
       <!-- 登录表单 -->
       <el-form class="login-form" ref="loginFormRef" :model="adminLoginForm" :rules="adminLoginFormRules">
-        <h3>管理员登录</h3>
+        <h3>用户登录</h3>
         <!-- 用户名 -->
         <el-form-item prop="username">
-          <el-input v-model="adminLoginForm.username" placeholder="请输入编号/用户名/姓名" prefix-icon="iconfont iconicon"></el-input>
+          <el-input v-model="adminLoginForm.username" placeholder="请输入账号" prefix-icon="iconfont iconicon"></el-input>
         </el-form-item>
         <!-- 密码 -->
         <el-form-item prop="password">
@@ -67,28 +67,55 @@ export default {
     },
     getType() {
       // 调用这个方法直接获取到了类型
-      console.log(this.radio)
     },
     
     login() {
-      // 表单预验证
-      // 此处可以直接获取选中的类型值
-      console.log(this.radio);
-      
       this.$refs.loginFormRef.validate(valid => {
+        // 表单预验证
         if (!valid) return;
-        this.$axios.post('http://localhost:8080/admin/login', {
-          username: this.adminLoginForm.username,
-          password: this.adminLoginForm.password
-        })
-        .then((response) => {
-          // 成功响应
-          console.log(response);
-        }).catch((error) => {
-          // 失败
-          alert('失败！');
-          console.log(error)
-        });
+        if (this.radio == 1) {
+          // 管理员登录
+          this.$axios.post('http://localhost:8080/admin/login', {
+            username: this.adminLoginForm.username,
+            password: this.adminLoginForm.password
+          })
+          .then((res) => {
+            if (res.data.code == 0) {
+              let ret = res.data.data
+              // 保存信息，跳转到主页
+              window.localStorage.setItem('token', ret.token)
+              window.localStorage.setItem('admin', JSON.stringify(ret.admin))
+              this.$router.push('/systemdata')
+              this.$message({message: "登录成功", type: "success"})
+            } else {
+              alert(res.data.message)
+              this.adminLoginForm.password = ''
+            }
+          }).catch((error) => {
+            this.$message.error("登录失败")
+          });
+        } else if(this.radio == 2) {
+          // 讲师登录
+          this.$axios.post('http://localhost:8080/teacher/login', {
+            username: this.adminLoginForm.username,
+            password: this.adminLoginForm.password
+          })
+          .then((res) => {
+            if (res.data.code == 0) {
+              let ret = res.data.data
+              window.localStorage.setItem('token', ret.token)
+              window.localStorage.setItem('teacher', JSON.stringify(ret.teacher))
+              // 跳转
+              this.$router.push('/teachermain')
+              this.$message({message: "登录成功", type: "success"})
+            } else {
+              alert(res.data.message)
+              this.adminLoginForm.password = ''
+            }
+          }).catch((error) => {
+            this.$message.error("登录失败")
+          });
+        }
       })
     }
   }

@@ -59,7 +59,7 @@ public class Student extends Model<Student> {
     /**
      * 所在班级
      */
-    private Integer classNo;
+    private String classNo;
 
     /**
      * 年龄
@@ -75,6 +75,11 @@ public class Student extends Model<Student> {
      * 联系电话
      */
     private String telephone;
+
+    /**
+     * 邮件地址
+     */
+    private String email;
 
     /**
      * 头像

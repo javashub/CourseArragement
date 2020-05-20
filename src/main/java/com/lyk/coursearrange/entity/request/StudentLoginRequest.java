@@ -10,8 +10,6 @@ import lombok.Data;
 @Data
 public class StudentLoginRequest {
 
-    private Integer id;
-
     private String username;
 
     private String password;

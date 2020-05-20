@@ -1,5 +1,5 @@
 <template>
-  <!-- 后台管理系统主界面 -->
+  <!-- 讲师主界面 -->
   <div class="wrapper">
     <el-container>
       <el-header>
@@ -132,7 +132,7 @@
 
 <script>
 export default {
-  name: "ManagerMain",
+  name: "TeacherMain",
   data() {
     return {
       time: "",
@@ -146,7 +146,7 @@ export default {
       this.getTime();
     }, 1000);
     
-    let u = window.localStorage.getItem('admin')
+    let u = window.localStorage.getItem('teacher')
     if(u != null){
       this.name = (JSON.parse(u)).realname
     }

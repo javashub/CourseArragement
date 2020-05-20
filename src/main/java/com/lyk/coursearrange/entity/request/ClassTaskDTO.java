@@ -8,7 +8,13 @@ import lombok.Data;
  * @Descripe:
  */
 @Data
-public class ClassTaskRequest {
+public class ClassTaskDTO {
+
+    /**
+     * 学期
+     */
+    private String semester;
+
     /**
      * 年级
      */
@@ -25,9 +31,19 @@ public class ClassTaskRequest {
     private String courseNo;
 
     /**
+     * 课程名称
+     */
+    private String courseName;
+
+    /**
      * 讲师编号
      */
     private String teacherNo;
+
+    /**
+     * 讲师名字
+     */
+    private String realname;
 
     /**
      * 课程属性
@@ -40,12 +56,12 @@ public class ClassTaskRequest {
     private Integer studentNum;
 
     /**
-     * 上课周数
+     * 周学时
      */
     private Integer weeksNumber;
 
     /**
-     * 每周几节课
+     * 周数
      */
     private Integer weeksSum;
 
