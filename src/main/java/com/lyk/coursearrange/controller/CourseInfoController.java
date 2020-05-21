@@ -41,10 +41,7 @@ public class CourseInfoController {
         Page<CourseInfo> pages = new Page<>(page, limit);
         QueryWrapper<CourseInfo> wrapper = new QueryWrapper<CourseInfo>().orderByAsc("course_no");
         IPage<CourseInfo> ipage = cis.page(pages, wrapper);
-        if (ipage != null) {
-            return ServerResponse.ofSuccess(ipage);
-        }
-        return ServerResponse.ofError("查询教材失败");
+        return ServerResponse.ofSuccess(ipage);
     }
 
     /**
@@ -108,14 +105,7 @@ public class CourseInfoController {
         wrapper.like(!StringUtils.isEmpty(keyword), "course_name", keyword);
         Page<CourseInfo> pages = new Page<>(page, limit);
         IPage<CourseInfo> iPage = cis.page(pages, wrapper);
-        if (iPage != null) {
-            return ServerResponse.ofSuccess(iPage);
-        }
-        return ServerResponse.ofError("查询失败!");
+        return ServerResponse.ofSuccess(iPage);
     }
-
-
-
-
 }
 

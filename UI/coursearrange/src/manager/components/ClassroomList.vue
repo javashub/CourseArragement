@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 数据显示 -->
-    <el-table :data="classroomData" size="mini">
+    <el-table :data="classroomData" size="mini" :stripe="true" :highlight-current-row="true">
       <el-table-column label="序号" type="selection"></el-table-column>
       <!-- <el-table-column prop="id" label="ID"></el-table-column> -->
       <el-table-column prop="classroomNo" label="教室编号"></el-table-column>

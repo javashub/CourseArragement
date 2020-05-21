@@ -12,8 +12,8 @@
         <el-option v-for="item in grade" :key="item.value" :label="item.label" :value="item.value"></el-option>
       </el-select>
       <el-button slot="trigger" type="primary" @click="addClassInfo()">
-        添加
-        <i class="el-icon-folder-add el-icon--right"></i>
+        新增班级
+        <!-- <i class="el-icon-folder-add el-icon--right"></i> -->
       </el-button>
       <!-- <el-select
         v-model="value2"
@@ -31,7 +31,7 @@
       </el-select>-->
     </div>
     <div>
-      <el-table :data="classInfoData" size="mini">
+      <el-table :data="classInfoData" size="mini" :stripe="true" :highlight-current-row="true">
         <el-table-column label="序号" type="selection"></el-table-column>
         <el-table-column prop="gradeName" label="年级"></el-table-column>
         <el-table-column prop="classNo" label="班级编号"></el-table-column>

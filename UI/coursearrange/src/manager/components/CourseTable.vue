@@ -1,6 +1,6 @@
 <template>
   <div class="class-table">
-    <div>
+    <div class="top-select">
       <el-select v-model="value1" placeholder="学期">
         <el-option
           v-for="item in semester"
@@ -214,7 +214,13 @@ export default {
 </script>
 
 <style lang="less" scoped>
+
+
 .class-table {
+  .top-select {
+    text-align: left;
+    margin-left: 7px;
+  }
   .table-wrapper {
     width: 100%;
     height: 100%;

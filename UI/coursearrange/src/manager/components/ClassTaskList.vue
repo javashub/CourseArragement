@@ -20,16 +20,16 @@
             ref="upload"
             accept=".xls,.xlsx"
             action="http://localhost:8080/upload"
-            :on-preview="handlePreview"
             :on-remove="handleRemove"
             :on-error="handleError"
             :on-success="uploadSuccess"
+            :disabled="importBtnDisabled"
             :file-list="fileList"
             :auto-upload="false"
             :limit="1"
           >
             <el-button style="margin-left: 10px;" slot="trigger" size="small" type="primary">从Excel导入<i class="el-icon-upload2 el-icon--right"></i></el-button>
-            <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器<i class="el-icon-upload el-icon--right"></i></el-button>
+            <el-button style="margin-left: 10px;" size="small" type="success" :loading="loading" @click="submitUpload">上传到服务器<i class="el-icon-upload el-icon--right"></i></el-button>
             <el-button class="add-button" size="small" type="primary" @click="addClassTask()">手动添加</el-button>
             <!-- 下载模板 <a class="atag" href="http://localhost:8080/download">-->
             <el-button class="add-button" size="small" type="primary" @click="downloadTemplate()">
@@ -46,7 +46,7 @@
       </div>
     </div>
     <!-- 开课任务，等待排课的课程 -->
-    <el-table class="ckasstask-table" :data="classTaskData" size="mini">
+    <el-table class="ckasstask-table" :data="classTaskData" size="mini" :stripe="true" :highlight-current-row="true">
       <el-table-column label="序号" type="selection"></el-table-column>
       <el-table-column prop="semester" label="学期" ></el-table-column>
       <el-table-column prop="gradeNo" label="年级" ></el-table-column>
@@ -140,7 +140,8 @@ export default {
   name: "ClassTaskList",
   data() {
     return {
-      // 数据库中课程任务
+      importBtnDisabled: false, // 按钮是否禁用,
+      loading: false,
       classTaskData: [],
       semesterData: [],
       addClassTaskForm: {
@@ -239,7 +240,8 @@ export default {
 
     // 上传成功
     uploadSuccess(response, file, fileList) {
-      // location.reload()
+      this.loading = false
+      this.$message({message: "上传成功", type:"success"})
       handleRemove(file, fileList)
     },
 
@@ -253,11 +255,8 @@ export default {
 
     // 提交上传文件事件
     submitUpload() {
+      this.loading = true
       this.$refs.upload.submit()
-    },
-
-    handlePreview(file) {
-      
     },
 
     // 得到对应选中的年级

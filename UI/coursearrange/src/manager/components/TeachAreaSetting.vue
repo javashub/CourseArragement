@@ -1,10 +1,10 @@
 <template>
   <div>
-    <div>
-      <el-button class="add-button" type="primary" @click="addTeachArea()">新增安排</el-button>
+    <div class="button">
+      <el-button type="primary" @click="addTeachArea()">新增安排</el-button>
     </div>
     <div class="wrapper">
-      <el-table :data="locationData" size="mini">
+      <el-table :data="locationData" size="mini" :stripe="true" :highlight-current-row="true">
         <el-table-column label="序号" type="selection"></el-table-column>
         <el-table-column prop="gradeNo" label="年级编号" ></el-table-column>
         <el-table-column prop="gradeName" label="年级" ></el-table-column>
@@ -159,7 +159,6 @@ export default {
           console.log(res)
           let ret = res.data.data
           this.teachbuild.splice(0, this.teachbuild.length)
-          // this.value2 = ""
           ret.map(v => {
             this.teachbuild.push({
               value: v.teachBuildNo,
@@ -190,13 +189,12 @@ export default {
 </script>
 
 <style lang="less" scoped>
-  
-  .wrapper {
-    margin-top: 10px;
-  }
 
-  .add-button {
-    float: left;
+  .button {
+    margin-bottom: 5px;
+    padding: 0;
+    text-align: left;
+    margin-bottom: 5px;
   }
 
   .footer-button {

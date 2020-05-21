@@ -91,12 +91,12 @@ public class ClassInfoController {
         Map<String, Object> map = new HashMap();
         List<ClassInfoVO> classInfoVOS = null;
         if (gradeNo.equals("")) {
-            classInfoVOS = classInfoDao.queryClassInfos(page, limit);
+            classInfoVOS = classInfoDao.queryClassInfos((page - 1) * limit, limit);
             int total = classInfoDao.count2();
             map.put("records", classInfoVOS);
             map.put("total", total);
         } else {
-            classInfoVOS = classInfoDao.queryClassInfo(page, limit, gradeNo);
+            classInfoVOS = classInfoDao.queryClassInfo((page - 1) * limit, limit, gradeNo);
             int total = classInfoDao.count1(gradeNo);
             map.put("records", classInfoVOS);
             map.put("total", total);

@@ -9,8 +9,8 @@
         添加讲师
       </el-button>
     </div>
-    <!-- 数据显示 -->
-    <el-table :data="teacherData" size="mini">
+    <!-- 讲师列表 -->
+    <el-table :data="teacherData" size="mini" :stripe="true" :highlight-current-row="true">
       <el-table-column label="序号" type="selection"></el-table-column>
       <el-table-column prop="teacherNo" label="编号" fixed width="100"></el-table-column>
       <el-table-column prop="username" label="用户名" fixed width="100"></el-table-column>

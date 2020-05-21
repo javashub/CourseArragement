@@ -42,3 +42,12 @@ server:
 
 # 卓正软件
 key: IMTG6-BSXJ-JGZ6-3BIWM
+
+# 阿里云OSS
+aliyun:
+  oss:
+    file:
+      endpoint: oss-cn-shenzhen.aliyuncs.com
+      accessKeyId: LTAI4FgC4srdFY4KPjYNVx1u
+      accessKeySecret: IKoCvPxq7aMX4Bh9revMk7z30fjqP1
+      bucketName: arrange

@@ -2,52 +2,77 @@ package com.lyk.coursearrange.util;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.UUID;
 
 /**
  * @author: 15760
  * @Date: 2020/5/19
- * @Descripe:
+ * @Descripe: 阿里云OSS工具类
  */
 public class AliyunUtil {
 
     // bucket域名：arrange.oss-cn-shenzhen.aliyuncs.com
-
+    @Value("${aliyun.oss.file.endpoint}")
     private static String endpoint = "oss-cn-shenzhen.aliyuncs.com";
 
+    @Value("${aliyun.oss.file.accessKeyId}")
     private static String accessKeyId = "LTAI4FgC4srdFY4KPjYNVx1u";
 
+    @Value("${aliyun.oss.file.accessKeySecret}")
     private static String accessKeySecret = "IKoCvPxq7aMX4Bh9revMk7z30fjqP1";
 
+    @Value("${aliyun.oss.file.bucketName}")
     private static String bucketName = "arrange";
 
     /**
-     * 文件上传
+     * 文件上传成功返回路径
      */
-    public static void upload(MultipartFile file) {
+    public static String upload(MultipartFile file, String directory) {
+
         // 创建OSSClient实例。
         OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
 
-        // 上传内容到指定的存储空间（bucketName）并保存为指定的文件名称（objectName）。
+        String url = "";
 
-//        try {
-//            ossClient.putObject(bucketName, objectName, new ByteArrayInputStream(file.getBytes()));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            // 获取输入流
+            InputStream inputStream = file.getInputStream();
+            String fileName = file.getOriginalFilename();
+            System.out.println("fileName" + fileName);
+            //1 在文件名称里面添加随机唯一的值
+            String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+            // 随机id
+            fileName = uuid + fileName;
+//            String datePath = new DateTime().toString("yyyy/MM/dd");
+            //拼接
+            //  2019/11/12/ewtqr313401.jpg
+//            fileName = datePath+"/"+fileName;
+            // 上传
+            ossClient.putObject(bucketName, fileName, inputStream);
+            // 关闭OSSClient。
+            ossClient.shutdown();
 
-        // 关闭OSSClient。
-        ossClient.shutdown();
+            url = "https://" + bucketName + "." + endpoint + "/" + fileName;
+
+            return url;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return url;
     }
 
     /**
      * 文件下载
      */
-    public static void download() {
+    public static void download(String fileName) {
 
     }
+
 }
