@@ -73,13 +73,12 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             List<String> resultList = finalResult(individualMap);
             // 7、解码最终的染色体获取其中的基因信息
             List<CoursePlan> coursePlanList = decoding(resultList);
-            // 8、写入tb_course_plan数据表中供前端查询课程表使用
+            // 8、写入tb_course_plan上课计划表
+            coursePlanDao.deleteAllPlan(); // 先删除原来的课程计划
             for (CoursePlan coursePlan : coursePlanList) {
                 coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
-                        coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime());
+                        coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
             }
-            // 9、TODO 更新有学期，上课周数的
-//            for (ClassTask classTask1)
             return true;
         } catch (Exception e) {
             log.error("the error message is:" + "    " + e.getMessage());
@@ -99,7 +98,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         List<String> resultList = new ArrayList<>();
         // 将map集合中的基因编码再次全部混合
         List<String> resultGeneList = collectGene(individualMap);
-        String classroomNo;
+        String classroomNo = "";
         // 得到课程任务的年级列表
         List<String> gradeList = classTaskDao.selectByColumnName(ConstantInfo.GRADE_NO);
 //        List<String> gradeList = classTaskDao.selectByGradeNo();
@@ -483,7 +482,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         // 不固定时间
         List<String> unFixedTimeGeneList = new ArrayList<>();
         // 固定时间
-        List<String> fixedTimeGeneLList = new ArrayList<>();
+        List<String> fixedTimeGeneList = new ArrayList<>();
 
         for (ClassTask classTask : classTaskList) {
             // isFix为1则不固定上课时间，默认填充00
@@ -507,13 +506,13 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                     // 编码
                     String gene = classTask.getIsFix() + classTask.getGradeNo() + classTask.getClassNo()
                             + classTask.getTeacherNo() + classTask.getCourseNo() + classTask.getCourseAttr() + classTime;
-                    fixedTimeGeneLList.add(gene);
+                    fixedTimeGeneList.add(gene);
                 }
             }
         }
         // 将两种上课时间的集合放入集合中
         geneListMap.put(UNFIXED_TIME, unFixedTimeGeneList);
-        geneListMap.put(IS_FIX_TIME, fixedTimeGeneLList);
+        geneListMap.put(IS_FIX_TIME, fixedTimeGeneList);
         geneList.add(geneListMap);
         // 得到不含教室的初始基因编码
         return geneList;
@@ -526,8 +525,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      */
     private List<String> codingTime(List<Map<String, List<String>>> geneList) {
         List<String> resultGeneList = new ArrayList<>();
-        List<String> isFixedTimeGeneList = geneList.get(0).get(UNFIXED_TIME);
-        List<String> unFixedTimeGeneList = geneList.get(0).get(IS_FIX_TIME);
+        List<String> isFixedTimeGeneList = geneList.get(0).get(IS_FIX_TIME);
+        List<String> unFixedTimeGeneList = geneList.get(0).get(UNFIXED_TIME);
         // 将固定上课时间的课程基因编码集合全部加入集合，用于等下判断后面分配上课时间的时候有没有跟现有固定时间的课程冲突
         resultGeneList.addAll(isFixedTimeGeneList);
         // 排之前没有固定时间的课程

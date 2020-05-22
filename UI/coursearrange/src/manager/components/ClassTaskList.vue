@@ -223,13 +223,15 @@ export default {
     arrangeCourse() {
       this.$axios.post("http://localhost:8080/arrange/" + this.semester)
       .then(res => {
-        console.log(res)
-        
-        this.$message({message: '排课成功', type: 'success'})
-        
+        if (res.data.code == 0) {
+          this.allClassTask()
+          this.$message({message: '排课成功', type: 'success'})
+        } else {
+          this.$message.error(res.data.message)
+        }
       })
       .catch(error => {
-        this.$message.error('排课失败');
+        this.$message.error('排课失败')
       })
     },
 
@@ -241,8 +243,8 @@ export default {
     // 上传成功
     uploadSuccess(response, file, fileList) {
       this.loading = false
+      this.allClassTask()
       this.$message({message: "上传成功", type:"success"})
-      handleRemove(file, fileList)
     },
 
     handleRemove(file, fileList) {

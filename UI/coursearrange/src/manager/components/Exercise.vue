@@ -93,7 +93,7 @@
             <el-input v-model="exerciseAdd.exerciseTitle" placeholder="题目名称" autocomplete="off"></el-input>
           </el-form-item>
           <el-form-item label="是否多选">
-            <el-input v-model="exerciseAdd.multiselect" placeholder="0单选，1多选" autocomplete="off"></el-input>
+            <el-input v-model="exerciseAdd.multiselect" placeholder="必填，0单选，1多选" autocomplete="off"></el-input>
           </el-form-item>
           <el-form-item label="答案">
             <el-input v-model="exerciseAdd.answer" placeholder="单选时输入一个，多选多个" autocomplete="off"></el-input>
@@ -141,7 +141,7 @@ export default {
         categoryId: '',
         classNo: '00000000',
         exerciseTitle: '',
-        multiselect: 0,
+        multiselect: '',
         answer: '',
         optionA: '',
         optionB: '',
@@ -178,14 +178,14 @@ export default {
 
     // 提交添加题目
     commit() {
-      alert(this.exerciseAdd.categoryId)
       this.$axios.post("http://localhost:8080/addexercise", this.exerciseAdd)
       .then(res => {
         if (res.data.code == 0) {
           this.visible2 = false;
           this.$message({message: "添加成功", type:"success"})
           // 添加成功后
-          // this.exerciseAdd = ''
+          this.exerciseAdd = {}
+          this.exerciseAdd.classNo = '00000000'
           this.allExercise()
         } else {
           alert(res.data.message)
@@ -202,7 +202,9 @@ export default {
         .then(res => {
           if (res.data.code == 0) {
             this.visible1 = false
+            this.queryCategory()
             this.$message({message: "添加成功", type: "success"})
+            this.categoryName = ''
           } else {
             alert(res.data.message)
           }
