@@ -154,7 +154,7 @@ export default {
 
     // 查询课程表
     queryCoursePlan() {
-      this.classTableData.courses.map((item,index)=>{
+      this.classTableData.courses.map((item, index)=>{
         this.classTableData.courses[index].splice(0,this.classTableData.courses[index].length)
       })
       this.$axios
@@ -169,14 +169,14 @@ export default {
             const item = courseData[index];
             if(parseInt(item.classTime) != times){
               this.classTableData.courses[level].push("");
-              index = index-1;
+              index = index - 1;
             }
             else{
               console.log(index,level,times);
               
               this.classTableData.courses[level].push(item.teacher.realname + "-" + item.courseInfo.courseName + "(" + item.classroomNo + ")");
             }
-            if(times % 5 == 0){
+            if((times % 5) == 0){
               level = level + 1;
             }
           }
