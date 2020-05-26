@@ -49,7 +49,7 @@ public class AliyunUtil {
             //1 在文件名称里面添加随机唯一的值
             String uuid = UUID.randomUUID().toString().replaceAll("-", "");
             // 随机id
-            fileName = uuid + fileName;
+            String newFileName = uuid + fileName;
 //            String datePath = new DateTime().toString("yyyy/MM/dd");
             //拼接
             //  2019/11/12/ewtqr313401.jpg
@@ -59,7 +59,7 @@ public class AliyunUtil {
             // 关闭OSSClient。
             ossClient.shutdown();
 
-            url = "https://" + bucketName + "." + endpoint + "/" + fileName;
+            url = "https://" + bucketName + "." + endpoint + "/" + newFileName;
 
             return url;
         } catch (IOException e) {

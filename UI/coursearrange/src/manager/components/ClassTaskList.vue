@@ -300,7 +300,7 @@ export default {
     },
 
     /**
-     * 获得所有开课任务，分页http://localhost:8080/classtask/{page}/{semester}
+     * 获得所有开课任务
      */
     allClassTask() {
       this.$axios

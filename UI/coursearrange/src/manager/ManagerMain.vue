@@ -95,9 +95,6 @@
                 <router-link class="links" to="/studydocs">学习文档</router-link>
               </el-menu-item>
               <el-menu-item index="6-2">
-                <router-link class="links" to="/homework">作业文档</router-link>
-              </el-menu-item>
-              <el-menu-item index="6-3">
                 <router-link class="links" to="/exercise">在线测试</router-link>
               </el-menu-item>
             </el-submenu>

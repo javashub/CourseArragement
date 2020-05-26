@@ -197,6 +197,15 @@ public class TeacherController {
         return ServerResponse.ofError("密码更新失败");
     }
 
+    /**
+     * 查询所有讲师
+     * @return
+     */
+    @GetMapping("/allteacher")
+    public ServerResponse getAllTeacher() {
+
+        return ServerResponse.ofSuccess(teacherService.list());
+    }
 
 }
 

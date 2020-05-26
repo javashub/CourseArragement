@@ -8,6 +8,7 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.dao.ClassInfoDao;
 import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.Student;
+import com.lyk.coursearrange.entity.request.ClassAddVO;
 import com.lyk.coursearrange.entity.response.ClassInfoVO;
 import com.lyk.coursearrange.service.ClassInfoService;
 import com.lyk.coursearrange.service.StudentService;
@@ -102,6 +103,27 @@ public class ClassInfoController {
             map.put("total", total);
         }
         return ServerResponse.ofSuccess(map);
+    }
+
+    /**
+     * 添加班级
+     * @param classAddVO
+     * @return
+     */
+    @PostMapping("/addclassinfo")
+    public ServerResponse addClass(@RequestBody ClassAddVO classAddVO) {
+        System.out.println(classAddVO);
+        ClassInfo c = new ClassInfo();
+        c.setRemark(classAddVO.getGradeNo());
+        c.setClassNo(classAddVO.getClassNo());
+        c.setClassName(classAddVO.getClassName());
+        c.setTeacher(classAddVO.getId());
+        c.setNum(classAddVO.getNum());
+        boolean b = classInfoService.save(c);
+        if (b) {
+            return ServerResponse.ofSuccess("添加班级成功");
+        }
+        return ServerResponse.ofError("添加班级失败");
     }
 
     /**

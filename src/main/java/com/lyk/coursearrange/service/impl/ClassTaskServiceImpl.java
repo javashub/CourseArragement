@@ -39,15 +39,15 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private CoursePlanDao coursePlanDao;
 
 
-    // 不固定上课时间
+    // 不固定上课时间 1
     private final String UNFIXED_TIME = "unFixedTime";
 
-    // 固定上课时间
+    // 固定上课时间 2
     private final String IS_FIX_TIME = "isFixedTime";
 
 
     /**
-     * 先对全校内已经分配用于上课的教学楼信息做一个查询(针对有特殊要求的教室)
+     *
      * @param
      * @return
      */
@@ -55,8 +55,9 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     @Override
     public Boolean classScheduling(String semester) {
         try {
-            log.debug("开始排课,时间：" + System.currentTimeMillis());
-            // 1、获得开课任务，知道要上什么课，等下要排什么课
+            log.info("开始排课,时间：" + System.currentTimeMillis());
+            long start = System.currentTimeMillis();
+            // 1、获得开课任务
 //            List<ClassTask> classTaskList = classTaskDao.selectBySemester(classTask);
             QueryWrapper<ClassTask> wrapper = new QueryWrapper<ClassTask>().eq("semester", semester);
             List<ClassTask> classTaskList = classTaskDao.selectList(wrapper);
@@ -67,7 +68,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             List<String> resultGeneList = codingTime(geneList);
             // 4、将分配好时间的基因编码以班级分类成为以班级的个体
             Map<String, List<String>> individualMap = transformIndividual(resultGeneList);
-            // 5、遗传进化(核心算法)
+            // 5、遗传进化
             individualMap = geneticEvolution(individualMap);
             // 6、给新个体分配教室，同时要进行冲突检测
             List<String> resultList = finalResult(individualMap);
@@ -79,6 +80,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
                         coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
             }
+            log.info("完成排课,耗时：" + (System.currentTimeMillis() - start));
             return true;
         } catch (Exception e) {
             log.error("the error message is:" + "    " + e.getMessage());
@@ -89,7 +91,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
 
     /**
-     * 开始给进化完的基因编码分配教室，即在原来的编码中加上教室编号
+     * 开始给进化完的基因编码分配教室，即在原来的编码中加上教室编号，6
      * @param individualMap
      * @return
      */
@@ -99,21 +101,33 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         // 将map集合中的基因编码再次全部混合
         List<String> resultGeneList = collectGene(individualMap);
         String classroomNo = "";
-        // 得到课程任务的年级列表
+        // 得到课程任务的年级列表 01 02 03
         List<String> gradeList = classTaskDao.selectByColumnName(ConstantInfo.GRADE_NO);
-//        List<String> gradeList = classTaskDao.selectByGradeNo();
         // 将基因编码按照年级分配
         Map<String, List<String>> gradeMap = collectGeneByGrade(resultGeneList, gradeList);
         // 这里需要根据安排教学区域时选的教学楼进行安排课程
         for (String gradeNo : gradeMap.keySet()) {
             // 找到当前年级对应的教学楼编号
-            String teachBuildNo = teachBuildInfoDao.selectBuildNo(gradeNo);
+//            String teachBuildNo = teachBuildInfoDao.selectBuildNo(gradeNo);
+            // 如果一个年级设置多个教学楼，则需要使用List ===============>>>>>>>
+            List<String> teachBuildNoList = teachBuildInfoDao.selectTeachBuildList(gradeNo);
+
             // 得到不同年级的课程基因编码
             List<String> gradeGeneList = gradeMap.get(gradeNo);
+
             // 看看对应教学楼下有多少教室，在设定的教学楼下开始随机分配教室
-            List<Classroom> classroomList = classroomDao.selectByTeachbuildNo(teachBuildNo);
+//            List<Classroom> classroomList = classroomDao.selectByTeachbuildNo(teachBuildNo);
+
+            // 年级设置多个教学楼栋的情况
+            QueryWrapper wrapper = new QueryWrapper();
+            wrapper.in("teachbuild_no", teachBuildNoList);
+//            List<Classroom> classroomList1 = classroomDao.selectByTeachbuildNoList(teachBuildNoList);
+
+            List<Classroom> classroomList2 = classroomDao.selectList(wrapper);
+
             for (String gene : gradeGeneList) {
-                classroomNo = issueClassroom(gene, classroomList, resultList);
+                // 分配教室
+                classroomNo = issueClassroom(gene, classroomList2, resultList);
                 // 基因编码中加入教室编号，至此所有基因信息编码完成，得到染色体
                 gene = gene + classroomNo;
                 // 将最终的编码加入集合中
@@ -282,11 +296,11 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * 遗传进化(每个班级中多条基因编码)
      * 步骤：
      * 1、初始化种群
-     * 2、交叉
+     * 2、选择、交叉
      * 3、变异
      * 4、重复2,3步骤
      * 5、直到达到终止条件
-     * @param individualMap
+     * @param individualMap 按班级分的基因编码
      * @return
      */
     private Map<String, List<String>> geneticEvolution(Map<String, List<String>> individualMap) {
@@ -294,35 +308,28 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         int generation = ConstantInfo.GENERATION;
         List<String> resultGeneList;
         for (int i = 0; i < generation; ++i) {
-            // 1、交叉
+            // 1、选择、交叉individualMap：按班级分的课表
             individualMap = hybridization(individualMap);
-            // 2、合拢个体准备进行变异
+            // 2、合拢所有班级的个体准备进行变异
             collectGene(individualMap);
-            // 2,3、合拢每个班级中的所有基因编码，然后进行变异操作
+            // 2,3、变异
             resultGeneList = geneMutation(collectGene(individualMap));
             // 4、冲突检测，消除冲突
             conflictResolution(resultGeneList);
-            // 5、将消除冲突后的个体再次分割，再分班进入下一次进化
+            // 5、将消除冲突后的个体再分班进入下一次进化
             individualMap = transformIndividual(conflictResolution(resultGeneList));
         }
         return individualMap;
     }
 
-    /**
-     * 判断冲突：同时一时间一个教室上多门课
-     * @return
-     */
-    private String positionConflict() {
-        return "";
-    }
 
 
 
     /**
      * 冲突消除,同一个讲师同一时间上多门课。解决：重新分配一个时间，直到所有的基因编码中
      * 不再存在上课时间冲突为止
-     * 因素：讲师-教室-时间-课程
-     * @param resultGeneList
+     * 因素：讲师-课程-时间-教室
+     * @param resultGeneList 所有个体集合
      * @return
      */
     private List<String> conflictResolution(List<String> resultGeneList) {
@@ -337,7 +344,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 String tempGene = resultGeneList.get(j);
                 String tempTecherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, tempGene);
                 String tempClassTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, tempGene);
-                // 判断是否有一样的
+                // 判断是否有同一讲师同一时间上两门课
                 if (techerNo.equals(tempTecherNo) && classTime.equals(tempClassTime)) {
                     // 说明同一讲师同一时间有两门以上的课要上，冲突出现，重新给这门课找一个时间
                     String newClassTime = ClassUtil.randomTime(gene, resultGeneList);
@@ -350,7 +357,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     }
 
     /**
-     * 重新合拢交叉后的个体,即不分班级的基因编码
+     * 重新合拢交叉后的个体,即不分班级的基因编码，新种群
      * @param individualMap
      * @return
      */
@@ -364,7 +371,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
     /**
      * 基因变异
-     * @param resultGeneList
+     * @param resultGeneList 所有的基因编码个体
      * @return
      */
     private List<String> geneMutation(List<String> resultGeneList) {
@@ -374,12 +381,15 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         double mutationRate = 0.01;
         // 设定每一代中需要变异的基因个数，基因数*变异率
         int mutationNumber = (int)(resultGeneList.size() * mutationRate);
+
         if (mutationNumber < 1) {
             mutationNumber = 1;
         }
+
         for (int i = 0; i < mutationNumber; ) {
-            // 生成一个随机数，以随机拿一条基因编码
+
             int temp = min + (int)(Math.random() * (max + 1 - min));
+            // 随机拿一条编码
             String gene = resultGeneList.get(temp);
             if (ClassUtil.cutGene(ConstantInfo.IS_FIX, gene).equals("2")) {
                 break;
@@ -387,7 +397,9 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 // 再随机给它一个上课时间
                 String newClassTime = ClassUtil.randomTime(gene, resultGeneList);
                 gene = gene.substring(0, 24) + newClassTime;
+                // 去掉原来的个体
                 resultGeneList.remove(temp);
+                // 原来位置上替换成新的个体
                 resultGeneList.add(temp, gene);
                 i = i + 1;
             }
@@ -403,7 +415,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private Map<String, List<String>> hybridization(Map<String, List<String>> individualMap) {
         // 对每一个班级的基因编码片段进行交叉
         for (String classNo : individualMap.keySet()) {
-            // 得到班级
+            // 得到每一个班级对应的基因编码
             List<String> individualList = individualMap.get(classNo);
             // 保存上一代
             List<String> oldIndividualList = individualList;
@@ -460,7 +472,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
 
     /**
-     * 编码:
+     * 编码规则:
      *  固定时间：1
      * 	年级编号：2
      * 	班级编号：8
@@ -468,9 +480,9 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * 	课程编号：6
      * 	课程属性：2
      * 	上课时间：2
-     * 	教室编号：1-6
+     * 	教室编号：6
      *
-     * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间(固定)
+     * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间
      * 其中如果不固定开课时间默认填充为"00"
      * 经过处理后得到开课任务中
      * @param classTaskList
@@ -479,15 +491,15 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private List<Map<String, List<String>>> coding(List<ClassTask> classTaskList) {
         List<Map<String, List<String>>> geneList = new ArrayList<>();
         Map<String, List<String>> geneListMap = new HashMap<>();
-        // 不固定时间
+        // 不固定1
         List<String> unFixedTimeGeneList = new ArrayList<>();
-        // 固定时间
+        // 固定2
         List<String> fixedTimeGeneList = new ArrayList<>();
 
         for (ClassTask classTask : classTaskList) {
-            // isFix为1则不固定上课时间，默认填充00
+            // 1，不固定上课时间，默认填充00
             if (classTask.getIsFix().equals("1")) {
-                // 得到每周上课的次数，因为字段为每周学时，课程表设定中约定一节课2学时
+                // 得到每周上课的节数，因为设定2学时为一节课
                 int size = classTask.getWeeksNumber() / 2;
                 for (int i = 0; i < size; i++) {
                     // 编码:固定时间的课程
@@ -496,8 +508,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                     unFixedTimeGeneList.add(gene);
                 }
             }
-
-            // isFix为2则固定上课时间
+            // 2,固定上课时间
             if (classTask.getIsFix().equals("2")) {
                 int size = classTask.getWeeksNumber() / 2;
                 for (int i = 0; i < size; i++) {
@@ -553,7 +564,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         for (String classNo : classNoList) {
             List<String> geneList = new ArrayList<>();
             for (String gene : resultGeneList) {
-                // 切割查看基因编码中班级编号的信息
+                // 获得班级编号
                 if (classNo.equals(ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene))) {
                     // 把含有该班级编号的基因编码加入集合
                     geneList.add(gene);
@@ -564,7 +575,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 individualMap.put(classNo, geneList);
             }
         }
-        // 得到不同班级的初始课表(未进行冲突检测)
+        // 得到不同班级的初始课表
         return individualMap;
     }
 

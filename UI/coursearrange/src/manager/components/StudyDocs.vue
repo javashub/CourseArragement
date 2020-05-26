@@ -24,6 +24,8 @@
             
           </el-upload>
     </div>
+
+    <!-- 表格 -->
     <div class="table">
       <el-table :data="docData" size="mini">
         <el-table-column label="序号" type="selection"></el-table-column>
@@ -34,8 +36,8 @@
 
         <el-table-column prop="operation" label="操作" width="150px">
           <template slot-scope="scope">
-            <el-button type="danger" size="mini" @click="deleteById(scope.$index, scope.row)">删除</el-button>
-            <el-button type="primary" size="mini" @click="editById(scope.$index, scope.row)">编辑</el-button>
+            <el-button type="danger" size="mini" @click="previewById(scope.$index, scope.row)">预览</el-button>
+            <el-button type="primary" size="mini" @click="downloadById(scope.$index, scope.row)">下载</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -56,6 +58,18 @@ export default {
 
   },
   methods: {
+    
+    allDocs() {
+
+    },
+    // 预览
+    previewById(index, row) {
+
+    },
+    // 下载
+    downloadById(index, row) {
+
+    }
 
   }
 }
