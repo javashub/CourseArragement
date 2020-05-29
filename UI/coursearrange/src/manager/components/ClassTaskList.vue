@@ -161,7 +161,6 @@ export default {
       },
       visible: false,
       page: 1,
-      pageSize: 10,
       total: 0,
       // 学期选择绑定的值
       value: "",

@@ -211,7 +211,7 @@ export default {
      */
     allStudent() {
       this.$axios
-        .get("http://localhost:8080/student/querystudent/" + this.page)
+        .get("http://localhost:8080/student/students/" + this.page)
         .then(res => {
           let ret = res.data.data
           this.studentData = ret.records
@@ -228,7 +228,7 @@ export default {
      */
     searchStudent() {
       this.$axios
-        .get("http://localhost:8080/student/searchstudent/" + this.keyword)
+        .get("http://localhost:8080/student/search/" + this.keyword)
         .then(res => {
           let ret = res.data.data
           this.studentData = ret.records

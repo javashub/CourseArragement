@@ -9,6 +9,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -34,18 +36,18 @@ public class AliyunUtil {
     /**
      * 文件上传成功返回路径
      */
-    public static String upload(MultipartFile file, String directory) {
+    public static Map<String, Object> upload(MultipartFile file, String directory) {
 
         // 创建OSSClient实例。
         OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
 
         String url = "";
+        Map map = null;
 
         try {
             // 获取输入流
             InputStream inputStream = file.getInputStream();
             String fileName = file.getOriginalFilename();
-            System.out.println("fileName" + fileName);
             //1 在文件名称里面添加随机唯一的值
             String uuid = UUID.randomUUID().toString().replaceAll("-", "");
             // 随机id
@@ -55,17 +57,19 @@ public class AliyunUtil {
             //  2019/11/12/ewtqr313401.jpg
 //            fileName = datePath+"/"+fileName;
             // 上传
-            ossClient.putObject(bucketName, fileName, inputStream);
+            ossClient.putObject(bucketName, newFileName, inputStream);
             // 关闭OSSClient。
             ossClient.shutdown();
 
             url = "https://" + bucketName + "." + endpoint + "/" + newFileName;
-
-            return url;
+            map = new HashMap();
+            map.put("url", url);
+            map.put("name", fileName);
+            return map;
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return url;
+        return map;
     }
 
     /**

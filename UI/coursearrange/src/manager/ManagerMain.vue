@@ -120,6 +120,7 @@
           <!-- Main区域，数据显示 -->
           <router-view></router-view>
         </el-main>
+        
       </el-container>
       <!-- 显示系统时间 -->
       <el-footer>{{time}}</el-footer>
@@ -155,6 +156,7 @@ export default {
       // alert(command)
       if (command == 'exit') {
         localStorage.removeItem('token')
+        localStorage.removeItem('admin')
         // 判断，返回指定页面
         this.$router.push('/')
       } else if (command == 'center') {

@@ -95,7 +95,7 @@ public class StudentController {
      * @param student
      * @return
      */
-    @PostMapping("/modifystudent")
+    @PostMapping("/modify")
     @UserLoginToken
     public ServerResponse modifyStudent(@RequestBody Student student) {
         // 修改操作
@@ -120,7 +120,7 @@ public class StudentController {
      * @param student
      * @return
      */
-    @PostMapping("/modifystudent/{id}")
+    @PostMapping("/modify/{id}")
     public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody Student student) {
 
         QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("id", id);
@@ -133,11 +133,11 @@ public class StudentController {
     }
 
     /**
-     * 学生查询自己的课表,一人一课表
+     * 学生查询自己的课表,根据学生所在班级查询自己的课表
      * @return
      */
-    @GetMapping("/querystudentcourse")
-    public ServerResponse queryStudentCourse() {
+    @GetMapping("/coursetable/{classNo}")
+    public ServerResponse queryStudentCourse(@PathVariable("classNo") String classNo) {
 
         return ServerResponse.ofError();
     }
@@ -177,9 +177,9 @@ public class StudentController {
      * @param limit
      * @return
      */
-    @GetMapping("/querystudent/{page}")
-    public ServerResponse queryStudent(@PathVariable("page")Integer page,
-                                       @RequestParam(defaultValue = "10")Integer limit) {
+    @GetMapping("/students/{page}")
+    public ServerResponse queryStudent(@PathVariable("page") Integer page,
+                                       @RequestParam(defaultValue = "10") Integer limit) {
         Page<Student> pages = new Page<>(page, limit);
         QueryWrapper<Student> wrapper = new QueryWrapper<Student>().orderByDesc("student_no");
         IPage<Student> iPage = studentService.page(pages, wrapper);
@@ -192,7 +192,7 @@ public class StudentController {
      * 根据姓名关键字搜学生
      * @return
      */
-    @GetMapping("/searchstudent/{keyword}")
+    @GetMapping("/search/{keyword}")
     public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @RequestParam(defaultValue = "1") Integer page,
                                         @RequestParam(defaultValue = "10") Integer limit) {
         QueryWrapper<Student> wrapper = new QueryWrapper<>();

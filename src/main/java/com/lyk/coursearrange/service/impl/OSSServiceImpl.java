@@ -6,6 +6,8 @@ import com.lyk.coursearrange.util.AliyunUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 /**
  * @author: 15760
  * @Date: 2020/5/21
@@ -17,8 +19,8 @@ public class OSSServiceImpl implements OSSService {
     @Override
     public ServerResponse uploadAvatar(MultipartFile file, Integer id, Integer type) {
         String directory = "avatar/";
-        String url = AliyunUtil.upload(file, "");
-        return ServerResponse.ofSuccess(url);
+        Map map = AliyunUtil.upload(file, "");
+        return ServerResponse.ofSuccess(map);
     }
 
     @Override

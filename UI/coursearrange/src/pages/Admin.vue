@@ -79,7 +79,7 @@ export default {
             username: this.adminLoginForm.username,
             password: this.adminLoginForm.password
           })
-          .then((res) => {
+          .then(res => {
             if (res.data.code == 0) {
               let ret = res.data.data
               // 保存信息，跳转到主页
@@ -100,7 +100,7 @@ export default {
             username: this.adminLoginForm.username,
             password: this.adminLoginForm.password
           })
-          .then((res) => {
+          .then(res => {
             if (res.data.code == 0) {
               let ret = res.data.data
               window.localStorage.setItem('token', ret.token)

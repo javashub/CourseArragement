@@ -158,6 +158,7 @@ export default {
       // alert(command)
       if (command == 'exit') {
         localStorage.removeItem('token')
+        localStorage.removeItem('teacher')
         // 判断，返回指定页面
         this.$router.push('/')
       } else if (command == 'center') {
