@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Teacher;
+import com.lyk.coursearrange.entity.request.PasswordVO;
 import com.lyk.coursearrange.entity.request.TeacherAddRequest;
 import com.lyk.coursearrange.entity.request.UserLoginRequest;
 import com.lyk.coursearrange.service.TeacherService;
@@ -172,27 +173,26 @@ public class TeacherController {
         return ServerResponse.ofError("添加讲师失败！");
     }
 
-    // TODO 讲师更新资料
-
 
     /**
-     * 讲师更新密码
-     * @param id 讲师id
-     * @param oldPassword 旧密码
-     * @param newPassword 新密码
+     * 管理员修改密码
+     * @param passwordVO
      * @return
      */
-    @PostMapping("/updatepassword")
-    public ServerResponse updatePassword(Integer id, String oldPassword, String newPassword) {
-
-        if (!teacherService.getById(id).getPassword().equals(oldPassword)) {
-            return ServerResponse.ofError("旧密码错误!");
+    @PostMapping("/password")
+    public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
+        QueryWrapper<Teacher> wrapper = new QueryWrapper();
+        wrapper.eq("id", passwordVO.getId());
+        wrapper.eq("password", passwordVO.getOldPass());
+        Teacher teacher = teacherService.getOne(wrapper);
+        if (teacher == null) {
+            return ServerResponse.ofError("旧密码错误");
         }
-        Teacher t = teacherService.getById(id);
-        t.setPassword(newPassword);
-        boolean b = teacherService.updateById(t);
+        // 否则进入修改密码流程
+        teacher.setPassword(passwordVO.getNewPass());
+        boolean b = teacherService.updateById(teacher);
         if (b) {
-            return ServerResponse.ofSuccess();
+            return ServerResponse.ofSuccess("密码修改成功");
         }
         return ServerResponse.ofError("密码更新失败");
     }

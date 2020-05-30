@@ -52,6 +52,11 @@ public class Admin extends Model<Admin> {
     private String realname;
 
     /**
+     * 用户类型1
+     */
+    private Integer userType;
+
+    /**
      * 职称
      */
     private String jobtitle;

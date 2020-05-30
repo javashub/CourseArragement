@@ -20,6 +20,7 @@ import CourseInfoList from '@/manager/components/CourseInfoList';
 import StudentList from '@/manager/components/StudentList';
 import ClassTaskList from '@/manager/components/ClassTaskList';
 import ClassManager from '@/manager/components/ClassManager';
+import UpdatePass from '@/pages/components/UpdatePass';
 
 Vue.use(Router)
 
@@ -50,11 +51,17 @@ export default new Router({
       name: 'TeacherMain',
       component: TeacherMain,
     },
+  
     {
       path: '/admin',
       name: 'Admin',
       component: ManagerMain,
       children: [
+        {
+          path: '/updatepass',
+          name: 'UpdatePass',
+          component: UpdatePass
+        },
         {
           // 登录成功跳转到该路径
           path: '/systemdata',
@@ -125,7 +132,7 @@ export default new Router({
           path: '/exercise',
           name: 'Exercise',
           component: Exercise
-        }
+        },
       ]
     }
   ]

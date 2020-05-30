@@ -182,8 +182,10 @@ export default {
         .then(res => {
           // 注册成功
           if (res.data.code == 0) {
-            alert('注册成功，请用你的学号'+res.data.data.studentNo+'登录系统')
+            alert('注册成功，请用你的学号' + res.data.data.studentNo+'登录系统')
             this.$router.push('/student/login')
+          } else {
+            alert(res.data.message)
           }
         })
         .catch(error => {

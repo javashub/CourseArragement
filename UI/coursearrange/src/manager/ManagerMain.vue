@@ -120,7 +120,7 @@
           <!-- Main区域，数据显示 -->
           <router-view></router-view>
         </el-main>
-        
+
       </el-container>
       <!-- 显示系统时间 -->
       <el-footer>{{time}}</el-footer>
@@ -163,7 +163,7 @@ export default {
         // 跳转到个人中心
       } else if (command == 'updatePassword') {
         // 修改密码页面
-        
+        this.$router.push('/updatepass')
       }
       
     },

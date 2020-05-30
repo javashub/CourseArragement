@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.UserLoginToken;
 import com.lyk.coursearrange.entity.Student;
+import com.lyk.coursearrange.entity.request.PasswordVO;
 import com.lyk.coursearrange.entity.request.StudentLoginRequest;
 import com.lyk.coursearrange.entity.request.StudentRegisterRequest;
 import com.lyk.coursearrange.service.StudentService;
@@ -217,6 +218,29 @@ public class StudentController {
             return ServerResponse.ofSuccess("删除成功！");
         }
         return ServerResponse.ofError("删除失败！");
+    }
+
+    /**
+     * 学生修改密码
+     * @param passwordVO
+     * @return
+     */
+    @PostMapping("/password")
+    public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
+        QueryWrapper<Student> wrapper = new QueryWrapper();
+        wrapper.eq("id", passwordVO.getId());
+        wrapper.eq("password", passwordVO.getOldPass());
+        Student student = studentService.getOne(wrapper);
+        if (student == null) {
+            return ServerResponse.ofError("旧密码错误");
+        }
+        // 否则进入修改密码流程
+        student.setPassword(passwordVO.getNewPass());
+        boolean b = studentService.updateById(student);
+        if (b) {
+            return ServerResponse.ofSuccess("密码修改成功");
+        }
+        return ServerResponse.ofError("密码更新失败");
     }
 
 

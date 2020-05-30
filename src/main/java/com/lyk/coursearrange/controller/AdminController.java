@@ -8,6 +8,7 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Admin;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.Teacher;
+import com.lyk.coursearrange.entity.request.PasswordVO;
 import com.lyk.coursearrange.entity.request.UserLoginRequest;
 import com.lyk.coursearrange.entity.request.TeacherAddRequest;
 import com.lyk.coursearrange.service.AdminService;
@@ -22,10 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * <p>
- *  前端控制器
- * </p>
- *
  * @author lequal
  * @since 2020-03-06
  */
@@ -85,7 +82,7 @@ public class AdminController {
      */
     @PostMapping("/modifyadmin")
     public ServerResponse modifyAdmin(@RequestBody Admin admin) {
-        // 修改
+
         return adminService.updateById(admin) ? ServerResponse.ofSuccess("更新成功！") : ServerResponse.ofError("更新失败！");
     }
 
@@ -158,59 +155,29 @@ public class AdminController {
         return ServerResponse.ofError("查询不到数据");
     }
 
-
-
-
-
-    // 封禁学生
-
-
-    // 搜索学生
-
-
-    // 删除学生
-
-
-
-    // ↓↓↓↓↓↓↓↓↓    管理员对课程的操作       ↓↓↓↓↓↓↓↓
-
-    // 添加课程
-
-
-
-    // 删除课程
-
-
-
-    // 更新课程
-
-
-
-    // 添加开课任务
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // 添加教学楼
-
-
-
-    // 删除教学楼
-
-
-
-    // 修改教学楼
-
-
+    /**
+     * 管理员修改密码
+     * @param passwordVO
+     * @return
+     */
+    @PostMapping("/password")
+    public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
+        System.out.println(passwordVO + "======");
+        QueryWrapper<Admin> wrapper = new QueryWrapper();
+        wrapper.eq("id", passwordVO.getId());
+        wrapper.eq("password", passwordVO.getOldPass());
+        Admin admin = adminService.getOne(wrapper);
+        if (admin == null) {
+            return ServerResponse.ofError("旧密码错误");
+        }
+        // 否则进入修改密码流程
+        admin.setPassword(passwordVO.getNewPass());
+        boolean b = adminService.updateById(admin);
+        if (b) {
+            return ServerResponse.ofSuccess("密码修改成功");
+        }
+        return ServerResponse.ofError("密码更新失败");
+    }
 
 
 }

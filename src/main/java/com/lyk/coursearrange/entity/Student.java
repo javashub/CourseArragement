@@ -47,6 +47,11 @@ public class Student extends Model<Student> {
     private String password;
 
     /**
+     * 标识用户类型3
+     */
+    private Integer userType;
+
+    /**
      * 真实姓名
      */
     private String realname;

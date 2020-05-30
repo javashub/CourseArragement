@@ -52,6 +52,11 @@ public class Teacher extends Model<Teacher> {
     private String realname;
 
     /**
+     * 标识用户类型2
+     */
+    private Integer userType;
+
+    /**
      * 职称
      */
     private String jobtitle;

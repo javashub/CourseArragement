@@ -61,9 +61,9 @@ export default {
       // 表单预验证
       this.$refs.loginFormRef.validate(valid => {
         if (!valid) return;
-          this.$axios.post('http://localhost:8080/student/login', {
-          username: this.studentLoginForm.username,
-          password: this.studentLoginForm.password
+        this.$axios.post('http://localhost:8080/student/login', {
+        username: this.studentLoginForm.username,
+        password: this.studentLoginForm.password
         })
         .then((res) => {
           if (res.data.code == 0) {

@@ -5,7 +5,6 @@ import com.lyk.coursearrange.service.OSSService;
 import com.lyk.coursearrange.util.AliyunUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.Map;
 
 /**
