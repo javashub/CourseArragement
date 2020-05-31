@@ -85,7 +85,7 @@ export default {
               // 保存信息，跳转到主页
               window.localStorage.setItem('token', ret.token)
               window.localStorage.setItem('admin', JSON.stringify(ret.admin))
-              this.$router.push('/systemdata')
+              this.$router.push('/admin')
               this.$message({message: "登录成功", type: "success"})
             } else {
               alert(res.data.message)

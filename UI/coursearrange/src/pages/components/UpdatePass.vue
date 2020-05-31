@@ -152,17 +152,26 @@ export default {
       if (res.data.code == 0) {
         // 密码更新成功，删除token，localStorage重新登录
         if (this.userType == 1) {
-          localStorage.removeItem('token')
-          localStorage.removeItem('admin')
-          this.$router.push('/admin/login')
+          this.$message({message: "修改密码成功 ，请重新登录", type: "success"})
+          setTimeout(() => {
+            localStorage.removeItem('token')
+            localStorage.removeItem('admin')
+            this.$router.push('/admin/login')
+          }, 1000)
         } else if (this.userType == 2) {
-          localStorage.removeItem('token')
-          localStorage.removeItem('teacher')
-          this.$router.push('/admin/login')
+          this.$message({message: "修改密码成功 ，请重新登录", type: "success"})
+          setTimeout(() => {
+            localStorage.removeItem('token')
+            localStorage.removeItem('teacher')
+            this.$router.push('/admin/login')
+          }, 1000)
         } else if (this.userType == 3) {
-          localStorage.removeItem('token')
-          localStorage.removeItem('student')
-          this.$router.push('/student/login')
+          this.$message({message: "修改密码成功 ，请重新登录", type: "success"})
+          setTimeout(() => {
+            localStorage.removeItem('token')
+            localStorage.removeItem('student')
+            this.$router.push('/student/login')
+          }, 1000)
         }
       } else {
         // 旧密码不正确

@@ -51,6 +51,64 @@ export default new Router({
       path: '/teachermain',
       name: 'TeacherMain',
       component: TeacherMain,
+      children: [
+        {
+          path: '/updatepass',
+          name: 'UpdatePass',
+          component: UpdatePass
+        },
+        {
+          // 登录成功跳转到该路径
+          path: '/systemdata',
+          name: 'SystemData',
+          component: SystemData
+        },
+        {
+          path: '/studentlist',
+          name: 'StudentList',
+          component: StudentList
+        },
+        {
+          path: '/coursetable',
+          name: 'CourseTable',
+          component: CourseTable
+        },
+        {
+          path: '/courseinfolist',
+          name: 'CourseInfoList',
+          component: CourseInfoList
+        },
+        {
+          path: '/classtasklist',
+          name: 'ClassTaskList',
+          component: ClassTaskList
+        },
+        {
+          path: '/classmanager',
+          name: 'ClasssManager',
+          component: ClassManager
+        },
+        {
+          path: '/onlinecourse',
+          name: 'OnlineCourse',
+          component: OnlineCourse
+        },
+        {
+          path: '/studydocs',
+          name: 'StudyDocs',
+          component: StudyDocs
+        },
+        {
+          path: '/homework',
+          name: 'HomeWork',
+          component: HomeWork
+        },
+        {
+          path: '/exercise',
+          name: 'Exercise',
+          component: Exercise
+        },
+      ]
     },
   
     {

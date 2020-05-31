@@ -1,5 +1,5 @@
 <template>
-  <!-- 讲师主界面 -->
+  <!-- 后台管理系统主界面 -->
   <div class="wrapper">
     <el-container>
       <el-header>
@@ -24,7 +24,7 @@
           <el-menu :default-active="default_active" @select="handleSelect" unique-opened>
             <el-menu-item index="0">
               <template slot="title">
-                <router-link to="systemdata" class="links">
+                <router-link to="/systemdata" class="links">
                   <i class="el-icon-setting"></i>系统数据
                 </router-link>
               </template>
@@ -32,13 +32,10 @@
 
             <el-submenu index="1">
               <template slot="title">
-                <i class="el-icon-setting"></i>排课管理
+                <i class="el-icon-setting"></i>上课任务
               </template>
               <el-menu-item index="1-1">
-                <router-link to="classtasklist" class="links">课程计划</router-link>
-              </el-menu-item>
-              <el-menu-item index="1-2">
-                <router-link to="coursetable" class="links">查看课表</router-link>
+                <router-link to="/coursetable" class="links">查看课表</router-link>
               </el-menu-item>
             </el-submenu>
 
@@ -47,73 +44,44 @@
                 <i class="el-icon-setting"></i>课程管理
               </template>
               <el-menu-item index="2-1">
-                <router-link to="courseinfolist" class="links">教材列表</router-link>
+                <router-link to="/courseinfolist" class="links">教材列表</router-link>
               </el-menu-item>
               <el-menu-item index="2-2">
-                <router-link to="onlinecourse" class="links">网课管理</router-link>
+                <router-link to="/onlinecourse" class="links">网课管理</router-link>
               </el-menu-item>
             </el-submenu>
 
             <el-submenu index="3">
               <template slot="title">
-                <i class="el-icon-message"></i>讲师管理
+                <i class="el-icon-menu"></i>班级管理
               </template>
               <el-menu-item-group>
                 <el-menu-item index="3-1">
-                  <router-link to="teacherlist" class="links">所有讲师</router-link>
+                  <router-link to="/classmanager" class="links">所有班级</router-link>
                 </el-menu-item>
               </el-menu-item-group>
             </el-submenu>
 
             <el-submenu index="4">
               <template slot="title">
-                <i class="el-icon-menu"></i>班级管理
+                <i class="el-icon-menu"></i>学生管理
               </template>
               <el-menu-item-group>
                 <el-menu-item index="4-1">
-                  <router-link to="classmanager" class="links">所有班级</router-link>
+                  <router-link to="/studentlist" class="links">所有学生</router-link>
                 </el-menu-item>
               </el-menu-item-group>
             </el-submenu>
 
             <el-submenu index="5">
               <template slot="title">
-                <i class="el-icon-menu"></i>学生管理
-              </template>
-              <el-menu-item-group>
-                <el-menu-item index="5-1">
-                  <router-link to="studentlist" class="links">所有学生</router-link>
-                </el-menu-item>
-              </el-menu-item-group>
-            </el-submenu>
-
-            <el-submenu index="6">
-              <template slot="title">
                 <i class="el-icon-setting"></i>教学资料
               </template>
-              <el-menu-item index="6-1">
+              <el-menu-item index="5-1">
                 <router-link class="links" to="/studydocs">学习文档</router-link>
               </el-menu-item>
-              <el-menu-item index="6-2">
-                <router-link class="links" to="/homework">作业文档</router-link>
-              </el-menu-item>
-              <el-menu-item index="6-3">
+              <el-menu-item index="5-2">
                 <router-link class="links" to="/exercise">在线测试</router-link>
-              </el-menu-item>
-            </el-submenu>
-
-            <el-submenu index="7">
-              <template slot="title">
-                <i class="el-icon-setting"></i>教学设施
-              </template>
-              <el-menu-item index="7-1">
-                <router-link class="links" to="teachbuildinglist">教学楼管理</router-link>
-              </el-menu-item>
-              <el-menu-item index="7-2">
-                <router-link to="classroomlist" class="links">教室列表</router-link>
-              </el-menu-item>
-              <el-menu-item index="7-2">
-                <router-link to="setteacharea" class="links">教学区域安排</router-link>
               </el-menu-item>
             </el-submenu>
           </el-menu>
@@ -123,6 +91,7 @@
           <!-- Main区域，数据显示 -->
           <router-view></router-view>
         </el-main>
+
       </el-container>
       <!-- 显示系统时间 -->
       <el-footer>{{time}}</el-footer>
@@ -132,7 +101,7 @@
 
 <script>
 export default {
-  name: "TeacherMain",
+  name: "ManagerMain",
   data() {
     return {
       time: "",
@@ -163,9 +132,10 @@ export default {
         this.$router.push('/')
       } else if (command == 'center') {
         // 跳转到个人中心
+
       } else if (command == 'updatePassword') {
         // 修改密码页面
-        
+        this.$router.push('/updatepass')
       }
       
     },

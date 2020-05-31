@@ -86,6 +86,19 @@ public class DocController {
         return ServerResponse.ofSuccess(iPage);
     }
 
+    /**
+     * 根据id删除文档
+     * @param id
+     * @return
+     */
+    @DeleteMapping("/deletedoc")
+    public ServerResponse delete(@RequestParam Integer id) {
+        boolean b = docService.removeById(id);
+        if (b) {
+            return ServerResponse.ofSuccess("删除成功");
+        }
+        return ServerResponse.ofError("删除失败");
+    }
 
 
 

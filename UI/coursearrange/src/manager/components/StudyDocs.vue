@@ -11,7 +11,7 @@
 
     <!-- 表格 -->
     <div class="table">
-      <el-table :data="docData" size="mini">
+      <el-table :data="docData" size="mini" :stripe="true">
         <el-table-column label="序号" type="selection"></el-table-column>
         <el-table-column prop="docName" label="文件名"></el-table-column>
         <el-table-column prop="description" label="描述"></el-table-column>
@@ -22,7 +22,8 @@
         <el-table-column prop="operation" label="操作" width="150px">
         <template slot-scope="scope">
           <!-- <el-button type="text" size="small" @click="previewById(scope.$index, scope.row)">预览</el-button> -->
-          <el-button type="text" size="small" @click="downloadById(scope.$index, scope.row)">下载</el-button>
+          <el-button type="primary" size="small" @click="downloadById(scope.$index, scope.row)">下载</el-button>
+          <el-button type="danger" size="small" @click="deleteById(scope.$index, scope.row)">删除</el-button>
         </template>
         </el-table-column>
       </el-table>
@@ -125,6 +126,8 @@ export default {
       
     },
 
+    
+
     // 获得上传的用户类型
     getUserType() {
       // 判断是管理员上传还是讲师上传
@@ -195,6 +198,22 @@ export default {
     downloadById(index, row) {
       console.log(row.docUrl)
       window.location.href = row.docUrl
+    },
+
+    deleteById(index, row) {
+      alert(row.id)
+      this.$axios.delete("http://localhost:8080/deletedoc?id=" + row.id)
+      .then(res => {
+        if (res.data.code == 0) {
+          // 删除成功
+          console.log(res)
+          this.allDocs()
+          this.$message({message: "删除成功", type: "success"})
+        } else {
+          this.$message.error(res.data.message)
+        }
+      })
+      .catch()
     },
 
     // 取消
