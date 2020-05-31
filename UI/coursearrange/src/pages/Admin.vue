@@ -16,7 +16,7 @@
         </el-form-item>
         <!-- 密码 -->
         <el-form-item prop="password">
-          <el-input v-model="adminLoginForm.password" placeholder="请输入密码" prefix-icon="iconfont iconmima" type="password"></el-input>
+          <el-input v-model="adminLoginForm.password" placeholder="请输入密码" prefix-icon="iconfont iconmima" type="password" show-password></el-input>
         </el-form-item>
         <!-- 登录类型 -->
         <el-form-item >
@@ -45,8 +45,8 @@ export default {
       radio: '1',
       // 登录表单的对象
       adminLoginForm: {
-        username: '',
-        password: ''
+        username: '10011',
+        password: 'aizai2015'
       },
       adminLoginFormRules: {
         username: [
@@ -106,7 +106,7 @@ export default {
               window.localStorage.setItem('token', ret.token)
               window.localStorage.setItem('teacher', JSON.stringify(ret.teacher))
               // 跳转
-              this.$router.push('/teachermain')
+              this.$router.push('/admin')
               this.$message({message: "登录成功", type: "success"})
             } else {
               alert(res.data.message)

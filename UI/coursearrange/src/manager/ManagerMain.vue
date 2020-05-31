@@ -24,7 +24,7 @@
           <el-menu :default-active="default_active" @select="handleSelect" unique-opened>
             <el-menu-item index="0">
               <template slot="title">
-                <router-link to="systemdata" class="links">
+                <router-link to="/systemdata" class="links">
                   <i class="el-icon-setting"></i>系统数据
                 </router-link>
               </template>
@@ -34,11 +34,11 @@
               <template slot="title">
                 <i class="el-icon-setting"></i>排课管理
               </template>
-              <el-menu-item index="1-1">
-                <router-link to="classtasklist" class="links">课程计划</router-link>
+              <el-menu-item index="1-1" v-if="!isTeacher">
+                <router-link to="/classtasklist" class="links">课程计划</router-link>
               </el-menu-item>
               <el-menu-item index="1-2">
-                <router-link to="coursetable" class="links">查看课表</router-link>
+                <router-link to="/coursetable" class="links">查看课表</router-link>
               </el-menu-item>
             </el-submenu>
 
@@ -47,20 +47,20 @@
                 <i class="el-icon-setting"></i>课程管理
               </template>
               <el-menu-item index="2-1">
-                <router-link to="courseinfolist" class="links">教材列表</router-link>
+                <router-link to="/courseinfolist" class="links">教材列表</router-link>
               </el-menu-item>
               <el-menu-item index="2-2">
-                <router-link to="onlinecourse" class="links">网课管理</router-link>
+                <router-link to="/onlinecourse" class="links">网课管理</router-link>
               </el-menu-item>
             </el-submenu>
 
-            <el-submenu index="3">
+            <el-submenu index="3" v-if="!isTeacher">
               <template slot="title">
                 <i class="el-icon-message"></i>讲师管理
               </template>
               <el-menu-item-group>
                 <el-menu-item index="3-1">
-                  <router-link to="teacherlist" class="links">所有讲师</router-link>
+                  <router-link to="/teacherlist" class="links">所有讲师</router-link>
                 </el-menu-item>
               </el-menu-item-group>
             </el-submenu>
@@ -71,7 +71,7 @@
               </template>
               <el-menu-item-group>
                 <el-menu-item index="4-1">
-                  <router-link to="classmanager" class="links">所有班级</router-link>
+                  <router-link to="/classmanager" class="links">所有班级</router-link>
                 </el-menu-item>
               </el-menu-item-group>
             </el-submenu>
@@ -82,7 +82,7 @@
               </template>
               <el-menu-item-group>
                 <el-menu-item index="5-1">
-                  <router-link to="studentlist" class="links">所有学生</router-link>
+                  <router-link to="/studentlist" class="links">所有学生</router-link>
                 </el-menu-item>
               </el-menu-item-group>
             </el-submenu>
@@ -102,18 +102,18 @@
               </el-menu-item>
             </el-submenu>
 
-            <el-submenu index="7">
+            <el-submenu index="7" v-if="!isTeacher">
               <template slot="title">
                 <i class="el-icon-setting"></i>教学设施
               </template>
               <el-menu-item index="7-1">
-                <router-link class="links" to="teachbuildinglist">教学楼管理</router-link>
+                <router-link class="links" to="/teachbuildinglist">教学楼管理</router-link>
               </el-menu-item>
               <el-menu-item index="7-2">
-                <router-link to="classroomlist" class="links">教室列表</router-link>
+                <router-link to="/classroomlist" class="links">教室列表</router-link>
               </el-menu-item>
-              <el-menu-item index="7-2">
-                <router-link to="setteacharea" class="links">教学区域安排</router-link>
+              <el-menu-item index="7-3">
+                <router-link to="/setteacharea" class="links">教学区域安排</router-link>
               </el-menu-item>
             </el-submenu>
           </el-menu>
@@ -138,18 +138,27 @@ export default {
     return {
       time: "",
       default_active: "0",
-      name: '用户名'
+      name: '用户名',
     };
   },
-
+  computed: {
+    isTeacher:()=>{
+      return window.localStorage.getItem('teacher') != null;
+    }
+  },
   mounted() {
     setInterval(() => {
       this.getTime();
     }, 1000);
     
-    let u = window.localStorage.getItem('admin')
-    if(u != null){
-      this.name = (JSON.parse(u)).realname
+    let admin = window.localStorage.getItem('admin')
+    if(admin != null){
+      this.name = (JSON.parse(admin)).realname
+    } else {
+      let teacher = window.localStorage.getItem('teacher')
+      if (teacher != null) {
+        this.name = (JSON.parse(teacher)).realname
+      }
     }
   },
 
@@ -160,6 +169,7 @@ export default {
       if (command == 'exit') {
         localStorage.removeItem('token')
         localStorage.removeItem('admin')
+        localStorage.removeItem('teacher')
         // 判断，返回指定页面
         this.$router.push('/')
       } else if (command == 'center') {

@@ -9,7 +9,6 @@ import TeacherList from '@/manager/components/TeacherList';
 import TeachAreaSetting from '@/manager/components/TeachAreaSetting';
 import SystemData from '@/manager/SystemData';
 import OnlineCourse from '@/manager/components/OnlineCourse';
-import TeacherMain from '@/pages/TeacherMain';
 import StudyDocs from '@/manager/components/StudyDocs';
 import HomeWork from '@/manager/components/HomeWork';
 import Exercise from '@/manager/components/Exercise';
@@ -25,92 +24,40 @@ import StudentDoc from '@/home/components/StudentDoc';
 
 Vue.use(Router)
 
-export default new Router({
+const router = new Router({
   routes: [
     {
       path: '/',
       name: 'Home',
-      component: Home
+      component: Home,
+      meta: { 
+        noRequireAuth: true
+      },
     },
     {
       path: '/student/login',
       name: 'Login',
-      component: Login
+      component: Login,
+      meta: { 
+        noRequireAuth: true
+      },
     },
     {
       path: '/student/register',
       name: 'Register',
-      component: Register
+      component: Register,
+      meta: { 
+        noRequireAuth: true
+      },
     },
     {
       path: '/admin/login',
       name: 'AdminLogin',
-      component: Admin
+      component: Admin,
+      meta: { 
+        noRequireAuth: true
+      },
     },
-    {
-      path: '/teachermain',
-      name: 'TeacherMain',
-      component: TeacherMain,
-      children: [
-        {
-          path: '/updatepass',
-          name: 'UpdatePass',
-          component: UpdatePass
-        },
-        {
-          // 登录成功跳转到该路径
-          path: '/systemdata',
-          name: 'SystemData',
-          component: SystemData
-        },
-        {
-          path: '/studentlist',
-          name: 'StudentList',
-          component: StudentList
-        },
-        {
-          path: '/coursetable',
-          name: 'CourseTable',
-          component: CourseTable
-        },
-        {
-          path: '/courseinfolist',
-          name: 'CourseInfoList',
-          component: CourseInfoList
-        },
-        {
-          path: '/classtasklist',
-          name: 'ClassTaskList',
-          component: ClassTaskList
-        },
-        {
-          path: '/classmanager',
-          name: 'ClasssManager',
-          component: ClassManager
-        },
-        {
-          path: '/onlinecourse',
-          name: 'OnlineCourse',
-          component: OnlineCourse
-        },
-        {
-          path: '/studydocs',
-          name: 'StudyDocs',
-          component: StudyDocs
-        },
-        {
-          path: '/homework',
-          name: 'HomeWork',
-          component: HomeWork
-        },
-        {
-          path: '/exercise',
-          name: 'Exercise',
-          component: Exercise
-        },
-      ]
-    },
-  
     {
       path: '/admin',
       name: 'Admin',
@@ -122,7 +69,6 @@ export default new Router({
           component: UpdatePass
         },
         {
-          // 登录成功跳转到该路径
           path: '/systemdata',
           name: 'SystemData',
           component: SystemData
@@ -201,3 +147,22 @@ export default new Router({
     }
   ]
 })
+
+router.beforeEach((to, from, next) => {
+  if (!to.matched.some(res => res.meta.noRequireAuth)) {// 判断是否需要登录权限
+    if (window.localStorage.getItem('teacher') || window.localStorage.getItem("admin") ) {// 判断是否登录
+      next()
+    } else {
+      next({
+        path: '/',
+        query: { redirect: to.fullPath }
+      })
+    }
+  } else {
+    next()
+  }
+
+})
+
+
+export default router
