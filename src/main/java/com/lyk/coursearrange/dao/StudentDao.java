@@ -4,6 +4,7 @@ import com.lyk.coursearrange.entity.Student;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * <p>
@@ -21,5 +22,8 @@ public interface StudentDao extends BaseMapper<Student> {
             "        UNION" +
             "        SELECT * FROM tb_student WHERE realname=#{account} AND password=#{password}")
     Student studentLogin(@Param("account") String username, @Param("password") String password);
+
+    @Select("select count(*) from tb_student where date(create_time) = #{yesday}")
+    int selectReg(@Param("yesday") String yesday);
 
 }

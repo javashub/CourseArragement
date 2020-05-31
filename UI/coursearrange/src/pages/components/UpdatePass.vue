@@ -51,6 +51,8 @@ export default {
         callback(new Error('请再次输入新密码'));
       } else if (value !== this.passForm.newPass) {
         callback(new Error('两次输入密码不一致!'));
+        // this.passForm.newPass = ''
+        this.passForm.rePass = ''
       } else {
         callback();
       }
@@ -165,6 +167,9 @@ export default {
       } else {
         // 旧密码不正确
         this.$message.error(res.data.message)
+        this.passForm.oldPass = ''
+        this.passForm.newPass = ''
+        this.passForm.rePass = ''
       }
     })
     .catch(error => {})

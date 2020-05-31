@@ -1,11 +1,17 @@
 package com.lyk.coursearrange.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.dao.StudentDao;
+import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +35,15 @@ public class SystemController {
     private ClassTaskService classTaskService;
     @Autowired
     private TeachbuildInfoService teachbuildInfoService;
+    @Autowired
+    private DocService docService;
+    @Autowired
+    private ExerciseService exerciseService;
+    @Autowired
+    private ClassroomService classroomService;
+    @Autowired
+    private StudentDao studentDao;
+
 
     @GetMapping("/systemdata")
     public ServerResponse systemData() {
@@ -40,19 +55,30 @@ public class SystemController {
         int students = studentService.count();
         // 教材数量
         int courses = courseInfoService.count();
-        // 网课数量
-
         // 班级数量
         int classes = classInfoService.count();
         // 教学楼数量
         int teachbuilds = teachbuildInfoService.count();
         // 教室数量
-
+        int classrooms = classroomService.count();
         // 当前课程任务数量
         int classtasks = classTaskService.count();
         // 学习文档数
-
+        int docs = docService.count();
         // 题库数量
+        int exercises = exerciseService.count();
+
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE,-1);
+        Date d = cal.getTime();
+        SimpleDateFormat sp = new SimpleDateFormat("yyyy-MM-dd");
+        //获取昨天日期
+        String yesday = sp.format(d);
+//        String yesday = "2020-03-26";
+
+        // 昨日学生注册人数
+        int stuRge = studentDao.selectReg(yesday);
+
 
         map.put("teachers", teachers);
         map.put("students", students);
@@ -60,7 +86,10 @@ public class SystemController {
         map.put("classes", classes);
         map.put("teachbuilds", teachbuilds);
         map.put("classtasks", classtasks);
-
+        map.put("docs", docs);
+        map.put("exercises", exercises);
+        map.put("classrooms", classrooms);
+        map.put("stuReg", stuRge);
         return ServerResponse.ofSuccess(map);
     }
 

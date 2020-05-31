@@ -70,7 +70,7 @@ public class DocController {
 
 
     /**
-     * 根据班级查询文档
+     * 根据班级查询文档，用于学生端
      * @param page
      * @param toClassNo
      * @param limit

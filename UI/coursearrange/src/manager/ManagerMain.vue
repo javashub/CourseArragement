@@ -97,6 +97,9 @@
               <el-menu-item index="6-2">
                 <router-link class="links" to="/exercise">在线测试</router-link>
               </el-menu-item>
+              <el-menu-item index="6-3">
+                <router-link class="links" to="/studentdoc">测试路径</router-link>
+              </el-menu-item>
             </el-submenu>
 
             <el-submenu index="7">

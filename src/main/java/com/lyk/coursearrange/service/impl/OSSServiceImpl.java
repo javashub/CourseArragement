@@ -18,6 +18,7 @@ public class OSSServiceImpl implements OSSService {
     @Override
     public ServerResponse uploadAvatar(MultipartFile file, Integer id, Integer type) {
         String directory = "avatar/";
+        // 调用上传
         Map map = AliyunUtil.upload(file, "");
         return ServerResponse.ofSuccess(map);
     }

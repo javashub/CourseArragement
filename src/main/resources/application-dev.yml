@@ -16,8 +16,6 @@ spring:
       enable: true
       additional-paths: src/main/java
       exclude: WEB-INF/**
-  thymeleaf:
-    cache: false
 
   #设置文件传输大小限制
   servlet:
@@ -42,6 +40,8 @@ server:
 
 # 卓正软件
 key: IMTG6-BSXJ-JGZ6-3BIWM
+poSysPath: D:/arrange/license/
+password: 111111
 
 # 阿里云OSS
 aliyun:

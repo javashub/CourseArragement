@@ -17,17 +17,18 @@
         <el-table-column prop="description" label="描述"></el-table-column>
         <el-table-column prop="toClassNo" label="接收班级"></el-table-column>
         <el-table-column prop="fromUserName" label="发布者"></el-table-column>
-        <el-table-column prop="expire" label="有效期"></el-table-column>
+        <el-table-column prop="expire" label="有效期(天)"></el-table-column>
         <el-table-column prop="createTime" label="上传时间"></el-table-column>
         <el-table-column prop="operation" label="操作" width="150px">
-          <template slot-scope="scope">
-            <el-button type="danger" size="mini" @click="previewById(scope.$index, scope.row)">预览</el-button>
-            <el-button type="primary" size="mini" @click="downloadById(scope.$index, scope.row)">下载</el-button>
-          </template>
+        <template slot-scope="scope">
+          <!-- <el-button type="text" size="small" @click="previewById(scope.$index, scope.row)">预览</el-button> -->
+          <el-button type="text" size="small" @click="downloadById(scope.$index, scope.row)">下载</el-button>
+        </template>
         </el-table-column>
       </el-table>
     </div>
 
+    <!-- 分页插件 -->
     <div class="footer-button">
       <el-pagination
         @size-change="handleSizeChange"
@@ -101,7 +102,9 @@ export default {
         // 上传者自定义的名字
         fileName: ''
       },
-      
+      // 需要预览的文件url地址
+      url: "",
+      // docName: '',
       visible: false,
       importBtnDisabled: false,
       loading: false,
@@ -112,13 +115,13 @@ export default {
   },
 
   mounted() {
-    this.allDocs();
+    this.allDocs()
   },
 
   methods: {
 
     addDocs() {
-      this.visible = true;
+      this.visible = true
       
     },
 
@@ -174,7 +177,6 @@ export default {
     allDocs() {
       this.$axios.get("http://localhost:8080/docs/" + this.page)
       .then(res => {
-        console.log(res)
         if (res.data.code == 0) {
           let ret = res.data.data
           this.docData = ret.records
@@ -189,16 +191,16 @@ export default {
       })
     },
 
-    // 预览
-    previewById(index, row) {},
-
     // 下载
-    downloadById(index, row) {},
+    downloadById(index, row) {
+      console.log(row.docUrl)
+      window.location.href = row.docUrl
+    },
 
     // 取消
     cancelAdd() {
       this.visible = false
-
+      this.addDocData = {}
     },
 
     handleSizeChange(v) {
@@ -219,8 +221,6 @@ export default {
   }
 };
 </script>
-
-
 
 <style lang="less" scoped>
 

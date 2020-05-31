@@ -13,7 +13,6 @@ import '@/assets/iconfonts/fonts/iconfont.css';
 // 引入echarts
 import echarts from 'echarts'
 
-
 // 引入全局样式
 import './assets/css/global.css';
 import { Button, Select, Form, Radio, Table, Container, Message, Pagination, Dialog, Autocomplete,

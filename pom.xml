@@ -44,19 +44,6 @@
             <version>2.10.5</version>
         </dependency>
 
-        <!--文档在线查看-->
-<!--        <dependency>-->
-<!--            <groupId>com.zhuozhengsoft</groupId>-->
-<!--            <artifactId>pageoffice</artifactId>-->
-<!--            <version>4.6.0.3</version>-->
-<!--        </dependency>-->
-        <dependency>
-            <groupId>com.zhuozhengsoft</groupId>
-            <artifactId>pageoffice</artifactId>
-            <version>4.5.0.10</version>
-        </dependency>
-
-
         <!--阿里云OSS对象存储-->
         <dependency>
             <groupId>com.aliyun.oss</groupId>

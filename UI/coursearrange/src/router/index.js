@@ -21,6 +21,7 @@ import StudentList from '@/manager/components/StudentList';
 import ClassTaskList from '@/manager/components/ClassTaskList';
 import ClassManager from '@/manager/components/ClassManager';
 import UpdatePass from '@/pages/components/UpdatePass';
+import StudentDoc from '@/home/components/StudentDoc';
 
 Vue.use(Router)
 
@@ -133,6 +134,11 @@ export default new Router({
           name: 'Exercise',
           component: Exercise
         },
+        {
+          path: '/studentdoc',
+          name: 'StudentDoc',
+          component: StudentDoc
+        }
       ]
     }
   ]
