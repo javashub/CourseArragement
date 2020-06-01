@@ -28,6 +28,7 @@
       <el-table-column prop="classNo" label="班级" fixed width="100"></el-table-column>
       <el-table-column prop="age" label="年龄" fixed width="80"></el-table-column>
       <el-table-column prop="telephone" label="电话" fixed width="100"></el-table-column>
+      <el-table-column prop="email" label="邮件" fixed width="150"></el-table-column>
       <el-table-column prop="address" label="地址"></el-table-column>
 
       <el-table-column prop="operation" label="操作">
@@ -63,6 +64,9 @@
         </el-form-item>
         <el-form-item label="手机" prop="telephone">
           <el-input v-model="editFormData.telephone" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="邮件" prop="email">
+          <el-input v-model="editFormData.email" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="地址" prop="address">
           <el-input v-model="editFormData.address" autocomplete="off"></el-input>
@@ -130,9 +134,8 @@ export default {
         realname: [{ required: true, message: "请输入姓名", trigger: "blur" }],
         grade: [{ required: true, message: "请输入年级", trigger: "blur" }],
         classNo: [{ required: true, message: "请输入班级", trigger: "blur" }],
-        telephone: [
-          { required: true, message: "请输入联系电话", trigger: "blur" }
-        ],
+        telephone: [{ required: true, message: "请输入联系电话", trigger: "blur" }],
+        email: [{ required: true, message: "请输入邮件", trigger: "blur" }],
         address: [{ required: true, message: "请输入地址", trigger: "blur" }],
         age: [{ required: true, message: "请输入年龄", trigger: "blur" }]
       }
@@ -159,7 +162,7 @@ export default {
     // 查询班级信息
     queryClass() {
       this.$axios
-        .get("http://localhost:8080/queryclassbygrade/" + this.value1)
+        .get("http://localhost:8080/class-grade/" + this.value1)
         .then(res => {
           let ret = res.data.data
           this.classNo.splice(0, this.classNo.length)
@@ -180,7 +183,7 @@ export default {
     queryStudentByClass() {
       this.$axios
         .get(
-          "http://localhost:8080/querystudentbyclass/" + this.page + "/" + this.value2
+          "http://localhost:8080/student-class/" + this.page + "/" + this.value2
         )
         .then(res => {
           console.log(res)
@@ -273,7 +276,7 @@ export default {
      */
     modifyStudent(modifyData) {
       this.$axios
-        .post("http://localhost:8080/student/modifystudent/" + this.editFormData.id, modifyData)
+        .post("http://localhost:8080/student/modify/" + this.editFormData.id, modifyData)
         .then(res => {
           this.$message({ message: "更新成功", type: "success" })
           this.allStudent()

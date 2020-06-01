@@ -30,7 +30,6 @@ public class DocController {
      */
     @PostMapping("/uploaddocs")
     public ServerResponse uploadDocs(MultipartFile file) {
-        System.out.println(file);
         return docService.uploadDocs(file);
     }
 

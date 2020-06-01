@@ -19,17 +19,20 @@ import org.springframework.stereotype.Controller;
  * @since 2020-03-23
  */
 @RestController
+@RequestMapping("/classroom")
 public class ClassroomController {
 
 
     @Autowired
     private ClassroomService classroomService;
 
+    // TODO 添加教室，添加时需要查询所有的教学楼，选择教室所在教学楼并判断教室是否已经存在
+
     /**
      * 带分页显示教室列表
      * @return
      */
-    @GetMapping("/queryclassroom/{page}")
+    @GetMapping("/{page}")
     public ServerResponse queryClassroom(@PathVariable("page")Integer page,
                                          @RequestParam(defaultValue = "10")Integer limit) {
         Page<Classroom> pages = new Page<>(page, limit);
@@ -46,7 +49,7 @@ public class ClassroomController {
      * @param car
      * @return
      */
-    @PostMapping("/addclassroom")
+//    @PostMapping("/add")
     public ServerResponse addClassroom(@RequestBody ClassroomAddRequest car) {
 //        Classroom classroom = new Classroom();
 //        classroom.setClassroomNo(car.getClassroomNo());
@@ -65,7 +68,7 @@ public class ClassroomController {
      * @param id
      * @return
      */
-    @DeleteMapping("/deleteclassroom/{id}")
+    @DeleteMapping("/delete/{id}")
     public ServerResponse deleteClassroomById(@PathVariable("id") Integer id) {
         boolean b = classroomService.removeById(id);
         if (b) {
@@ -79,7 +82,7 @@ public class ClassroomController {
      * @param id
      * @return
      */
-    @GetMapping("/queryclassroombyid/{id}")
+    @GetMapping("/query/{id}")
     public ServerResponse queryClassroomByID(@PathVariable("id") Integer id) {
 
         return ServerResponse.ofSuccess(classroomService.getById(id));
@@ -90,7 +93,7 @@ public class ClassroomController {
      * @param classroom
      * @return
      */
-    @PostMapping("/modifyclassroom")
+    @PostMapping("/modify")
     public ServerResponse modifyClassroom(@RequestBody Classroom classroom) {
 
         return classroomService.updateById(classroom) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");

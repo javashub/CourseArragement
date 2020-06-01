@@ -39,7 +39,7 @@ public class CoursePlanController {
      * @param classNo
      * @return
      */
-    @GetMapping("/querycourseplan/{classno}")
+    @GetMapping("/courseplan/{classno}")
     public ServerResponse queryCoursePlanByClassNo(@PathVariable("classno") String classNo) {
         QueryWrapper<CoursePlan> wrapper = new QueryWrapper<CoursePlan>().eq("class_no", classNo).orderByAsc("class_time");
         List<CoursePlan> coursePlanList = coursePlanService.list(wrapper);

@@ -84,6 +84,7 @@ public class StudentController {
         student.setGrade(stu.getGrade());
         student.setAddress(stu.getAddress());
         student.setTelephone(stu.getTelephone());
+        student.setEmail(stu.getEmail());
         boolean b = studentService.save(student);
         if (b) {
             return ServerResponse.ofSuccess("注册成功", student);

@@ -51,7 +51,6 @@ public class CourseInfoController {
      */
     @PostMapping("/add")
     public ServerResponse addCourseInfo(@RequestBody CourseInfo cinfo) {
-//        CourseInfoAddRequest c = new CourseInfoAddRequest();
         boolean b = cis.save(cinfo);
         if (b) {
             return ServerResponse.ofSuccess("添加成功");

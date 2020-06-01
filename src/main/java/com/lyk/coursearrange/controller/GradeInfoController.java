@@ -7,17 +7,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * <p>
- *  前端控制器
- * </p>
- *
  * @author lequal
  * @since 2020-03-20
  */
 @RestController
-@RequestMapping("/gradeInfo")
+@RequestMapping("/grade")
 public class GradeInfoController {
-
 
 
 }

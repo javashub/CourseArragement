@@ -115,6 +115,7 @@ export default {
 
     // 根据关键字搜索交材信息,有问题呀
     searchCourse() {
+      this.page = 1
       this.$axios
         .get("http://localhost:8080/courseinfo/search/" + this.page + "/" + this.keyword)
         .then(res => {

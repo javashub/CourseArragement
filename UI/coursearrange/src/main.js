@@ -17,13 +17,15 @@ import echarts from 'echarts'
 import './assets/css/global.css';
 import { Button, Select, Form, Radio, Table, Container, Message, Pagination, Dialog, Autocomplete,
          Submenu, Menu, MenuItem, MenuItemGroup, Input, Option, FormItem, TableColumn, Row,
-         Icon, Dropdown, DropdownMenu, DropdownItem, Header, Aside, Main, Footer, Popover, Upload} from 'element-ui';
+         Icon, Dropdown, DropdownMenu, DropdownItem, Header, Aside, Main, Footer, Popover, Upload,
+         MessageBox} from 'element-ui';
 
 Vue.config.productionTip = false;
 Vue.prototype.$axios = axios;
 Vue.prototype.$message = Message;
 Vue.prototype.$echarts = echarts
-
+Vue.prototype.$confirm = MessageBox.confirm;
+Vue.prototype.$prompt = MessageBox.prompt;
 
 // Vue.use(ElementUI);
 Vue.use(Button);

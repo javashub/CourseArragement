@@ -24,6 +24,8 @@ public class TeacherAddRequest {
 
     private String telephone;
 
+    private String email;
+
     private String address;
 
     private Integer age;

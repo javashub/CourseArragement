@@ -78,7 +78,7 @@ public class TeacherController {
      * @param teacher
      * @return
      */
-    @PostMapping("/modifyteacher")
+    @PostMapping("/modify")
     public ServerResponse modifyTeacher(@RequestBody Teacher teacher) {
 
         boolean b = teacherService.updateById(teacher);
@@ -95,7 +95,7 @@ public class TeacherController {
      * @param limit
      * @return
      */
-    @GetMapping("/queryteacher/{page}")
+    @GetMapping("/query/{page}")
     public ServerResponse queryTeacher(@PathVariable(value = "page") Integer page,
                                        @RequestParam(defaultValue = "10") Integer limit) {
         Page<Teacher> pages = new Page<>(page, limit);
@@ -108,7 +108,7 @@ public class TeacherController {
      * 根据姓名关键字搜索讲师
      * @return
      */
-    @GetMapping("/searchteacher/{page}/{keyword}")
+    @GetMapping("/search/{page}/{keyword}")
     public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @PathVariable("page") Integer page,
                                         @RequestParam(defaultValue = "10") Integer limit) {
         QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
@@ -139,7 +139,7 @@ public class TeacherController {
      * 用于给讲师生成讲师编号,返回一个讲师编号
      * @return
      */
-    @GetMapping("/teacherno")
+    @GetMapping("/no")
     public ServerResponse getTeacherNo() {
 
         List<Teacher> teacherList = teacherService.list(new QueryWrapper<Teacher>().select().orderByDesc("teacher_no"));
@@ -153,11 +153,12 @@ public class TeacherController {
      * @param t
      * @return
      */
-    @PostMapping("/addteacher")
+    @PostMapping("/add")
     public ServerResponse addTeacher(@RequestBody TeacherAddRequest t) {
         Teacher teacher = new Teacher();
         teacher.setTeacherNo(t.getTeacherNo());
         teacher.setUsername(t.getUsername());
+        teacher.setEmail(t.getEmail());
         // 每一个新增的讲师密码默认是123456
         teacher.setPassword("123456");
         teacher.setRealname(t.getRealname());
@@ -173,9 +174,29 @@ public class TeacherController {
         return ServerResponse.ofError("添加讲师失败！");
     }
 
+    /**
+     * 根据ID封禁、解封讲师账号，状态为0时正常，1时封禁
+     * @param id
+     * @return
+     */
+    @GetMapping("/lock/{id}")
+    public ServerResponse lockTeacher(@PathVariable("id") Integer id) {
+
+        // 先查出来再修改，
+        Teacher teacher = teacherService.getById(id);
+        // 修改
+        if (teacher.getStatus() == 0) {
+            teacher.setStatus(1);
+        } else {
+            teacher.setStatus(0);
+        }
+        teacherService.updateById(teacher);
+        return ServerResponse.ofSuccess("操作成功！");
+    }
+
 
     /**
-     * 管理员修改密码
+     * 修改密码
      * @param passwordVO
      * @return
      */
@@ -201,7 +222,7 @@ public class TeacherController {
      * 查询所有讲师
      * @return
      */
-    @GetMapping("/allteacher")
+    @GetMapping("/all")
     public ServerResponse getAllTeacher() {
 
         return ServerResponse.ofSuccess(teacherService.list());

@@ -19,6 +19,7 @@
       <el-table-column prop="teach" label="学科" fixed width="100"></el-table-column>
       <el-table-column prop="age" label="年龄" fixed width="80"></el-table-column>
       <el-table-column prop="telephone" label="电话" fixed width="100"></el-table-column>
+      <el-table-column prop="email" label="邮件" fixed width="150"></el-table-column>
       <el-table-column prop="address" label="地址"></el-table-column>
 
       <el-table-column prop="operation" label="操作">
@@ -49,6 +50,9 @@
         </el-form-item>
         <el-form-item label="手机" prop="telephone">
           <el-input v-model="editFormData.telephone" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="邮件" prop="email">
+          <el-input v-model="editFormData.email" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="地址" prop="address">
           <el-input v-model="editFormData.address" autocomplete="off"></el-input>
@@ -83,6 +87,9 @@
         </el-form-item>
         <el-form-item label="手机" prop="telephone">
           <el-input v-model="addTeacherForm.telephone" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="邮件" prop="email">
+          <el-input v-model="addTeacherForm.email" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="地址" prop="address">
           <el-input v-model="addTeacherForm.address" autocomplete="off"></el-input>
@@ -127,7 +134,7 @@ export default {
       addTeacherRules: {
         username: [
           { required: true, message: '请输入昵称', trigger: 'blur' },
-          { min: 3, max: 12, message: '长度在 3 到 12 个字符', trigger: 'blur' }
+          { min: 2, max: 12, message: '长度在 2 到 12 个字符', trigger: 'blur' }
         ],
         realname: [
           { required: true, message: '请输入真实姓名', trigger: 'blur' },
@@ -141,6 +148,9 @@ export default {
         telephone: [
           { required: true, message: '请输入手机号码', trigger: 'blur' },
         ],
+        email: [
+          { required: true, message: '请输入邮件', trigger: 'blur' },
+        ],
         address: [
           { required: true, message: '请输入地址', trigger: 'blur' },
         ],
@@ -153,6 +163,7 @@ export default {
         username: '',
         realname: '',
         jobtitle: '',
+        email: '',
         teach: '',
         telephone: '',
         address: '',
@@ -168,7 +179,7 @@ export default {
 
     addTeacher() {
       // 在弹出添加表单之前从后台获取讲师的编号
-      this.$axios.get("http://localhost:8080/teacher/teacherno")
+      this.$axios.get("http://localhost:8080/teacher/no")
       .then(res => {
         if (res.data.code == 0) {
           let number = parseInt(res.data.message) + 1
@@ -185,7 +196,7 @@ export default {
     // 提交添加讲师的表单
     addCommit() {
       console.log(this.addTeacherForm)
-      this.$axios.post("http://localhost:8080/teacher/addteacher", this.addTeacherForm)
+      this.$axios.post("http://localhost:8080/teacher/add", this.addTeacherForm)
       .then(res => {
         
         if (res.data.code == 0) {
@@ -235,7 +246,7 @@ export default {
      */
     modifyTeacher(modifyData) {
       this.$axios
-        .post("http://localhost:8080/teacher/modifyteacher/" , modifyData)
+        .post("http://localhost:8080/teacher/modify" , modifyData)
         .then(res => {
           this.$message({ message: "更新成功", type: "success" });
           this.allTeacher();
@@ -250,8 +261,9 @@ export default {
      * 关键词搜索讲师
      */
     searchTeacher() {
+      this.page = 1
       this.$axios
-        .get("http://localhost:8080/teacher/searchteacher/" + this.page + "/" + this.keyword)
+        .get("http://localhost:8080/teacher/search/" + this.page + "/" + this.keyword)
         .then(res => {
           console.log(res)
           let ret = res.data.data
@@ -284,7 +296,7 @@ export default {
      */
     allTeacher() {
       this.$axios
-        .get("http://localhost:8080/teacher/queryteacher/" + this.page)
+        .get("http://localhost:8080/teacher/query/" + this.page)
         .then(res => {
           let ret = res.data.data;
           this.teacherData = ret.records;

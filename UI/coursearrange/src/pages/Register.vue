@@ -48,6 +48,8 @@
         </div>
         <!-- 联系电话 -->
         <el-input class="ele" placeholder="联系电话" v-model="studentRegForm.telephone" clearable></el-input>
+        <!-- 邮件 -->
+        <el-input class="ele" placeholder="电子邮件" v-model="studentRegForm.email" clearable></el-input>
         <!-- 地址 -->
         <el-input class="ele" placeholder="家庭住址" v-model="studentRegForm.address" clearable></el-input>
         <!-- 按钮 -->
@@ -93,6 +95,7 @@ export default {
         realname: '',
         telephone: '',
         address: '',
+        email: '',
         options: [
           {
             value: '01',
@@ -125,6 +128,9 @@ export default {
         ],
         studentNo: [
           { required: true, message: '请先给自己申请个学号', trigger: 'blur' },
+        ],
+        email: [
+          { required: true, message: '请输入邮件', trigger: 'blur' },
         ]
       }
     }
@@ -177,7 +183,8 @@ export default {
           grade: this.studentRegForm.gradeName,
           studentNo: this.studentRegForm.studentNo,
           telephone: this.studentRegForm.telephone,
-          address: this.studentRegForm.address
+          address: this.studentRegForm.address,
+          email: this.studentRegForm.email
         })
         .then(res => {
           // 注册成功

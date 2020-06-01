@@ -134,7 +134,7 @@ export default {
     // 查询班级编号，班级名
     queryClass() {
       this.$axios
-        .get("http://localhost:8080/queryclassbygrade/" + this.value2)
+        .get("http://localhost:8080/class-grade/" + this.value2)
         .then(res => {
           //alert(this.value2)
           let r = res.data.data;
@@ -158,9 +158,8 @@ export default {
         this.classTableData.courses[index].splice(0,this.classTableData.courses[index].length)
       })
       this.$axios
-        .get("http://localhost:8080/querycourseplan/" + this.value3)
+        .get("http://localhost:8080/courseplan/" + this.value3)
         .then(res => {
-          console.log(res)
           let courseData = res.data.data;
           let level = 0;
           let times = 0;
@@ -172,7 +171,6 @@ export default {
               index = index - 1;
             }
             else{
-              console.log(index,level,times);
               
               this.classTableData.courses[level].push(item.teacher.realname + "-" + item.courseInfo.courseName + "(" + item.classroomNo + ")");
             }
@@ -181,7 +179,6 @@ export default {
             }
           }
           this.$message({message:'查询成功', type: 'success'})
-          console.log(this.classTableData.courses)
         })
     },
 

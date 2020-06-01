@@ -113,7 +113,7 @@ export default {
      */
     modifyClassroom(modifyData) {
       this.$axios
-        .post("http://localhost:8080/modifyclassroom/", modifyData)
+        .post("http://localhost:8080/modify", modifyData)
         .then(res => {
           this.$message({ message: "更新成功", type: "success" })
           this.allClassroom()
@@ -129,7 +129,7 @@ export default {
      */
     deleteClassroomById(id) {
       this.$axios
-        .delete("http://localhost:8080/deleteclassroom/" + id)
+        .delete("http://localhost:8080/delete/" + id)
         .then(res => {
           this.allClassroom();
           this.$message({message:'删除成功', type: 'success'})
@@ -142,7 +142,7 @@ export default {
     // 获取所有教室，带分页
     allClassroom() {
       this.$axios
-        .get("http://localhost:8080/queryclassroom/" + this.page)
+        .get("http://localhost:8080/classroom/" + this.page)
         .then(res => {
           console.log(res)
           if (res.data.code == 0) {

@@ -137,6 +137,7 @@ export default {
       exerciseData: [],
       page: 1,
       total: 0,
+      pageSize: 10,
       exerciseAdd: {
         categoryId: '',
         classNo: '00000000',
@@ -174,6 +175,10 @@ export default {
     handleCurrentChange(v) {
       this.page = v
       this.allExercise()
+    },
+
+    handleSizeChange() {
+
     },
 
     // 提交添加题目

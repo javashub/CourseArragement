@@ -41,21 +41,22 @@ public class ClassInfoController {
      * @param limit
      * @return
      */
-    @GetMapping("/queryclassinfobypage/{page}")
-    public ServerResponse queryClassInfo(@PathVariable(value = "page") Integer page,
-                                         @RequestParam(defaultValue = "10") Integer limit) {
-        Page<ClassInfo> pages = new Page<>(page, limit);
-        QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>().orderByDesc("remark");
-        IPage<ClassInfo> iPage = classInfoService.page(pages, wrapper);
-        return ServerResponse.ofSuccess(iPage);
-    }
+//    @GetMapping("/queryclassinfobypage/{page}")
+//    public ServerResponse queryClassInfo(@PathVariable(value = "page") Integer page,
+//                                         @RequestParam(defaultValue = "10") Integer limit) {
+//        System.out.println("*******************************************");
+//        Page<ClassInfo> pages = new Page<>(page, limit);
+//        QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>().orderByDesc("remark");
+//        IPage<ClassInfo> iPage = classInfoService.page(pages, wrapper);
+//        return ServerResponse.ofSuccess(iPage);
+//    }
 
     /**
      * 根据年级查询所有班级
      * @param grade
      * @return
      */
-    @GetMapping("/queryclassbygrade/{grade}")
+    @GetMapping("/class-grade/{grade}")
     public ServerResponse queryClass(@PathVariable("grade") String grade) {
         QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>().eq("remark", grade);
         List<ClassInfo> classInfoList = classInfoService.list(wrapper);
@@ -70,7 +71,7 @@ public class ClassInfoController {
      * @param limit
      * @return
      */
-    @GetMapping("/querystudentbyclass/{page}/{classNo}")
+    @GetMapping("/student-class/{page}/{classNo}")
     public ServerResponse queryStudentByClass(@PathVariable("page") Integer page,
                                               @PathVariable("classNo") String classNo,
                                               @RequestParam(defaultValue = "10") Integer limit) {
@@ -104,6 +105,10 @@ public class ClassInfoController {
         }
         return ServerResponse.ofSuccess(map);
     }
+
+    // TODO 编辑班级
+
+    // TODO 删除班级
 
     /**
      * 添加班级

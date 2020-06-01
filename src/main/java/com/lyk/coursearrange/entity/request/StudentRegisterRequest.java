@@ -28,4 +28,6 @@ public class StudentRegisterRequest {
 
     private String telephone;
 
+    private String email;
+
 }

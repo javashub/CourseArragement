@@ -102,6 +102,7 @@ export default {
       page: 1,
       pageSize: 10,
       total: 0,
+      value1: '',
       value2: '',
       grade: [
         {
@@ -154,13 +155,13 @@ export default {
 
     // 查询所有讲师
     allTeacher() {
-      this.$axios.get("http://localhost:8080/teacher/allteacher")
+      this.$axios.get("http://localhost:8080/teacher/all")
       .then(res => {
         console.log(res)
         if (res.data.code == 0) {
           let ret = res.data.data
           this.teacher.splice(0, this.teacher.length)
-          this.value2 = ""
+          this.value2 = ''
           ret.map(v => {
             this.teacher.push({
               value: v.id,
@@ -181,7 +182,7 @@ export default {
       this.allClassInfo();
     },
 
-    // 有选择年级的时候调用
+    // 根据年级查询班级
     queryClassByGrade() {
       this.$axios
         .get(
@@ -200,7 +201,7 @@ export default {
         .catch(error => {});
     },
 
-    // 查询所有班级，分页
+    // 分页查询所有班级
     allClassInfo() {
       this.$axios
         .get("http://localhost:8080/queryclassinfo/" + this.page)

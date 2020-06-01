@@ -30,8 +30,7 @@ public class LocationInfoController {
      * @return
      */
     @PostMapping("/setteacharea")
-    public ServerResponse setTeachArea(@RequestBody()LocationSetVO l) {
-        System.out.println(l + "=============");
+    public ServerResponse setTeachArea(@RequestBody() LocationSetVO l) {
         QueryWrapper wrapper = new QueryWrapper();
         wrapper.eq("teachbuild_no", l.getTeachBuildNo());
         wrapper.eq("grade_no", l.getGradeNo());
@@ -60,6 +59,21 @@ public class LocationInfoController {
         map.put("records", list);
         map.put("total", total);
         return ServerResponse.ofSuccess(map);
+    }
+
+
+    /**
+     * 根据id删除教学区域信息
+     * @param id
+     * @return
+     */
+    @DeleteMapping("/location/delete/{id}")
+    public ServerResponse delete(@PathVariable("id") Integer id) {
+        boolean b = lis.removeById(id);
+        if (b) {
+            return ServerResponse.ofSuccess("删除成功");
+        }
+        return ServerResponse.ofError("删除失败");
     }
 }
 
