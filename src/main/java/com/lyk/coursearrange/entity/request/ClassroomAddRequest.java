@@ -23,10 +23,13 @@ public class ClassroomAddRequest {
     /**
      * 所属教学楼
      */
-    private String teachbuildingNo;
+    private String teachbuildNo;
 
     /**
      * 教室容量
      */
     private Integer capacity;
+
+
+    private String remark;
 }

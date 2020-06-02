@@ -1,5 +1,8 @@
 <template>
   <div>
+    <div class="add-button">
+      <el-button type="primary" @click="addRoom()">添加</el-button>
+    </div>
     <!-- 数据显示 -->
     <el-table :data="classroomData" size="mini" :stripe="true" :highlight-current-row="true">
       <el-table-column label="序号" type="selection"></el-table-column>
@@ -19,7 +22,7 @@
     </el-table>
 
     <!-- 弹出表单编辑教室 -->
-    <el-dialog title="编辑教学楼" :visible.sync="visibleForm">
+    <el-dialog title="" :visible.sync="visibleForm">
       <el-form :model="editFormData" label-position="left" label-width="80px" :rules="editFormRules">
         <el-form-item label="编号" prop="classroomNo">
           <el-input v-model="editFormData.classroomNo" autocomplete="off"></el-input>
@@ -33,7 +36,7 @@
         <el-form-item label="容量" prop="capacity">
           <el-input v-model="editFormData.capacity" autocomplete="off"></el-input>
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
+        <el-form-item label=" 备注" prop="remark">
           <el-input v-model="editFormData.remark" autocomplete="off"></el-input>
         </el-form-item>
       </el-form>
@@ -66,6 +69,7 @@ export default {
       page: 1,
       pageSize: 10,
       total: 0,
+      type: 1,
       editFormData: [],
       visibleForm: false,
       editFormRules: {
@@ -84,18 +88,38 @@ export default {
       }
     };
   },
+  computed: {
+    isAdd: () => {
+      return true;
+    }
+  },
   mounted() {
     this.allClassroom()
   },
   methods: {
+
+    addRoom() {
+      this.editFormData = {}
+      this.visibleForm = true
+      this.type = 2
+    },
+
     commit() {
-      this.modifyClassroom(this.editFormData)
+      if (this.type === 1) {
+        this.modifyClassroom(this.editFormData)
+      } else {
+        alert('添加')
+        this.addClassroom(this.editFormData)
+      } 
+      
     },
 
     deleteById(index, row) {
       this.deleteClassroomById(row.id)
     },
+
     editById(index, row) {
+      this.type = 1
       let modifyId = row.id
       this.editFormData = row
       this.visibleForm = true
@@ -109,15 +133,40 @@ export default {
     },
 
     /**
+     * 添加教室
+     */
+    addClassroom(modifyData) {
+      this.$axios
+        .post("http://localhost:8080/classroom/add", modifyData)
+        .then(res => {
+          if (res.data.code == 0) {
+            this.$message({ message: "添加成功", type: "success" })
+            this.allClassroom()
+            this.visibleForm = false
+          } else {
+            this.$message.error(res.data.message)
+          }
+          
+        })
+        .catch(error => {
+          this.$message.error("更新失败")
+        });
+    },
+
+    /**
      * 根据ID更新教室
      */
     modifyClassroom(modifyData) {
       this.$axios
         .post("http://localhost:8080/modify", modifyData)
         .then(res => {
-          this.$message({ message: "更新成功", type: "success" })
-          this.allClassroom()
-          this.visibleForm = false
+          if (res.data.code == 0) {
+            this.$message({ message: "更新成功", type: "success" })
+            this.allClassroom()
+            this.visibleForm = false
+          } else {
+            this.$message.error(res.data.message)
+          }
         })
         .catch(error => {
           this.$message.error("更新失败")
@@ -129,10 +178,14 @@ export default {
      */
     deleteClassroomById(id) {
       this.$axios
-        .delete("http://localhost:8080/delete/" + id)
+        .delete("http://localhost:8080/classroom/delete/" + id)
         .then(res => {
-          this.allClassroom();
-          this.$message({message:'删除成功', type: 'success'})
+          if (res.data.code == 0) {
+            this.allClassroom();
+            this.$message({message:'删除成功', type: 'success'})
+          } else {
+            this.$message.error(res.data.message)
+          }
         })
         .catch(error => {
           this.$message.error("删除失败");
@@ -162,5 +215,10 @@ export default {
 <style lang="less" scoped>
 .footer-button {
   margin-top: 10px;
+}
+
+.add-button {
+  margin-bottom: 5px;
+  text-align: left;
 }
 </style>

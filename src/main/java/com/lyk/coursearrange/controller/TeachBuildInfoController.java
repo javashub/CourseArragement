@@ -14,10 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 测试完成2020.03.22
- *
- *
- *
  * @author lequal
  * @since 2020-03-20
  */
@@ -56,7 +52,7 @@ public class TeachBuildInfoController {
     }
 
     /**
-     * 根据id删除教室
+     * 根据id删除教学楼
      * @param id
      * @return
      */
@@ -65,18 +61,19 @@ public class TeachBuildInfoController {
 
         boolean b = teachBuildInfoService.removeById(id);
         if (b) {
-            return ServerResponse.ofSuccess("删除教室成功");
+            return ServerResponse.ofSuccess("删除成功");
         }
         return ServerResponse.ofError("删除失败");
     }
 
     /**
-     * 添加教室
+     * 添加教学楼
      * @param t
      * @return
      */
     @PostMapping("/add")
     public ServerResponse addTeachbuilding(@RequestBody TeachbuildAddRequest t) {
+        System.out.println(t);
         TeachbuildInfo t1 = new TeachbuildInfo();
         t1.setTeachBuildNo(t.getTeachBuildNo());
         t1.setTeachBuildName(t.getTeachBuildName());
@@ -89,13 +86,13 @@ public class TeachBuildInfoController {
     }
 
     /**
-     * 根据id查询教室信息
+     * 根据id查询
      * @param id
      * @return
      */
     @GetMapping("/select/{id}")
     public ServerResponse queryTeachBuildingById(@PathVariable("id") Integer id) {
-        // 返回当前需要更新的对象
+
         return ServerResponse.ofSuccess(teachBuildInfoService.getById(id));
     }
 
@@ -108,8 +105,7 @@ public class TeachBuildInfoController {
     @PostMapping("/modify/{id}")
     public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody TeachbuildInfo t) {
 
-        QueryWrapper<TeachbuildInfo> wrapper = new QueryWrapper<TeachbuildInfo>().eq("id", id);
-        boolean b = teachBuildInfoService.update(t, wrapper);
+        boolean b = teachBuildInfoService.update(t, new QueryWrapper<TeachbuildInfo>().eq("id", id));
 
         if (b) {
             return ServerResponse.ofSuccess("更新成功");

@@ -17,6 +17,7 @@
       </el-select>
       <el-button class="add-button" type="primary" @click="visible2 = true">新增题目</el-button>
       <el-button class="add-button" type="primary" @click="visible1 = true">新增类型</el-button>
+      <el-button class="add-button" type="primary" @click="putTrain">随机出题</el-button>
     </div>
     <div class="table">
       <el-table
@@ -142,7 +143,7 @@ export default {
         categoryId: '',
         classNo: '00000000',
         exerciseTitle: '',
-        multiselect: '',
+        multiselect: 0,
         answer: '',
         optionA: '',
         optionB: '',
@@ -152,6 +153,7 @@ export default {
         optionF: '',
         fraction: ''
       },
+      type: '',
       total: 0,
       page: 1,
       value: "",
@@ -172,9 +174,20 @@ export default {
     this.allExercise();
   },
   methods: {
+
+    // 随机出题
+    putTrain() {
+
+    },
+
     handleCurrentChange(v) {
-      this.page = v
-      this.allExercise()
+      if (this.type == 1) {
+        this.page = v
+        this.allExercise()
+      } else {
+        this.page = v
+        this.queryExerciseByCategory()
+      }
     },
 
     handleSizeChange() {
@@ -243,9 +256,10 @@ export default {
         .get("http://localhost:8080/exercise/" + this.page)
         .then(res => {
           if (res.data.code == 0) {
-            let ret = res.data.data;
-            this.exerciseData = ret.records;
-            this.total = ret.total;
+            this.type = 1
+            let ret = res.data.data
+            this.exerciseData = ret.records
+            this.total = ret.total
           }
         })
         .catch(error => {});
@@ -256,9 +270,10 @@ export default {
         .get("http://localhost:8080/exercise/" + this.value + "/" + this.page)
         .then(res => {
           if (res.data.code == 0) {
-            let ret = res.data.data;
-            this.exerciseData = ret.records;
-            this.total = ret.total;
+            this.type = 2
+            let ret = res.data.data
+            this.exerciseData = ret.records
+            this.total = ret.total
           }
         })
         .catch(error => {});

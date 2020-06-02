@@ -1,14 +1,11 @@
 package com.lyk.coursearrange.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.dao.StudentDao;
-import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;

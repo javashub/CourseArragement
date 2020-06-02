@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Classroom;
+import com.lyk.coursearrange.entity.TeachbuildInfo;
 import com.lyk.coursearrange.entity.request.ClassroomAddRequest;
 import com.lyk.coursearrange.service.ClassroomService;
+import com.lyk.coursearrange.service.TeachbuildInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +27,8 @@ public class ClassroomController {
 
     @Autowired
     private ClassroomService classroomService;
+    @Autowired
+    private TeachbuildInfoService t;
 
     // TODO 添加教室，添加时需要查询所有的教学楼，选择教室所在教学楼并判断教室是否已经存在
 
@@ -49,15 +53,22 @@ public class ClassroomController {
      * @param car
      * @return
      */
-//    @PostMapping("/add")
+    @PostMapping("/add")
     public ServerResponse addClassroom(@RequestBody ClassroomAddRequest car) {
-//        Classroom classroom = new Classroom();
-//        classroom.setClassroomNo(car.getClassroomNo());
-//        classroom.setClassroomName(car.getClassroomName());
-//        classroom.setTeachbuildNo(car.getTeachbuildingNo());
-//        classroom.setCapacity(car.getCapacity());
-//        boolean b = classroomService.save(car);
-        if (true) {
+        System.out.println(car);
+        System.out.println("======================");
+        Classroom c = new Classroom();
+        TeachbuildInfo teachbuildInfo = t.getOne(new QueryWrapper<TeachbuildInfo>().eq("teach_build_no", car.getTeachbuildNo()));
+        if (teachbuildInfo == null) {
+            return ServerResponse.ofError("教学楼编号不存在，请重新选择");
+        }
+        c.setCapacity(car.getCapacity());
+        c.setClassroomNo(car.getClassroomNo());
+        c.setTeachbuildNo(car.getTeachbuildNo());
+        c.setClassroomName(car.getClassroomName());
+        c.setRemark(car.getRemark());
+        boolean b = classroomService.save(c);
+        if (b) {
             return ServerResponse.ofSuccess("添加成功");
         }
         return ServerResponse.ofError("添加失败");

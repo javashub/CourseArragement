@@ -1,7 +1,9 @@
 <template>
   <div>
     <!-- 添加教学楼 -->
-    
+    <div class="add-button">
+      <el-button type="primary" @click="addTeachbuild">添加</el-button>
+    </div>
     <!-- 教学楼列表 -->
     <el-table :data="teachBuildData" size="mini" :stripe="true" :highlight-current-row="true">
       <el-table-column label="序号" type="selection"></el-table-column>
@@ -19,10 +21,10 @@
     </el-table>
 
     <!-- 弹出表单编辑教学楼 -->
-    <el-dialog title="编辑教学楼" :visible.sync="visibleForm">
+    <el-dialog title="" :visible.sync="visibleForm">
       <el-form :model="editFormData" label-position="left" label-width="80px" :rules="editFormRules">
         <el-form-item label="编号">
-          <el-input v-model="editFormData.teachBuildNo" autocomplete="off" disabled></el-input>
+          <el-input v-model="editFormData.teachBuildNo" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="名称" prop="teachBuildName">
           <el-input v-model="editFormData.teachBuildName" autocomplete="off"></el-input>
@@ -60,9 +62,13 @@ export default {
       page: 1,
       pageSize: 10,
       total: 0,
+      type: 1, // 编辑
       editFormData: [],
       visibleForm: false,
       editFormRules: {
+        teachBuildNo: [
+           { required: true, message: '请输入教学楼编号', trigger: 'blur' },
+        ],
         teachBuildLocation: [
            { required: true, message: '请输入教学楼位置', trigger: 'blur' },
         ],
@@ -79,11 +85,48 @@ export default {
 
   methods: {
 
+    addTeachbuild() {
+      this.visibleForm = true
+      this.type = 2
+      this.editFormData = {}
+    },
+
     /**
      * 提交更新
      */
     commit() {
-      this.modifyTeachBuild(this.editFormData)
+      alert(this.type)
+      if (this.type == 1) {
+        // 编辑
+        alert(this.type)
+        this.modifyTeachBuild(this.editFormData)
+      } else {
+        alert(this.type)
+        // type = 2 添加
+        this.newteachbuild(this.editFormData)
+      }
+      
+    },
+
+    // 添加教学楼
+    newteachbuild(modifyData) {
+      alert('添加')
+      console.log(modifyData);
+      
+      this.$axios
+        .post("http://localhost:8080/teachbuildinfo/add", modifyData)
+        .then(res => {
+          if (res.data.code == 0) {
+            this.$message({ message: "添加成功", type: "success" })
+            this.allTeachBuilding()
+            this.visibleForm = false
+          } else {
+            this.$message.error(res.data.message)
+          }
+        })
+        .catch(error => {
+          this.$message.error("更新失败")
+        });
     },
 
     handleSizeChange() {},
@@ -96,6 +139,7 @@ export default {
       let modifyId = row.id
       this.editFormData = row
       this.visibleForm = true
+      this.type = 1
     },
 
     handleCurrentChange(v) {
@@ -110,9 +154,13 @@ export default {
       this.$axios
         .post("http://localhost:8080/teachbuildinfo/modify/" + this.editFormData.id, modifyData)
         .then(res => {
-          this.$message({ message: "更新成功", type: "success" })
-          this.allTeachBuilding()
-          this.visibleForm = false
+          if (res.data.code == 0) {
+            this.$message({ message: "更新成功", type: "success" })
+            this.allTeachBuilding()
+            this.visibleForm = false
+          } else {
+            this.$message.error(res.data.message)
+          }
         })
         .catch(error => {
           this.$message.error("更新失败")
@@ -124,10 +172,13 @@ export default {
       this.$axios
         .get("http://localhost:8080/teachbuildinfo/list/" + this.page)
         .then(res => {
-          console.log(res.data)
-          let ret = res.data.data
-          this.teachBuildData = ret.records
-          this.total = ret.total
+          if (res.data.code == 0) {
+            let ret = res.data.data
+            this.teachBuildData = ret.records
+            this.total = ret.total
+          } else {
+            this.$message.error(res.data.message)
+          }
         })
         .catch(error => {
           console.log("查询教学楼失败")
@@ -141,8 +192,12 @@ export default {
       this.$axios
         .delete("http://localhost:8080/teachbuildinfo/delete/" + id)
         .then(res => {
-          this.allTeachBuilding()
-          this.$message({message:'删除成功', type: 'success'})
+          if (res.data.code == 0) {
+            this.allTeachBuilding()
+            this.$message({message:'删除成功', type: 'success'})
+          } else {
+            this.$message.error(res.data.message)
+          }
         })
         .catch(error => {
           this.$message.error("删除失败")
@@ -155,5 +210,10 @@ export default {
 <style lang="less" scoped>
 .footer-button {
   margin-top: 10px;
+}
+
+.add-button {
+  margin-bottom: 5px;
+  text-align: left;
 }
 </style>
