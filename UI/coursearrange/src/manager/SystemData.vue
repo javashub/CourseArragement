@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper">
     <!-- 系统数据 -->
-    系统数据，Echarts图表
+    <h1>王总牛逼</h1>
 
   </div>
 </template>
@@ -32,6 +32,6 @@ export default {
   .wrapper {
     height: 400px;
     width: 600px;
-    background-color: aqua;
+    // background-color: aqua;
   }
 </style>

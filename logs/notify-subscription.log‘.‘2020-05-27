@@ -1,0 +1,4 @@
+2020-05-27 09:39:02,988 - configuration key 'file.resource.loader.unicode' has been deprecated in favor of 'resource.loader.file.unicode'
+2020-05-27 09:39:02,990 - configuration key 'file.resource.loader.path' has been deprecated in favor of 'resource.loader.file.path'
+2020-05-27 09:39:02,990 - configuration key 'file.resource.loader.class' has been deprecated in favor of 'resource.loader.file.class'
+2020-05-27 09:39:02,990 - configuration key 'input.encoding' has been deprecated in favor of 'resource.default_encoding'

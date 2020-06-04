@@ -43,8 +43,6 @@ public class AliyunUtil {
         OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
 
         String url = "";
-        Map map = null;
-
         try {
             // 获取输入流
             InputStream inputStream = file.getInputStream();
@@ -64,14 +62,14 @@ public class AliyunUtil {
 
             url = "https://" + bucketName + "." + endpoint + "/" + fileName;
             System.out.println("url========" + url);
-            map = new HashMap();
+            Map<String, Object> map = new HashMap<>();
             map.put("url", url);
             map.put("name", fileName);
             return map;
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return map;
+        return null;
     }
 
     /**

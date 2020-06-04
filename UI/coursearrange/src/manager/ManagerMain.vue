@@ -32,7 +32,7 @@
 
             <el-submenu index="1">
               <template slot="title">
-                <i class="el-icon-setting"></i>排课管理
+                <i class="el-icon-s-data"></i>排课管理
               </template>
               <el-menu-item index="1-1" v-if="!isTeacher">
                 <router-link to="/classtasklist" class="links">课程计划</router-link>
@@ -44,19 +44,22 @@
 
             <el-submenu index="2">
               <template slot="title">
-                <i class="el-icon-setting"></i>课程管理
+                <i class="el-icon-reading"></i>课程管理
               </template>
               <el-menu-item index="2-1">
                 <router-link to="/courseinfolist" class="links">教材列表</router-link>
               </el-menu-item>
               <el-menu-item index="2-2">
-                <router-link to="/onlinecourse" class="links">网课管理</router-link>
+                <router-link to="/onlinecourse" class="links">网课列表</router-link>
+              </el-menu-item>
+              <el-menu-item index="2-3">
+                <router-link to="/onlinecategory" class="links">网课类别</router-link>
               </el-menu-item>
             </el-submenu>
 
             <el-submenu index="3" v-if="!isTeacher">
               <template slot="title">
-                <i class="el-icon-message"></i>讲师管理
+                <i class="el-icon-user"></i>讲师管理
               </template>
               <el-menu-item-group>
                 <el-menu-item index="3-1">
@@ -67,7 +70,7 @@
 
             <el-submenu index="4">
               <template slot="title">
-                <i class="el-icon-menu"></i>班级管理
+                <i class="el-icon-box"></i>班级管理
               </template>
               <el-menu-item-group>
                 <el-menu-item index="4-1">
@@ -78,7 +81,7 @@
 
             <el-submenu index="5">
               <template slot="title">
-                <i class="el-icon-menu"></i>学生管理
+                <i class="el-icon-user"></i>学生管理
               </template>
               <el-menu-item-group>
                 <el-menu-item index="5-1">
@@ -89,7 +92,7 @@
 
             <el-submenu index="6">
               <template slot="title">
-                <i class="el-icon-setting"></i>教学资料
+                <i class="el-icon-notebook-1"></i>教学资料
               </template>
               <el-menu-item index="6-1">
                 <router-link class="links" to="/studydocs">学习文档</router-link>
@@ -104,7 +107,7 @@
 
             <el-submenu index="7" v-if="!isTeacher">
               <template slot="title">
-                <i class="el-icon-setting"></i>教学设施
+                <i class="el-icon-office-building"></i>教学设施
               </template>
               <el-menu-item index="7-1">
                 <router-link class="links" to="/teachbuildinglist">教学楼管理</router-link>
@@ -114,6 +117,14 @@
               </el-menu-item>
               <el-menu-item index="7-3">
                 <router-link to="/setteacharea" class="links">教学区域安排</router-link>
+              </el-menu-item>
+            </el-submenu>
+            <el-submenu index="8">
+              <template slot="title">
+                <i class="el-icon-help"></i>帮助中心
+              </template>
+              <el-menu-item index="8-1">
+                <router-link class="links" >使用说明</router-link>
               </el-menu-item>
             </el-submenu>
           </el-menu>
