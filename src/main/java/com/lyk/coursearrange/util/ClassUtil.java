@@ -101,6 +101,7 @@ public class ClassUtil {
             // 不冲突
             return time;
         } else {
+            // 递归调用导致出现栈溢出
             // 冲突，重新生成随机时间
             return randomTime(gene, geneList);
         }

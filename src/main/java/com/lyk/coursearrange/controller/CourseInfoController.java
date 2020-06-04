@@ -51,7 +51,7 @@ public class CourseInfoController {
      */
     @PostMapping("/add")
     public ServerResponse addCourseInfo(@RequestBody CourseInfo cinfo) {
-        boolean b = cis.save(cinfo);
+        boolean b = cis.saveOrUpdate(cinfo);
         if (b) {
             return ServerResponse.ofSuccess("添加成功");
         }
@@ -105,6 +105,19 @@ public class CourseInfoController {
         Page<CourseInfo> pages = new Page<>(page, limit);
         IPage<CourseInfo> iPage = cis.page(pages, wrapper);
         return ServerResponse.ofSuccess(iPage);
+    }
+
+    /**
+     * 获取添加课程的课程编号
+     * @return
+     */
+    @GetMapping("/get-no")
+    public ServerResponse getNo() {
+        QueryWrapper<CourseInfo> wrapper = new QueryWrapper<CourseInfo>().select("course_no").orderByDesc("course_no");
+        List<CourseInfo> list = cis.list(wrapper);
+        String no = String.valueOf(Integer.parseInt(list.get(0).getCourseNo()) + 1);
+        System.out.println(no + "=========");
+        return ServerResponse.ofSuccess(no);
     }
 }
 

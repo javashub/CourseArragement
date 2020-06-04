@@ -226,7 +226,9 @@ export default {
         if (res.data.code == 0) {
           this.allClassTask()
           this.$message({message: '排课成功', type: 'success'})
+          this.$router.push('/coursetable')
         } else {
+          this.$message.error('排课失败')
           this.$message.error(res.data.message)
         }
       })

@@ -5,6 +5,7 @@
       <el-input placeholder="搜索教材" v-model="keyword" @clear="inputListener" clearable>
         <el-button slot="append" type="primary" icon="el-icon-search" @click="searchCourse">搜索</el-button>
       </el-input>
+      <el-button slot="append" type="primary" @click="addInfo">添加</el-button>
     </div>
     <!-- 上面放一个说明，添加交材按钮 -->
 
@@ -29,7 +30,7 @@
     <!-- 弹出表单编辑教材信息 -->
     <el-dialog title="编辑教材" :visible.sync="visibleForm">
       <el-form :model="editFormData" label-position="left" label-width="80px" :rules="editFormRules">
-        <el-form-item label="课程编号">
+        <el-form-item label="课程编号" prop="courseNo">
           <el-input v-model="editFormData.courseNo" autocomplete="off" disabled></el-input>
         </el-form-item>
         <el-form-item label="课程名称" prop="courseName">
@@ -46,7 +47,7 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="visibleForm = false">取 消</el-button>
+        <el-button @click="cancel">取 消</el-button>
         <el-button type="primary" @click="commit()">提 交</el-button>
       </div>
     </el-dialog>
@@ -72,11 +73,14 @@ export default {
   data() {
     return {
       courseInfoData: [],
-      editFormData: [],
+      editFormData: {
+        courseNo: ''
+      },
       keyword: '',
       page: 1,
       pageSize: 10,
       total: 0,
+      type: 1,
       visibleForm: false,
       editFormRules: {
         courseName: [
@@ -94,7 +98,19 @@ export default {
   methods: {
     // 子页面提交方法
     commit() {
-      this.modifyCourseInfo(this.editFormData)
+      if (this.type == 1) {
+        this.modifyCourseInfo(this.editFormData)
+      } else {
+        this.add()
+      }
+    },
+
+    cancel() {
+      this.visibleForm = false
+      this.editFormData.courseName = ''
+      this.editFormData.courseAttr = ''
+      this.editFormData.publisher = ''
+      this.editFormData.remark = ''
     },
 
     handleSizeChange() {},
@@ -139,6 +155,39 @@ export default {
       let modifyId = row.id
       this.editFormData = row
       this.visibleForm = true
+      this.type = 1
+    },
+
+    addInfo() {
+      this.type = 2 // 添加
+      this.visibleForm = true
+      // this.editFormData = {}
+      this.$axios.get("http://localhost:8080/courseinfo/get-no")
+      .then(res => {
+        if (res.data.code == 0) {
+          // 获取课程编号
+          this.editFormData.courseNo = res.data.message
+        } else {
+          this.$message.error(res.data.message)
+        }
+      })
+      .catch(error => {})
+    },
+
+    // 添加教材
+    add() {
+      this.$axios.post("http://localhost:8080/courseinfo/add", this.editFormData)
+      .then(res => {
+        if (res.data.code == 0) {
+          this.allCourseInfo()
+          this.$message({message:'添加成功', type: 'success'})
+          this.visibleForm = false
+          this.editFormData = {}
+        } else {
+          this.$message.error(res.data.message)
+        }
+      })
+      .catch(error => {})
     },
 
     // 根据id删除教材信息

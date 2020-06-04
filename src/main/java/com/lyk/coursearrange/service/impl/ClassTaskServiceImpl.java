@@ -542,7 +542,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         resultGeneList.addAll(isFixedTimeGeneList);
         // 排之前没有固定时间的课程
         for (String gene : unFixedTimeGeneList) {
-            // 获得一个随机时间
+            // 获得一个随机时间，随机时间函数会出现递归调用导致栈溢出的情况
             String classTime = ClassUtil.randomTime(gene, resultGeneList);
             // 得到分配好随机上课时间的基因编码
             gene = gene.substring(0, 24) + classTime;
