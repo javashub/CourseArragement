@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.controller;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.OnlineVideo;
 import com.lyk.coursearrange.entity.request.UserInfoVO;
@@ -25,6 +26,18 @@ public class OnlineVideoController {
     private OnlineVideoService ovs;
 
     /**
+     * 根据课程id获取课程包含的视频
+     * @param id
+     * @return
+     */
+    @GetMapping("/get/{id}")
+    public ServerResponse getAllVideo(@PathVariable("id") Integer id) {
+        QueryWrapper wrapper = new QueryWrapper();
+        wrapper.eq("online_course_id", id);
+        return ServerResponse.ofSuccess(ovs.list(wrapper));
+    }
+
+    /**
      * 上传视频并返回url和文件名到前端
      * @return
      */
@@ -38,7 +51,7 @@ public class OnlineVideoController {
     }
 
     /**
-     * 添加新视频
+     * 上传新视频
      * @param id
      * @return
      */

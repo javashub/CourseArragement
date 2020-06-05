@@ -164,7 +164,7 @@ export default {
       total: 0,
       pageSize: 10,
       // 学期选择绑定的值
-      value: "",
+      value: "2019-2020-1",
       // 当前选择的学期
       semester: "2019-2020-1",
       fileList: [],

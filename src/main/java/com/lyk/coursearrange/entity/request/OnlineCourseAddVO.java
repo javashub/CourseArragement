@@ -19,6 +19,11 @@ public class OnlineCourseAddVO {
     private String onlineName;
 
     /**
+     * 课程封面
+     */
+    private String cover;
+
+    /**
      * 网课类别id
      */
     private Integer onlineCategoryId;

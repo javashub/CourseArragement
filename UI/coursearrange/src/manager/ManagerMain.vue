@@ -124,7 +124,7 @@
                 <i class="el-icon-help"></i>帮助中心
               </template>
               <el-menu-item index="8-1">
-                <router-link class="links" >使用说明</router-link>
+                <router-link to="/help" class="links" >使用说明</router-link>
               </el-menu-item>
             </el-submenu>
           </el-menu>

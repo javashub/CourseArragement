@@ -22,6 +22,7 @@ import ClassManager from '@/manager/components/ClassManager';
 import UpdatePass from '@/pages/components/UpdatePass';
 import StudentDoc from '@/home/components/StudentDoc';
 import OnlineCategory from '@/manager/components/OnlineCategory';
+import Help from '@/manager/components/Help';
 
 Vue.use(Router)
 
@@ -64,6 +65,11 @@ const router = new Router({
       name: 'Admin',
       component: ManagerMain,
       children: [
+        {
+          path: '/help',
+          name: 'Help',
+          component: Help
+        },
         {
           path: '/onlinecategory',
           name: 'OnlineCategory',

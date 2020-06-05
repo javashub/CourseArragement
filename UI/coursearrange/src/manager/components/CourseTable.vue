@@ -160,6 +160,7 @@ export default {
       this.$axios
         .get("http://localhost:8080/courseplan/" + this.value3)
         .then(res => {
+          console.log(res)
           let courseData = res.data.data;
           let level = 0;
           let times = 0;
@@ -225,24 +226,28 @@ export default {
   }
   .tabel-container {
     margin: 7px;
-
+    font-size: 30px;
     table {
       table-layout: fixed;
       width: 100%;
-
+      word-wrap:break-word;
+      word-break:break-all;
+      border-collapse:collapse;
       thead {
         background-color: #67a1ff;
         th {
           color: #fff;
           line-height: 17px;
           font-weight: normal;
+          font-size: 15px;
         }
       }
       tbody {
         background-color: #eaf2ff;
         td {
+          font-size: 13px;
           color: #677998;
-          line-height: 12px;
+          line-height: 13px;
         }
       }
       th,
@@ -256,7 +261,7 @@ export default {
       tr td:first-child {
         color: #333;
         .period {
-          font-size: 8px;
+          font-size: 12px;
         }
       }
     }
