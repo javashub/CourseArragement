@@ -35,6 +35,11 @@ public class OnlineCourse extends Model<OnlineCourse> {
     private String onlineName;
 
     /**
+     * 课程简介
+     */
+    private String description;
+
+    /**
      * 封面
      */
     private String cover;

@@ -92,6 +92,7 @@ public class OnlineCourseController {
             onlineCourse.setOnlineNo(no);
         }
         onlineCourse.setOnlineName(on.getOnlineName());
+        onlineCourse.setDescription(on.getDescription());
         onlineCourse.setCover(on.getCover());
         onlineCourse.setOnlineCategoryId(on.getOnlineCategoryId());
         onlineCourse.setOnlineCategoryName(on.getOnlineCategoryName());
