@@ -47,12 +47,9 @@
                 <i class="el-icon-reading"></i>课程管理
               </template>
               <el-menu-item index="2-1">
-                <router-link to="/courseinfolist" class="links">教材列表</router-link>
-              </el-menu-item>
-              <el-menu-item index="2-2">
                 <router-link to="/onlinecourse" class="links">网课列表</router-link>
               </el-menu-item>
-              <el-menu-item index="2-3">
+              <el-menu-item index="2-2">
                 <router-link to="/onlinecategory" class="links">网课类别</router-link>
               </el-menu-item>
             </el-submenu>
@@ -101,7 +98,7 @@
                 <router-link class="links" to="/exercise">在线测试</router-link>
               </el-menu-item>
               <el-menu-item index="6-3">
-                <router-link class="links" to="/studentdoc">测试路径</router-link>
+                <router-link to="/courseinfolist" class="links">教材列表</router-link>
               </el-menu-item>
             </el-submenu>
 

@@ -40,6 +40,11 @@ public class OnlineVideo extends Model<OnlineVideo> {
     private String videoName;
 
     /**
+     * 视频封面
+     */
+    private String cover;
+
+    /**
      * 视频路径
      */
     private String videoUrl;

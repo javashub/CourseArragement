@@ -64,6 +64,7 @@ public class OnlineVideoController {
         onlineVideo.setOnlineCourseId(id);
         onlineVideo.setVideoName(u.getVideoName());
         onlineVideo.setVideoUrl(u.getVideoUrl());
+
 //        onlineVideo.setVideoUrl(map.get("url").toString());
 //        onlineVideo.setVideoName(map.get("name").toString());
         onlineVideo.setVideoNo(u.getVideoNo()); // 视频编号

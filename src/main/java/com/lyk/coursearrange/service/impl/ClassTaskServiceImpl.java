@@ -61,7 +61,10 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 //            List<ClassTask> classTaskList = classTaskDao.selectBySemester(classTask);
             QueryWrapper<ClassTask> wrapper = new QueryWrapper<ClassTask>().eq("semester", semester);
             List<ClassTask> classTaskList = classTaskDao.selectList(wrapper);
-
+            // 没有任务，排课失败
+            if (classTaskList == null) {
+                return false;
+            }
             // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间的课程集合
             List<Map<String, List<String>>>  geneList = coding(classTaskList);
             // 3、给初始基因编码随机分配时间
@@ -296,7 +299,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * 遗传进化(每个班级中多条基因编码)
      * 步骤：
      * 1、初始化种群
-     * 2、选择、交叉
+     * 2、交叉，选择
      * 3、变异
      * 4、重复2,3步骤
      * 5、直到达到终止条件
@@ -371,7 +374,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
     /**
      * 基因变异
-     * @param resultGeneList 所有的基因编码个体
+     * @param resultGeneList 所有的基因编码
      * @return
      */
     private List<String> geneMutation(List<String> resultGeneList) {
@@ -531,7 +534,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
     /**
      * 给初始基因编码随机分配时间(那些不固定上课时间的课程)
-     * @param geneList
+     * @param geneList 固定时间与不固定时间的编码集合
      * @return
      */
     private List<String> codingTime(List<Map<String, List<String>>> geneList) {
@@ -546,6 +549,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             String classTime = ClassUtil.randomTime(gene, resultGeneList);
             // 得到分配好随机上课时间的基因编码
             gene = gene.substring(0, 24) + classTime;
+            // 分配好上课时间的编码集合
             resultGeneList.add(gene);
         }
         return resultGeneList;

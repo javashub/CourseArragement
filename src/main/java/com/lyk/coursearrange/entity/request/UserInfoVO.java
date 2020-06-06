@@ -23,4 +23,9 @@ public class UserInfoVO {
 
     private String videoUrl;
 
+    /**
+     * 视频封面
+     */
+    private String cover;
+
 }

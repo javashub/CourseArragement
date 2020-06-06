@@ -60,6 +60,6 @@ public class ConstantInfo {
     public static final String TECHNOLOGY_COURSE = "07";
 
     // 设置遗传代数
-    public static final int GENERATION = 50;
+    public static final int GENERATION = 100;
 
 }
