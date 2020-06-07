@@ -10,8 +10,12 @@ import lombok.Data;
 @Data
 public class UserInfoVO {
 
+    // 课程的id
+    private Integer courseId;
+
     private Integer UserType;
 
+    // 操作者的id
     private Integer id;
 
     private String realname;

@@ -52,16 +52,16 @@ public class OnlineVideoController {
 
     /**
      * 上传新视频
-     * @param id
+     * @param
      * @return
      */
     @PostMapping("/add")
-    public ServerResponse addVideo(MultipartFile file, @PathVariable("id") Integer id, @RequestBody UserInfoVO u) {
+    public ServerResponse addVideo(MultipartFile file, @RequestBody UserInfoVO u) {
         Map<String, Object> map = new HashMap();
 //        map = AliyunUtil.upload(file, null);
         OnlineVideo onlineVideo = new OnlineVideo();
         // 所属课程的id
-        onlineVideo.setOnlineCourseId(id);
+        onlineVideo.setOnlineCourseId(u.getCourseId());
         onlineVideo.setVideoName(u.getVideoName());
         onlineVideo.setVideoUrl(u.getVideoUrl());
 

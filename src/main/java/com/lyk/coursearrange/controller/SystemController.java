@@ -40,6 +40,8 @@ public class SystemController {
     private ClassroomService classroomService;
     @Autowired
     private StudentDao studentDao;
+    @Autowired
+    private  OnlineCourseService onlineCourseService;
 
 
     @GetMapping("/systemdata")
@@ -64,6 +66,8 @@ public class SystemController {
         int docs = docService.count();
         // 题库数量
         int exercises = exerciseService.count();
+        // 网课数量
+        int onlineCourse = onlineCourseService.count();
 
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DATE,-1);
@@ -87,6 +91,8 @@ public class SystemController {
         map.put("exercises", exercises);
         map.put("classrooms", classrooms);
         map.put("stuReg", stuRge);
+        map.put("onlineCourse", onlineCourse);
+
         return ServerResponse.ofSuccess(map);
     }
 

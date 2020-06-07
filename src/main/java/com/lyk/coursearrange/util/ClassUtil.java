@@ -53,7 +53,6 @@ public class ClassUtil {
 
     /**
      * 判断同一个班级同一时间内是否有冲突的上课情况
-     *
      * @param time
      * @param gene
      * @param geneList
