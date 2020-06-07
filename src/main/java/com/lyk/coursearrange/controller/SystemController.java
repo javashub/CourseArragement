@@ -2,6 +2,7 @@ package com.lyk.coursearrange.controller;
 
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.dao.StudentDao;
+import com.lyk.coursearrange.dao.TeacherDao;
 import com.lyk.coursearrange.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +43,8 @@ public class SystemController {
     private StudentDao studentDao;
     @Autowired
     private  OnlineCourseService onlineCourseService;
+    @Autowired
+    private TeacherDao teacherDao;
 
 
     @GetMapping("/systemdata")
@@ -78,7 +81,9 @@ public class SystemController {
 //        String yesday = "2020-03-26";
 
         // 昨日学生注册人数
-        int stuRge = studentDao.selectReg(yesday);
+        int studentReg = studentDao.studentReg(yesday);
+        // 昨日注册讲师
+        int teacherReg = teacherDao.teacherReg(yesday);
 
 
         map.put("teachers", teachers);
@@ -90,8 +95,9 @@ public class SystemController {
         map.put("docs", docs);
         map.put("exercises", exercises);
         map.put("classrooms", classrooms);
-        map.put("stuReg", stuRge);
+        map.put("studentReg", studentReg);
         map.put("onlineCourse", onlineCourse);
+        map.put("teacherReg", teacherReg);
 
         return ServerResponse.ofSuccess(map);
     }

@@ -9,13 +9,13 @@ export default {
   name: "SystemData",
   data() {
     return {
-
+      sysData: []
     };
   },
 
   mounted() {
     this.systemData()
-    this.draw()
+  
   },
   computed: {
 
@@ -26,16 +26,23 @@ export default {
       this.$axios
         .get("http://localhost:8080/systemdata")
         .then(res => {
+          console.log(res)
           if (res.data.code == 0) {
+            let ret = res.data.data
+            console.log(ret)
+            this.sysData = ret
+            this.draw()
+            console.log(this.sysData.classes)
           } else {
             console.log(res.data.message);
           }
         })
-        .catch();
+        .catch(error => {});
     },
 
     // 画图
-    draw() {
+    draw(sys) {
+
       let chart = this.$echarts.init(document.getElementById("chart"));
 
       chart.setOption({
@@ -57,7 +64,7 @@ export default {
         xAxis: [
           {
             type: "category",
-            data: ["讲师", "学生", "班级", "教室", "教学楼", "教材", "文档", "网课", "题库", "排课任务", "新增学生"],
+            data: ["讲师", "学生", "班级", "教室", "教学楼", "教材", "文档", "网课", "题库", "排课任务", "新增学生", "新增讲师"],
             axisTick: {
               alignWithLabel: true
             }
@@ -73,7 +80,20 @@ export default {
             name: "",
             type: "bar",
             barWidth: "60%",
-            data: [10, 52, 200, 334, 390, 330, 220, 100, 80, 90, 5]
+            data: [
+              this.sysData.teachers,
+              this.sysData.students,
+              this.sysData.classes,
+              this.sysData.classrooms,
+              this.sysData.teachbuilds,
+              this.sysData.courses,
+              this.sysData.docs,
+              this.sysData.onlineCourse,
+              this.sysData.exercises,
+              this.sysData.classtasks,
+              this.sysData.studentReg,
+              this.sysData.teacherReg,
+            ]
           }
         ]
       });
@@ -84,8 +104,10 @@ export default {
 
 <style lang="less" scoped>
 .wrapper {
-  height: 600px;
-  width: 900px;
-  // background-color: aqua;
+  margin:0;
+  padding:0;
+  position:absolute;
+  width: 85%; 
+	height: 80%;
 }
 </style>

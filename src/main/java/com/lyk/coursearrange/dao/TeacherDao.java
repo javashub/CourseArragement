@@ -22,4 +22,7 @@ public interface TeacherDao extends BaseMapper<Teacher> {
             "        SELECT * FROM tb_teacher WHERE realname=#{account} AND password=#{password}")
     Teacher teacherLogin(@Param("account") String account, @Param("password") String password);
 
+    @Select("select count(*) from tb_teacher where date(create_time) = #{yesday}")
+    int teacherReg(@Param("yesday") String yesday);
+
 }

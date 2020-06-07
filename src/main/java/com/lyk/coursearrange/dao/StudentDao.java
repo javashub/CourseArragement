@@ -24,6 +24,6 @@ public interface StudentDao extends BaseMapper<Student> {
     Student studentLogin(@Param("account") String username, @Param("password") String password);
 
     @Select("select count(*) from tb_student where date(create_time) = #{yesday}")
-    int selectReg(@Param("yesday") String yesday);
+    int studentReg(@Param("yesday") String yesday);
 
 }
