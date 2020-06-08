@@ -36,6 +36,27 @@ public class StudentController {
 
     @Autowired
     private TokenService tokenService;
+
+
+    /**
+     *  学生加入班级，只有加入班级后才可以看到本班的课表，文档
+     * @param id 学生id
+     * @param classNo 班级编号
+     * @return
+     */
+    @PostMapping("/join/{id}/{classNo}")
+    public ServerResponse joinClass(@PathVariable("id") Integer id, @PathVariable("classNo") String classNo) {
+        // TODO 学生加入年级，学生查看本班的文档(文档控制器中),查看自己所在的班级课表
+        Student student = studentService.getById(id);
+        student.setClassNo(classNo);
+        boolean b = studentService.saveOrUpdate(student);
+        if (b) {
+            return ServerResponse.ofSuccess("加入班级成功");
+        }
+        return ServerResponse.ofError("加入班级失败");
+    }
+
+
     /**
      * 学生登录
      * @param studentLoginRequest
