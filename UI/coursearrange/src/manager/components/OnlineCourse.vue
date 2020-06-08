@@ -1,45 +1,45 @@
 <template>
   <div>
-        <div class="c-panel">
-          <span>类别</span>
-          <el-cascader
-            clearable
-            size="small"
-            v-model="cascader"
-            :options="options"
-            :props="props"
-            @change="handleChange"
-          ></el-cascader>
+    <div class="c-panel">
+      <span>类别</span>
+      <el-cascader
+        clearable
+        size="small"
+        v-model="cascader"
+        :options="options"
+        :props="props"
+        @change="handleChange"
+      ></el-cascader>
 
-          <el-button size="small" @click="handleUploadCourse" plain style="margin-left:10px;">上传课程</el-button>
-          <el-button size="small" @click="handleUploadVideo" plain>上传视频</el-button>
-        </div>
-        <el-table :data="tableData" style="width: 100%">
-          <el-table-column type="index"></el-table-column>
-          <el-table-column prop="onlineNo" label="课程号"></el-table-column>
-          <el-table-column prop="onlineName" label="课程名"></el-table-column>
-          <el-table-column prop="cover" label="封面"  width="80">
-            <template slot-scope="scope">
-              <el-image style="width: 24px; height: 30px" :src="scope.row.cover"></el-image>
-            </template>
-          </el-table-column>
+      <el-button size="small" @click="handleUploadCourse" plain style="margin-left:10px;">上传课程</el-button>
+      <el-button size="small" @click="handleUploadVideo" plain>上传视频</el-button>
+    </div>
+    <el-table :data="tableData" style="width: 100%">
+      <el-table-column type="index"></el-table-column>
+      <el-table-column prop="onlineNo" label="课程号"></el-table-column>
+      <el-table-column prop="onlineName" label="课程名"></el-table-column>
+      <el-table-column prop="cover" label="封面" width="80">
+        <template slot-scope="scope">
+          <el-image fit="contain" style="width: 24px; height: 30px" :src="scope.row.cover"></el-image>
+        </template>
+      </el-table-column>
 
-          <el-table-column prop="onlineCategoryName" label="类别"></el-table-column>
-          <el-table-column prop="fromUserName" label="用户"></el-table-column>
-          <el-table-column label="详情" width="100">
-            <template slot-scope="scope">
-              <el-button icon="el-icon-menu" @click="handleDetail(scope.row)" size="mini"></el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <el-pagination
-          layout="prev, pager, next"
-          :total="total"
-          hide-on-single-page
-          @current-change="currentChange"
-          :page-size="limit"
-          :current-page.sync="page"
-        ></el-pagination>
+      <el-table-column prop="onlineCategoryName" label="类别"></el-table-column>
+      <el-table-column prop="fromUserName" label="用户"></el-table-column>
+      <el-table-column label="详情" width="100">
+        <template slot-scope="scope">
+          <el-button icon="el-icon-menu" @click="handleDetail(scope.row)" size="mini"></el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      layout="prev, pager, next"
+      :total="total"
+      hide-on-single-page
+      @current-change="currentChange"
+      :page-size="limit"
+      :current-page.sync="page"
+    ></el-pagination>
 
     <el-dialog title="视频列表" :visible.sync="visibleForm" width="80%" size="small">
       <el-table :data="videoData" style="width: 100%">
@@ -47,7 +47,7 @@
         <el-table-column prop="videoName" label="视频名称"></el-table-column>
         <el-table-column prop="cover" label="封面" width="80">
           <template slot-scope="scope">
-            <el-image style="width: 24px; height: 30px" :src="scope.row.cover"></el-image>
+            <el-image fit="contain" style="width: 24px; height: 30px" :src="scope.row.cover"></el-image>
           </template>
         </el-table-column>
         <el-table-column prop="videoUrl" label="视频地址"></el-table-column>
@@ -182,7 +182,7 @@ export default {
   },
   mounted() {
     this.init();
-    this.getUserType()
+    this.getUserType();
   },
   methods: {
     init() {
