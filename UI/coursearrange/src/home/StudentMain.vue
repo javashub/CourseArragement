@@ -1,18 +1,22 @@
 <template>
-
+  <div>
+    
+  </div>
 </template>
 
 <script>
 export default {
-  name: 'Index',
+  name: 'StudentMain',
   data() {
     return {
 
     }
   },
+
   mounted() {
 
   },
+
   methods: {
 
   }
@@ -21,4 +25,4 @@ export default {
 
 <style lang="less" scoped>
 
-</style>
+</style>  

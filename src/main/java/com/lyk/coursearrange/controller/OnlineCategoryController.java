@@ -29,10 +29,12 @@ public class OnlineCategoryController {
      */
     @PostMapping("/add")
     public ServerResponse addCategory(@RequestParam(name = "categoryNo") String categoryNo,
-                                      @RequestParam(name = "categoryName") String categoryName) {
+                                      @RequestParam(name = "categoryName") String categoryName,
+                                      @RequestParam(name = "parentId") Integer parentId) {
         OnlineCategory onlineCategory = new OnlineCategory();
         onlineCategory.setCategoryNo(categoryNo);
         onlineCategory.setCategoryName(categoryName);
+        onlineCategory.setParentId(parentId);
         boolean b = ocs.save(onlineCategory);
         if (b) {
             return ServerResponse.ofSuccess("添加成功");
@@ -64,7 +66,7 @@ public class OnlineCategoryController {
     public ServerResponse queryOne() {
         QueryWrapper wrapper = new QueryWrapper();
         // 查询父id为0的类别，即一级分类
-        wrapper.ne("parent_id", 0);
+        wrapper.eq("parent_id", 0);
         List<OnlineCategory> list = ocs.list(wrapper);
         return ServerResponse.ofSuccess(list);
     }
@@ -93,6 +95,7 @@ public class OnlineCategoryController {
         QueryWrapper<OnlineCategory> wrapper = new QueryWrapper<OnlineCategory>().select("category_no").orderByDesc();
         List<OnlineCategory> list = ocs.list(wrapper);
         String no = String.valueOf(Integer.parseInt(list.get(0).getCategoryNo()) + 1);
+        System.out.println("no = " + no);
         // 返回自动生成的编号，从res.data.message中获取
         return ServerResponse.ofSuccess(no);
     }

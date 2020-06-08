@@ -26,13 +26,10 @@ export default {
       this.$axios
         .get("http://localhost:8080/systemdata")
         .then(res => {
-          console.log(res)
           if (res.data.code == 0) {
             let ret = res.data.data
-            console.log(ret)
             this.sysData = ret
             this.draw()
-            console.log(this.sysData.classes)
           } else {
             console.log(res.data.message);
           }

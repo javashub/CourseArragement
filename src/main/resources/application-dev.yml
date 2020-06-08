@@ -38,11 +38,6 @@ server:
   port: 8080
 
 
-# 卓正软件
-key: IMTG6-BSXJ-JGZ6-3BIWM
-poSysPath: D:/arrange/license/
-password: 111111
-
 # 阿里云OSS
 aliyun:
   oss:

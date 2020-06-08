@@ -17,8 +17,9 @@
       <el-table-column prop="categoryName" label="名称" sortable></el-table-column>
       <!-- <el-table-column prop="remark" label="备注"></el-table-column> -->
       <el-table-column label="级别">
-        <template scope="scope">{{scope.row.parentId == 0 ? '一级标题':'二级标题'}}</template>
+        <template scope="scope">{{scope.row.parentId == 0 ? '一级类别' : '二级类别'}}</template>
       </el-table-column>
+      <el-table-column prop="categoryNo" label="编号" width="100"></el-table-column>
       <el-table-column prop="id" label="#" sortable width="100"></el-table-column>
 
       <el-table-column label="操作" width="150px">
@@ -31,13 +32,13 @@
     <el-dialog title="添加类别" :visible.sync="visibleForm" width="500px">
       <el-form :model="editFormData" label-position="left" label-width="80px">
         <el-form-item label="No" prop="categoryNo">
-          <el-input v-model="editFormData.categoryNo" autocomplete="off"></el-input>
+          <el-input v-model="editFormData.categoryNo" autocomplete="off" placeholder="类别编号"></el-input>
         </el-form-item>
         <el-form-item label="名称" prop="categoryName">
           <el-input v-model="editFormData.categoryName" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="父级ID" prop="parentId">
-          <el-input v-model="editFormData.parentId" autocomplete="off"></el-input>
+          <el-input v-model="editFormData.parentId" autocomplete="off" placeholder="0为一级类别"></el-input>
         </el-form-item>
         <el-form-item style="text-align:left;">
           <el-button type="primary" @click="save()" size="small">提 交</el-button>
@@ -68,6 +69,7 @@ export default {
     init() {
       this.tableData = []
       this.$axios.get("http://localhost:8080/category/one").then(r => {
+        console.log(r)
         let c = r.data.data;
         c.map(v => {
           this.$axios
@@ -77,20 +79,23 @@ export default {
                 id: v.id,
                 categoryName: v.categoryName,
                 children: rr.data.data,
-                remark: v.remark,
+                categoryNo: v.categoryNo,
                 parentId: v.parentId
               });
             });
         });
       });
     },
+
+
     save() {
       this.$axios({
         method: "post",
         url: "http://localhost:8080/category/add",
         params: {
           categoryNo: this.editFormData.categoryNo,
-          categoryName: this.editFormData.categoryName
+          categoryName: this.editFormData.categoryName,
+          parentId: this.editFormData.parentId
         }
       }).then(r => {
         if (r.data.code == 0) {

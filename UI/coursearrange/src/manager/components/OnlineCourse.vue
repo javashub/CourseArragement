@@ -1,7 +1,5 @@
 <template>
   <div>
-    <el-row>
-      <el-col :span="12">
         <div class="c-panel">
           <span>类别</span>
           <el-cascader
@@ -16,8 +14,6 @@
           <el-button size="small" @click="handleUploadCourse" plain style="margin-left:10px;">上传课程</el-button>
           <el-button size="small" @click="handleUploadVideo" plain>上传视频</el-button>
         </div>
-      </el-col>
-      <el-col :span="12">
         <el-table :data="tableData" style="width: 100%">
           <el-table-column type="index"></el-table-column>
           <el-table-column prop="onlineNo" label="课程号"></el-table-column>
@@ -38,8 +34,6 @@
           :page-size="limit"
           :current-page.sync="page"
         ></el-pagination>
-      </el-col>
-    </el-row>
 
     <el-dialog title="视频列表" :visible.sync="visibleForm" width="80%" size="small">
       <el-table :data="videoData" style="width: 100%">
