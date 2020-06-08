@@ -11,9 +11,11 @@ import com.lyk.coursearrange.entity.request.TeacherAddRequest;
 import com.lyk.coursearrange.entity.request.UserLoginRequest;
 import com.lyk.coursearrange.service.TeacherService;
 import com.lyk.coursearrange.service.impl.TokenService;
+import com.lyk.coursearrange.util.AliyunUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +33,29 @@ public class TeacherController {
     private TeacherService teacherService;
     @Autowired
     private TokenService tokenService;
+
+
+    /**
+     * 上传讲师证件
+     * @param id
+     * @param file
+     * @return
+     */
+    @PostMapping("/upload/{id}")
+    public ServerResponse uploadLicense(@PathVariable("id") Integer id, MultipartFile file) {
+        Map<String, Object> map = AliyunUtil.upload(file, "license");
+        String license = (String) map.get("url");
+        Teacher t = teacherService.getById(id);
+        t.setLicense(license);
+        boolean b = teacherService.save(t);
+        if (b) {
+            return ServerResponse.ofSuccess("上传证件成功");
+        }
+        return ServerResponse.ofError("上传证件失败");
+    }
+
+
+
     /**
      * 讲师登录
      * @param userLoginRequest
