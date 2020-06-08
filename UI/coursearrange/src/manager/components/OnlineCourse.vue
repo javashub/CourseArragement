@@ -50,7 +50,11 @@
             <el-image fit="contain" style="width: 24px; height: 30px" :src="scope.row.cover"></el-image>
           </template>
         </el-table-column>
-        <el-table-column prop="videoUrl" label="视频地址"></el-table-column>
+        <el-table-column prop="videoUrl" label="视频地址">
+          <template slot-scope="scope">
+              <el-link :href="scope.row.videoUrl" target="_blank">视频链接</el-link>
+          </template>
+        </el-table-column>
         <el-table-column prop="fromUserName" label="发布者"></el-table-column>
         <el-table-column prop="createTime" label="发布时间"></el-table-column>
         <el-table-column label="详情" width="100">
@@ -229,6 +233,7 @@ export default {
       this.detailRow = row;
       this.visibleForm = true;
       let courseId = row.id;
+      console.log(row.id)
       this.$axios
         .get("http://localhost:8080/onlinevideo/get/" + courseId)
         .then(r => {

@@ -47,7 +47,7 @@ public class TeacherController {
         String license = (String) map.get("url");
         Teacher t = teacherService.getById(id);
         t.setLicense(license);
-        boolean b = teacherService.save(t);
+        boolean b = teacherService.updateById(t);
         if (b) {
             return ServerResponse.ofSuccess("上传证件成功");
         }

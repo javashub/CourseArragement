@@ -32,9 +32,7 @@ public class OnlineVideoController {
      */
     @GetMapping("/get/{id}")
     public ServerResponse getAllVideo(@PathVariable("id") Integer id) {
-        QueryWrapper wrapper = new QueryWrapper();
-        wrapper.eq("online_course_id", id);
-        return ServerResponse.ofSuccess(ovs.list(wrapper));
+        return ServerResponse.ofSuccess(ovs.list( new QueryWrapper<OnlineVideo>().eq("online_course_id", id)));
     }
 
     /**
@@ -64,6 +62,7 @@ public class OnlineVideoController {
         onlineVideo.setOnlineCourseId(u.getCourseId());
         onlineVideo.setVideoName(u.getVideoName());
         onlineVideo.setVideoUrl(u.getVideoUrl());
+        onlineVideo.setCover(u.getCover());
 
 //        onlineVideo.setVideoUrl(map.get("url").toString());
 //        onlineVideo.setVideoName(map.get("name").toString());

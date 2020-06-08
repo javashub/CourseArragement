@@ -14,8 +14,8 @@
       <el-table-column prop="username" label="用户名" fixed width="100"></el-table-column>
       <el-table-column prop="realname" label="姓名" fixed width="100"></el-table-column>
       <el-table-column prop="jobtitle" label="职称" fixed width="100"></el-table-column>
-      <el-table-column prop="teach" label="学科" fixed width="100"></el-table-column>
-      <el-table-column prop="age" label="年龄" fixed width="80"></el-table-column>
+      <el-table-column prop="teach" label="学科" fixed width="80"></el-table-column>
+      <el-table-column prop="age" label="年龄" fixed width="50"></el-table-column>
       <el-table-column prop="telephone" label="电话" fixed width="100"></el-table-column>
       <el-table-column prop="email" label="邮件" fixed width="150"></el-table-column>
       <el-table-column prop="address" label="地址"></el-table-column>
@@ -89,7 +89,7 @@
     </el-dialog>
 
     <!-- 弹出表单添加讲师 -->
-    <el-dialog title="编辑讲师" :visible.sync="visibleAddForm">
+    <el-dialog title="添加讲师" :visible.sync="visibleAddForm">
       <el-form
         :model="addTeacherForm"
         label-position="left"
