@@ -342,13 +342,15 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             String gene = resultGeneList.get(i);
             String techerNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
             String classTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene);
+            String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
             for (int j = i + 1; j < resultGeneList.size(); ++j) {
                 // 再找剩余的基因编码对比
                 String tempGene = resultGeneList.get(j);
                 String tempTecherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, tempGene);
                 String tempClassTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, tempGene);
+                String tempClassNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, tempGene);
                 // 判断是否有同一讲师同一时间上两门课
-                if (techerNo.equals(tempTecherNo) && classTime.equals(tempClassTime)) {
+                if (techerNo.equals(tempTecherNo) && classTime.equals(tempClassTime) && classNo.equals(tempClassNo)) {
                     // 说明同一讲师同一时间有两门以上的课要上，冲突出现，重新给这门课找一个时间
                     String newClassTime = ClassUtil.randomTime(gene, resultGeneList);
                     gene = gene.substring(0, 24) + newClassTime;

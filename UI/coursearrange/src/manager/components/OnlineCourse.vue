@@ -18,6 +18,12 @@
           <el-table-column type="index"></el-table-column>
           <el-table-column prop="onlineNo" label="课程号"></el-table-column>
           <el-table-column prop="onlineName" label="课程名"></el-table-column>
+          <el-table-column prop="cover" label="封面"  width="80">
+            <template slot-scope="scope">
+              <el-image style="width: 24px; height: 30px" :src="scope.row.cover"></el-image>
+            </template>
+          </el-table-column>
+
           <el-table-column prop="onlineCategoryName" label="类别"></el-table-column>
           <el-table-column prop="fromUserName" label="用户"></el-table-column>
           <el-table-column label="详情" width="100">
@@ -38,8 +44,12 @@
     <el-dialog title="视频列表" :visible.sync="visibleForm" width="80%" size="small">
       <el-table :data="videoData" style="width: 100%">
         <el-table-column type="index"></el-table-column>
-        <el-table-column prop="cover" label="封面"></el-table-column>
         <el-table-column prop="videoName" label="视频名称"></el-table-column>
+        <el-table-column prop="cover" label="封面" width="80">
+          <template slot-scope="scope">
+            <el-image style="width: 24px; height: 30px" :src="scope.row.cover"></el-image>
+          </template>
+        </el-table-column>
         <el-table-column prop="videoUrl" label="视频地址"></el-table-column>
         <el-table-column prop="fromUserName" label="发布者"></el-table-column>
         <el-table-column prop="createTime" label="发布时间"></el-table-column>
@@ -155,7 +165,7 @@ export default {
       options: [],
       tableData: [],
       page: 1,
-      limit: 1,
+      limit: 10,
       total: 0,
       visibleForm: false,
       cascader: [],
@@ -167,11 +177,12 @@ export default {
       detailRowId: {},
       courseOptions: [],
       loading: true,
-      uu:{}
+      uu: {}
     };
   },
   mounted() {
     this.init();
+    this.getUserType()
   },
   methods: {
     init() {
@@ -215,7 +226,7 @@ export default {
         });
     },
     handleDetail(row) {
-      this.detailRowId = row;
+      this.detailRow = row;
       this.visibleForm = true;
       let courseId = row.id;
       this.$axios
@@ -247,6 +258,10 @@ export default {
     },
     saveCourse() {
       let data = this.uploadCourseForm;
+      data.fromUserType = this.uu.fromUserType;
+      data.fromUserId = this.uu.fromUserId;
+      data.fromUserName = this.uu.fromUserName;
+
       let node = this.$refs["cc"].getCheckedNodes()[0]; //获得当前节点，
       data.onlineCategoryId = data.cid[1];
       data.onlineCategoryName = node.label;
@@ -255,21 +270,26 @@ export default {
         .then(r => {
           if (r.data.code == 0) {
             this.$message({ message: "上传成功", type: "success" });
-            this.init();
+            this.handleChange();
           }
         });
-        this.uploadCourseVisibleForm = false;
+      this.uploadCourseVisibleForm = false;
     },
     saveVideo() {
+      let data = this.uploadVideoForm;
+      data.UserType = this.uu.fromUserType;
+      data.id = this.uu.fromUserId;
+      data.realname = this.uu.fromUserName;
+
       this.$axios
-        .post("http://localhost:8080/onlinevideo/add", this.uploadVideoForm)
+        .post("http://localhost:8080/onlinevideo/add", data)
         .then(r => {
           if (r.data.code == 0) {
             this.$message({ message: "上传成功", type: "success" });
             this.init();
           }
         });
-        this.uploadVideoVisibleForm = false;
+      this.uploadVideoVisibleForm = false;
     },
     handleCourseCoverSuccess(res, file) {
       this.uploadCourseForm.cover = res.data.url;
@@ -299,29 +319,29 @@ export default {
           this.loading = false;
         });
     },
-        // 获得上传的用户类型
+    // 获得上传的用户类型
     getUserType() {
       // 判断是管理员上传还是讲师上传
-      let user = window.localStorage.getItem('admin')
+      let user = window.localStorage.getItem("admin");
       if (user != null) {
         // 管理员设置为1
-        this.uu.fromUserType = 1
+        this.uu.fromUserType = 1;
         // 获得上传用户的id
-        this.uu.fromUserId = (JSON.parse(user)).id
+        this.uu.fromUserId = JSON.parse(user).id;
         // 获得上传的用户名
-        this.uu.fromUserName = (JSON.parse(user)).realname
+        this.uu.fromUserName = JSON.parse(user).realname;
       } else {
-        let user = window.localStorage.getItem('teacher')
+        let user = window.localStorage.getItem("teacher");
         if (user != null) {
           // 讲师设置为2
-          this.uu.fromUserType = 2
+          this.uu.fromUserType = 2;
           // 获得上传用户的id
-          this.uu.fromUserId = (JSON.parse(user)).id
+          this.uu.fromUserId = JSON.parse(user).id;
           // 获得上传的用户名
-          this.uu.fromUserName = (JSON.parse(user)).realname
+          this.uu.fromUserName = JSON.parse(user).realname;
         }
       }
-    },
+    }
   }
 };
 </script>
