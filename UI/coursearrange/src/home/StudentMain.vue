@@ -1,5 +1,8 @@
 <template>
   <!-- 学生端主界面 -->
+  <!-- 学生点击修改密码，跳转到updatepass.vue与其他用户共用一个组件 -->
+  <!-- 学生登录之后默认进入查看课表页面 -->
+  <!-- 点击学生右上角的个人中心跳转到一个页面展示个人信息，上方放一个按钮加入班级，一个修改信息 -->
   <div class="wrapper">
     <el-container>
       <el-header>
@@ -10,7 +13,6 @@
             <i class="el-icon-setting" style="margin-right: 15px"></i>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item command="center">个人中心</el-dropdown-item>
-              <el-dropdown-item command="updatePassword">修改密码</el-dropdown-item>
               <el-dropdown-item command="exit">退出</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>您好，
@@ -22,22 +24,31 @@
           <!-- 侧边 -->
           <!-- 默认展开的索引default-active -->
           <el-menu :default-active="default_active" @select="handleSelect" unique-opened>
-            <el-menu-item index="0">
+             <el-menu-item index="/index">
               <template slot="title">
-                <router-link to="/systemdata" class="links">
-                  <i class="el-icon-setting"></i>系统数据
-                </router-link>
+                <i class="el-icon-s-home"></i>
+                <span slot="title">首页</span>
               </template>
             </el-menu-item>
-
-            
+            <el-menu-item index="/courseList">
+              <template slot="title">
+                <i class="el-icon-s-marketing"></i>
+                <span slot="title">课程表</span>
+              </template>
+            </el-menu-item>
+             <el-menu-item index="/center">
+              <template slot="title">
+                <i class="el-icon-user"></i>
+                <span slot="title">个人中心</span>
+              </template>
+            </el-menu-item>
+          </el-menu>
         </el-aside>
 
         <el-main>
           <!-- Main区域，数据显示 -->
           <router-view></router-view>
         </el-main>
-
       </el-container>
       <!-- 显示系统时间 -->
       <el-footer>{{time}}</el-footer>
@@ -52,24 +63,22 @@ export default {
     return {
       time: "",
       default_active: "0",
-      name: '用户名',
+      name: "用户名"
     };
   },
-  computed: {
-
-  },
+  computed: {},
   mounted() {
     setInterval(() => {
       this.getTime();
     }, 1000);
-    
-    let student = window.localStorage.getItem('student')
-    if(student != null){
-      this.name = (JSON.parse(student)).realname
+
+    let student = window.localStorage.getItem("student");
+    if (student != null) {
+      this.name = JSON.parse(student).realname;
     } else {
-      let teacher = window.localStorage.getItem('teacher')
+      let teacher = window.localStorage.getItem("teacher");
       if (teacher != null) {
-        this.name = (JSON.parse(teacher)).realname
+        this.name = JSON.parse(teacher).realname;
       }
     }
   },
@@ -78,19 +87,16 @@ export default {
     // 下拉菜单功能，退出、个人中心
     handleCommand(command) {
       // alert(command)
-      if (command == 'exit') {
-        localStorage.removeItem('token')
-        localStorage.removeItem('admin')
-        localStorage.removeItem('teacher')
+      if (command == "exit") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("admin");
+        localStorage.removeItem("teacher");
         // 判断，返回指定页面
-        this.$router.push('/')
-      } else if (command == 'center') {
+        this.$router.push("/student/login");
+      } else if (command == "center") {
         // 跳转到个人中心
-      } else if (command == 'updatePassword') {
-        // 修改密码页面
-        this.$router.push('/updatepass')
+        this.$router.push("/center");
       }
-      
     },
 
     // 获取系统时间
@@ -101,6 +107,12 @@ export default {
     // 展开一个菜单
     handleSelect(val) {
       this.default_active = val;
+      if(val=='/index'){
+        // 网课页面
+        window.open('http://localhost:80/index.html')
+        return;
+      }
+      this.$router.push(val);
     }
   }
 };

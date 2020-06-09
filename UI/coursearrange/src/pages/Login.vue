@@ -35,8 +35,8 @@ export default {
     return {
       // 登录表单的对象
       studentLoginForm: {
-        username: '',
-        password: ''
+        username: '2020011234',
+        password: '123456'
       },
       studentLoginFormRules: {
         username: [
@@ -69,9 +69,9 @@ export default {
           if (res.data.code == 0) {
             // 成功响应,得到token
             let ret = res.data.data
-            // window.localStorage.setItem('token', ret.token)
-            // window.localStorage.setItem('user', JSON.stringify(ret.student))
-            this.$router.push('/systemdata')
+            window.localStorage.setItem('token', ret.token)
+            window.localStorage.setItem('student', JSON.stringify(ret.student))
+            this.$router.push('/student')
             this.$message({message: "登录成功", type: "success"})
           } else {
             alert(res.data.message)

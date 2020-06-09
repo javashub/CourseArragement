@@ -15,6 +15,8 @@ import Exercise from '@/manager/components/Exercise';
 import ClassroomList from '@/manager/components/ClassroomList';
 import TeachBuildingList from '@/manager/components/TeachBuildingList';
 import CourseTable from '@/manager/components/CourseTable';
+import StudentCourseTable from '@/home/components/CourseTable';
+import StudentCenter from '@/home/components/Center';
 import CourseInfoList from '@/manager/components/CourseInfoList';
 import StudentList from '@/manager/components/StudentList';
 import ClassTaskList from '@/manager/components/ClassTaskList';
@@ -23,6 +25,7 @@ import UpdatePass from '@/pages/components/UpdatePass';
 import StudentDoc from '@/home/components/StudentDoc';
 import OnlineCategory from '@/manager/components/OnlineCategory';
 import Help from '@/manager/components/Help';
+import StudentMain from '@/home/StudentMain';
 
 Vue.use(Router)
 
@@ -59,6 +62,31 @@ const router = new Router({
       meta: { 
         noRequireAuth: true
       },
+    },
+    {
+      path: '/student',
+      name: 'Student',
+      component: StudentMain,
+      meta: { 
+        noRequireAuth: true
+      },
+      children: [
+        {
+          path: '',
+          name: 'CourseList-default',
+          component: StudentCourseTable
+        },
+        {
+          path: '/courseList',
+          name: 'CourseList',
+          component: StudentCourseTable
+        },
+        {
+          path: '/center',
+          name: 'StudentCenter',
+          component: StudentCenter
+        },
+      ]
     },
     {
       path: '/admin',
@@ -161,19 +189,19 @@ const router = new Router({
 })
 
 router.beforeEach((to, from, next) => {
-  if (!to.matched.some(res => res.meta.noRequireAuth)) {// 判断是否需要登录权限
-    if (window.localStorage.getItem('teacher') || window.localStorage.getItem("admin") ) {// 判断是否登录
-      next()
-    } else {
-      next({
-        path: '/',
-        query: { redirect: to.fullPath }
-      })
-    }
-  } else {
-    next()
-  }
-
+  // if (!to.matched.some(res => res.meta.noRequireAuth)) {// 判断是否需要登录权限
+  //   if (window.localStorage.getItem('teacher') || window.localStorage.getItem("admin") ) {// 判断是否登录
+  //     next()
+  //   } else {
+  //     next({
+  //       path: '/',
+  //       query: { redirect: to.fullPath }
+  //     })
+  //   }
+  // } else {
+  //   next()
+  // }
+  next()
 })
 
 
