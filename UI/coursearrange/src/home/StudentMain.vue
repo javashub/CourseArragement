@@ -42,6 +42,12 @@
                 <span slot="title">个人中心</span>
               </template>
             </el-menu-item>
+            <el-menu-item index="/password">
+              <template slot="title">
+                <i class="el-icon-unlock"></i>
+                <span slot="title">修改密码</span>
+              </template>
+            </el-menu-item>
           </el-menu>
         </el-aside>
 

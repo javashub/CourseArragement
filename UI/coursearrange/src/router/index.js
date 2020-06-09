@@ -17,6 +17,7 @@ import TeachBuildingList from '@/manager/components/TeachBuildingList';
 import CourseTable from '@/manager/components/CourseTable';
 import StudentCourseTable from '@/home/components/CourseTable';
 import StudentCenter from '@/home/components/Center';
+import StudentPassword from '@/home/components/Password';
 import CourseInfoList from '@/manager/components/CourseInfoList';
 import StudentList from '@/manager/components/StudentList';
 import ClassTaskList from '@/manager/components/ClassTaskList';
@@ -85,6 +86,11 @@ const router = new Router({
           path: '/center',
           name: 'StudentCenter',
           component: StudentCenter
+        },
+        {
+          path: '/password',
+          name: 'Password',
+          component: StudentPassword
         },
       ]
     },
