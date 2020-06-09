@@ -60,7 +60,7 @@
       <el-table-column prop="weeksNumber" label="周学时" ></el-table-column>
       <el-table-column prop="weeksSum" label="周数" ></el-table-column>
       <!-- 是否固定时间 -->
-      <el-table-column prop="ixFix" label="固定" ></el-table-column>
+      <el-table-column prop="isFix" label="固定" ></el-table-column>
       <!-- 只有固定上课时间才会有固定的时间在时间这个列中 -->
       <el-table-column prop="classTime" label="时间" ></el-table-column>
 

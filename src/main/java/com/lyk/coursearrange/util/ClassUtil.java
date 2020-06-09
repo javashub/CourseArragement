@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.util;
 
 import com.lyk.coursearrange.entity.request.ConstantInfo;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.*;
@@ -18,6 +19,7 @@ import java.util.*;
  * 上课时间：2
  * 教室编号：6
  */
+@Slf4j
 public class ClassUtil {
 
     /**
@@ -50,23 +52,66 @@ public class ClassUtil {
         }
     }
 
+    public static Boolean judgeTime(String time, String gene, List<String> geneList) {
+
+        for (String str : geneList) {
+            // 讲师--时间    班级--时间
+            // 得到遍历编码中的讲师、班级编号
+            String teacherNo = cutGene(ConstantInfo.TEACHER_NO, str);
+            String classNo = cutGene(ConstantInfo.CLASS_NO, str);
+            String classTime = cutGene(ConstantInfo.CLASS_TIME, str);
+            if (((teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO, gene))) && (classTime.equals(time)))
+                    || classNo.equals(cutGene(ConstantInfo.CLASS_TIME, gene)) && time.equals(cutGene(ConstantInfo.CLASS_TIME, str))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     /**
      * 判断同一个班级同一时间内是否有冲突的上课情况
-     * @param time
-     * @param gene
+     * @param time 随机生成的时间
+     * @param gene 待分配时间的编码
      * @param geneList
      * @return
      */
     public static Boolean isTimeRepeat(String time, String gene, List<String> geneList) {
         // 先从染色体中获得班级编号
-        String classNO = cutGene(ConstantInfo.CLASS_NO, gene);
+        String classNo = cutGene(ConstantInfo.CLASS_NO, gene);
+        // 讲师编号
+//        String teacherNo = cutGene(ConstantInfo.TEACHER_NO,gene);
+
         for (String str : geneList) {
-            // 判断班级编号是否相等
-            if (classNO.equals(cutGene(ConstantInfo.CLASS_NO, str))) {
+
+//            if(time.equals(cutGene(ConstantInfo.CLASS_TIME,str))){
+//                if(classNo.equals(cutGene(ConstantInfo.CLASS_NO,str)) || teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO,str))){
+//                    log.info("{},time:{},老师冲突:{}{},班级冲突:{}{}",geneList.size(),time,teacherNo,teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO,str)),classNo,classNo.equals(cutGene(ConstantInfo.CLASS_NO,str)));
+//                    return false;
+//                }
+//            }
+
+//            String teacherNo2 = cutGene(ConstantInfo.TEACHER_NO,str);
+//            if(teacherNo.equals(teacherNo2)){
+//                String classTime2 = cutGene(ConstantInfo.CLASS_TIME,str);
+//                if(classTime2.equals(time)){
+//                    return false;
+//                }
+//            }
+
+            // 判断班级编号是否相等，这种情况下只是处理了同班上课时间不冲突的情况，还有同讲师同一时间的未处理
+            if (classNo.equals(cutGene(ConstantInfo.CLASS_NO, str))) {
                 // 在班级编号相等的情况下再看看上课时间是否相等,不相等就返回true
                 String classTime = cutGene(ConstantInfo.CLASS_TIME, str);
                 if (time.equals(classTime)) {
+                    return false;
+                }
+            } else {// 如果是不同班级之间判断老师的上课时间
+                String teacherNo = cutGene(ConstantInfo.TEACHER_NO, str);
+                String classTime2 = cutGene(ConstantInfo.CLASS_TIME, str);
+                String teacherNo2 = cutGene(ConstantInfo.TEACHER_NO, gene);
+                String classTime = cutGene(ConstantInfo.CLASS_TIME, gene);
+                if (teacherNo.equals(teacherNo2) && time.equals(classTime)) {
                     return false;
                 }
             }
@@ -76,11 +121,8 @@ public class ClassUtil {
 
 
     /**
-     * 生成上课时间，这里上课时间设定为2位，
-     * 从01到25 分配给每周5天每天5节课的总共25节课中
-     *
      * @param gene     待分配时间的基因编码
-     * @param geneList 固定上课时间的课程
+     * @param geneList 需要比对的编码集合，最初为固定时间的编码，逐渐增加
      * @return
      */
     public static String randomTime(String gene, List<String> geneList) {
@@ -105,6 +147,31 @@ public class ClassUtil {
             return randomTime(gene, geneList);
         }
     }
+
+    public static String randomTime2(String gene, List<String> geneList) {
+        while (true) {
+            int min = 1;
+            int max = 25;
+            String time;
+            //随机生成1到25范围的数字，并将其转化为字符串
+            int temp = min + (int) (Math.random() * (max + 1 - min));
+
+            if (temp < 10) {
+                time = "0" + temp;
+            } else {
+                time = "" + temp;
+            }
+
+            Boolean timeRepeat = judgeTime(time, gene, geneList);
+            System.out.println(timeRepeat);
+            if (timeRepeat) {
+                // 不冲突
+                return time;
+            }
+        }
+
+    }
+
 
 
     /**
@@ -143,7 +210,6 @@ public class ClassUtil {
      * 计算次要课程的期望值
      * 物理、化学、生物
      * 政治、历史、地理
-     *
      * @param classTime
      * @return
      */
@@ -248,8 +314,8 @@ public class ClassUtil {
      * @return
      */
     public static double calculatExpectedValue(List<String> individualList) {
-        double K1 = 0.3; // 专业课所占权重
-        double K2 = 0.1; // 选修课所占权重
+        double K1 = 0.3; // 主要课所占权重
+        double K2 = 0.1; // 次要课所占权重
         double K3 = 0.1; // 体育课所占权重
         double K4 = 0.3; // 实验课所占权重
         double K5 = 0.2; // 课程离散程度所占权重
@@ -260,7 +326,7 @@ public class ClassUtil {
         int F4 = 0; // 实验课期望总值
         int F5; // 课程离散程度期望总值
 
-        double Fx; // 适应度值
+        double Fx; // 总适应度值
 
         // 开始计算个体的适应度
         for (String gene : individualList) {
@@ -268,6 +334,7 @@ public class ClassUtil {
             String courseAttr = cutGene(ConstantInfo.COURSE_ATTR, gene);
             // 获得该课程的开课时间
             String classTime = cutGene(ConstantInfo.CLASS_TIME, gene);
+
             if (courseAttr.equals(ConstantInfo.MAIN_COURSE)) {
                 F1 = F1 + calculateMainExpect(classTime);
             } else if (courseAttr.equals(ConstantInfo.SECONDARY_COURSE)) {
@@ -288,7 +355,6 @@ public class ClassUtil {
     /**
      * 将一个个体（班级课表）的同一门课程的所有上课时间进行统计，并且进行分组
      * 每个班级的课表都算是一个个体
-     *
      * @param individualList
      * @return
      */
@@ -318,7 +384,6 @@ public class ClassUtil {
 
     /**
      * 计算课程离散度期望值
-     *
      * @param individualList
      * @return
      */

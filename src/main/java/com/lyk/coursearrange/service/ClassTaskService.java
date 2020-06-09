@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.service;
 
+import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.apache.ibatis.annotations.Param;
@@ -15,6 +16,6 @@ import java.util.Map;
 public interface ClassTaskService extends IService<ClassTask> {
 
 //    Boolean classScheduling(ClassTask classTask);
-    Boolean classScheduling(@Param("semester") String semester);
+    ServerResponse classScheduling(@Param("semester") String semester);
 
 }

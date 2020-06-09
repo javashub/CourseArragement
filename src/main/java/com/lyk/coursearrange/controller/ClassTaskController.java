@@ -45,11 +45,12 @@ public class ClassTaskController {
 
     /**
      * 手动添加课程任务
+     *
      * @param c
      * @return
      */
     @PostMapping("/addclasstask")
-    public ServerResponse addClassTask(@RequestBody()ClassTaskDTO c) {
+    public ServerResponse addClassTask(@RequestBody() ClassTaskDTO c) {
         System.out.println(c);
         ClassTask classTask = new ClassTask();
         classTask.setSemester(c.getSemester());
@@ -94,6 +95,7 @@ public class ClassTaskController {
      * 获得学期集合,如：
      * 2019-2020-1
      * 2019-2020-2
+     *
      * @return
      */
     @GetMapping("/semester")
@@ -112,19 +114,14 @@ public class ClassTaskController {
     }
 
     /**
-     *排课算法接口，传入学期开始去查对应学期的开课任务，进行排课，排完课程后添加到course_plan表
+     * 排课算法接口，传入学期开始去查对应学期的开课任务，进行排课，排完课程后添加到course_plan表
+     *
      * @param semester
      * @return
      */
     @PostMapping("/arrange/{semester}")
     public ServerResponse arrange(@PathVariable("semester") String semester) {
-        log.debug("排课的学期：" + semester);
-        boolean b = classTaskService.classScheduling(semester);
-
-        if (b) {
-            return ServerResponse.ofSuccess("排课完成");
-        }
-        return ServerResponse.ofError("排课失败");
+        return classTaskService.classScheduling(semester);
     }
 }
 

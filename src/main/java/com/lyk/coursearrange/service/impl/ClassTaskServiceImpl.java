@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.dao.*;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.Classroom;
@@ -9,6 +10,7 @@ import com.lyk.coursearrange.entity.request.ConstantInfo;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.util.ClassUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +25,10 @@ import java.util.stream.Collectors;
  * @since 2020-04-06
  */
 @Service
+@Slf4j
 public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> implements ClassTaskService {
 
-    Logger log = LoggerFactory.getLogger(ClassTaskServiceImpl.class);
+//    Logger log = LoggerFactory.getLogger(ClassTaskServiceImpl.class);
 
     @Autowired
     private ClassTaskDao classTaskDao;
@@ -47,13 +50,13 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
 
     /**
-     *
+     * 排课算法入口
      * @param
      * @return
      */
     @Transactional
     @Override
-    public Boolean classScheduling(String semester) {
+    public ServerResponse classScheduling(String semester) {
         try {
             log.info("开始排课,时间：" + System.currentTimeMillis());
             long start = System.currentTimeMillis();
@@ -63,17 +66,17 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             List<ClassTask> classTaskList = classTaskDao.selectList(wrapper);
             // 没有任务，排课失败
             if (classTaskList == null) {
-                return false;
+                return ServerResponse.ofError("排课失败，查询不到排课任务！");
             }
-            // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间的课程集合
+            // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间
             List<Map<String, List<String>>>  geneList = coding(classTaskList);
-            // 3、给初始基因编码随机分配时间
+            // 3、给初始基因编码随机分配时间，得到同班上课时间不冲突的编码
             List<String> resultGeneList = codingTime(geneList);
-            // 4、将分配好时间的基因编码以班级分类成为以班级的个体
+            // 4、将分配好时间的基因编码以班级分类成为以班级的个体，得到班级的不冲突时间初始编码
             Map<String, List<String>> individualMap = transformIndividual(resultGeneList);
             // 5、遗传进化
             individualMap = geneticEvolution(individualMap);
-            // 6、给新个体分配教室，同时要进行冲突检测
+            // 6、分配教室并做教室冲突检测
             List<String> resultList = finalResult(individualMap);
             // 7、解码最终的染色体获取其中的基因信息
             List<CoursePlan> coursePlanList = decoding(resultList);
@@ -84,11 +87,11 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                         coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
             }
             log.info("完成排课,耗时：" + (System.currentTimeMillis() - start));
-            return true;
+            return ServerResponse.ofSuccess("排课成功！");
         } catch (Exception e) {
             log.error("the error message is:" + "    " + e.getMessage());
             e.printStackTrace();
-            return false;
+            return ServerResponse.ofError("排课失败，出现异常!");
         }
     }
 
@@ -318,7 +321,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             // 2,3、变异
             resultGeneList = geneMutation(collectGene(individualMap));
             // 4、冲突检测，消除冲突
-            conflictResolution(resultGeneList);
+//            conflictResolution(resultGeneList);
             // 5、将消除冲突后的个体再分班进入下一次进化
             individualMap = transformIndividual(conflictResolution(resultGeneList));
         }
@@ -350,19 +353,65 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 String tempClassTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, tempGene);
                 String tempClassNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, tempGene);
                 // 判断是否有同一讲师同一时间上两门课
-                if (techerNo.equals(tempTecherNo) && classTime.equals(tempClassTime) && classNo.equals(tempClassNo)) {
+                if (techerNo.equals(tempTecherNo) && classTime.equals(tempClassTime)) {
                     // 说明同一讲师同一时间有两门以上的课要上，冲突出现，重新给这门课找一个时间
                     String newClassTime = ClassUtil.randomTime(gene, resultGeneList);
                     gene = gene.substring(0, 24) + newClassTime;
-                    continue  eitx;
+                    continue eitx;
                 }
             }
         }
         return resultGeneList;
     }
 
+    // 备用冲突解决
+    List<String> conflictResolution2(List<String> resultGeneList) {
+        Set<String> legalGeneSet = new HashSet<>();
+        Set<String> illegalGeneSet = new HashSet<>();
+        List<String> newResultGeneList = new ArrayList<>();
+        //搜索冲突。
+        resultGeneList.forEach(s -> {
+            String teacherNo = s.substring(11, 16);
+            String classTime = s.substring(24, 26);
+            String key = String.format("%s-%s", teacherNo, classTime);
+            //判断同一时间老师是否还在别的地方上课。
+            if (!legalGeneSet.contains(key)) {
+                legalGeneSet.add(key);
+                newResultGeneList.add(s);
+            } else {
+                illegalGeneSet.add(s);
+            }
+        });
+        //解决冲突。
+        illegalGeneSet.forEach(s -> {
+            String isFix = s.substring(0, 1);
+            String gradeNo = s.substring(1, 3);
+            String classNo = s.substring(3, 11);
+            String teacherNo = s.substring(11, 16);
+            String courseNo = s.substring(16, 22);
+            String courseAttr = s.substring(22, 24);
+//            String classroomNo = s.substring(26, 32);
+            int classTime = Integer.parseInt(s.substring(24, 26));
+            //搜索一个合法时间并分配。
+            for (int newClassTime = 1; newClassTime <= 25; newClassTime++) {
+                if (newClassTime != classTime) {
+                    String key = String.format("%s-%02d", teacherNo, newClassTime);
+                    if (!legalGeneSet.contains(key)) {
+                        legalGeneSet.add(key);
+                        String gene = String.format("%s%s%s%s%s%s%02d",
+                                isFix, gradeNo, classNo, teacherNo, courseNo, courseAttr, newClassTime);
+                        newResultGeneList.add(gene);
+                        break;
+                    }
+                }
+            }
+        });
+        return newResultGeneList;
+    }
+
+
     /**
-     * 重新合拢交叉后的个体,即不分班级的基因编码，新种群
+     * 重新合拢交叉后的个体,即不分班级的基因编码，得到所有的编码
      * @param individualMap
      * @return
      */
@@ -383,7 +432,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         int min = 0;
         int max = resultGeneList.size() - 1;
         // 变异率，需要合理设置，太低则不容易进化得到最优解；太高则容易失去种群原来的优秀解
-        double mutationRate = 0.01;
+        double mutationRate = 0.001; //0.002  0.003  0.004  0.005尽量设置低一些，0.01可能都大了
         // 设定每一代中需要变异的基因个数，基因数*变异率
         int mutationNumber = (int)(resultGeneList.size() * mutationRate);
 
@@ -455,7 +504,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             if (firstIndex == secondIndex) {
                 flag = false;
             } else if(ClassUtil.cutGene(ConstantInfo.IS_FIX, firstGene).equals("2") || ClassUtil.cutGene(ConstantInfo.IS_FIX, secondGene).equals("2")) {
-                // 上课时间已经固定，重新选择
+                // 上课时间已经固定
                 flag = false;
             } else {
                 // 分别获取两条基因编码中的上课时间，开始交叉
@@ -543,17 +592,18 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         List<String> resultGeneList = new ArrayList<>();
         List<String> isFixedTimeGeneList = geneList.get(0).get(IS_FIX_TIME);
         List<String> unFixedTimeGeneList = geneList.get(0).get(UNFIXED_TIME);
-        // 将固定上课时间的课程基因编码集合全部加入集合，用于等下判断后面分配上课时间的时候有没有跟现有固定时间的课程冲突
+        // 将固定上课时间的课程基因编码集合全部加入集合
         resultGeneList.addAll(isFixedTimeGeneList);
-        // 排之前没有固定时间的课程
+        // 没有固定时间的课程
         for (String gene : unFixedTimeGeneList) {
-            // 获得一个随机时间，随机时间函数会出现递归调用导致栈溢出的情况
+            // 获得一个随机时间
             String classTime = ClassUtil.randomTime(gene, resultGeneList);
             // 得到分配好随机上课时间的基因编码
             gene = gene.substring(0, 24) + classTime;
             // 分配好上课时间的编码集合
             resultGeneList.add(gene);
         }
+        // 这个集合只是同一个班级内上课时间不冲突的
         return resultGeneList;
     }
 
@@ -576,8 +626,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                     geneList.add(gene);
                 }
             }
-            // 根据班级分配基因编码集合
-            if (geneList.size() > 1) {
+            // 根据班级分配基因编码集合>1
+            if (geneList.size() > 0) {
                 individualMap.put(classNo, geneList);
             }
         }
@@ -597,7 +647,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * 	课程属性：2
      * 	上课时间：2
      * 	教室编号：6
-     * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间(固定) + 教室编号(最后才分配)
+     * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间
      * 其中如果不固定开课时间默认填充为"00"
      * @param resultList 全部上课计划实体
      * @return

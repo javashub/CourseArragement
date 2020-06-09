@@ -25,10 +25,10 @@ public class ConstantInfo {
     // 课程属性 1位
     public static final String COURSE_ATTR = "courseAttr";
 
-    // 教室编号
+    // 教室编号6位
     public static final String CLASSROOM_NO = "classroom_no";
 
-    // 上课时间
+    // 上课时间2位
     public static final String CLASS_TIME = "class_time";
 
     // 开课学期
@@ -60,6 +60,6 @@ public class ConstantInfo {
     public static final String TECHNOLOGY_COURSE = "07";
 
     // 设置遗传代数
-    public static final int GENERATION = 100;
+    public static final int GENERATION = 50;
 
 }

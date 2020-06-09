@@ -11,6 +11,9 @@ import com.lyk.coursearrange.service.ExerciseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Random;
+
 /**
  * @author lequal
  * @since 2020-05-21
@@ -82,6 +85,27 @@ public class ExerciseController {
             return ServerResponse.ofSuccess("添加成功");
         }
         return ServerResponse.ofError("添加失败");
+    }
+
+    /**
+     * 根据习题类型随机出20道题目
+     * @param categoryId
+     * @return
+     */
+    @GetMapping("/exercise/push/{categoryid}")
+    public ServerResponse pushTrain(@PathVariable("categoryid") Integer categoryId) {
+
+        QueryWrapper wrapper = new QueryWrapper();
+//        wrapper.eq("")
+        int min = 1;
+        int max = es.list().size();
+        // 随机生成
+        for (int i = 0; i < 20; i++) {
+            int temp = min + (int)(Math.random() * (max + 1 - min));
+
+            List<Exercise> list = es.list();
+        }
+        return null;
     }
 
 
