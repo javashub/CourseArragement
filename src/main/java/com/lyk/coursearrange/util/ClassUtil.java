@@ -79,17 +79,15 @@ public class ClassUtil {
     public static Boolean isTimeRepeat(String time, String gene, List<String> geneList) {
         // 先从染色体中获得班级编号
         String classNo = cutGene(ConstantInfo.CLASS_NO, gene);
-        // 讲师编号
-//        String teacherNo = cutGene(ConstantInfo.TEACHER_NO,gene);
-
+        String teacherNo = cutGene(ConstantInfo.TEACHER_NO,gene);
         for (String str : geneList) {
 
-//            if(time.equals(cutGene(ConstantInfo.CLASS_TIME,str))){
-//                if(classNo.equals(cutGene(ConstantInfo.CLASS_NO,str)) || teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO,str))){
-//                    log.info("{},time:{},老师冲突:{}{},班级冲突:{}{}",geneList.size(),time,teacherNo,teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO,str)),classNo,classNo.equals(cutGene(ConstantInfo.CLASS_NO,str)));
-//                    return false;
-//                }
-//            }
+            if(time.equals(cutGene(ConstantInfo.CLASS_TIME,str))){
+                if(classNo.equals(cutGene(ConstantInfo.CLASS_NO,str)) || teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO,str))){
+                    log.info("{},time:{},老师冲突:{}{},班级冲突:{}{}",geneList.size(),time,teacherNo,teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO,str)),classNo,classNo.equals(cutGene(ConstantInfo.CLASS_NO,str)));
+                    return false;
+                }
+            }
 
 //            String teacherNo2 = cutGene(ConstantInfo.TEACHER_NO,str);
 //            if(teacherNo.equals(teacherNo2)){
@@ -99,6 +97,7 @@ public class ClassUtil {
 //                }
 //            }
 
+            /*
             // 判断班级编号是否相等，这种情况下只是处理了同班上课时间不冲突的情况，还有同讲师同一时间的未处理
             if (classNo.equals(cutGene(ConstantInfo.CLASS_NO, str))) {
                 // 在班级编号相等的情况下再看看上课时间是否相等,不相等就返回true
@@ -106,26 +105,31 @@ public class ClassUtil {
                 if (time.equals(classTime)) {
                     return false;
                 }
-            } else {// 如果是不同班级之间判断老师的上课时间
+            } else {
+                // 如果是不同班级之间判断老师的上课时间
                 String teacherNo = cutGene(ConstantInfo.TEACHER_NO, str);
-                String classTime2 = cutGene(ConstantInfo.CLASS_TIME, str);
                 String teacherNo2 = cutGene(ConstantInfo.TEACHER_NO, gene);
-                String classTime = cutGene(ConstantInfo.CLASS_TIME, gene);
+                String classTime = cutGene(ConstantInfo.CLASS_TIME, str);
+                // 用下面这条会出现一些冲突
+//                String classTime = cutGene(ConstantInfo.CLASS_TIME, gene);
+
                 if (teacherNo.equals(teacherNo2) && time.equals(classTime)) {
                     return false;
                 }
             }
+             */
         }
         return true;
     }
 
 
     /**
+     * 方法不适用多任务的情况，会出现递归调用导致栈溢出
      * @param gene     待分配时间的基因编码
      * @param geneList 需要比对的编码集合，最初为固定时间的编码，逐渐增加
      * @return
      */
-    public static String randomTime(String gene, List<String> geneList) {
+    public static String randomTime2(String gene, List<String> geneList) {
         int min = 1;
         int max = 25;
         String time;
@@ -148,30 +152,37 @@ public class ClassUtil {
         }
     }
 
-    public static String randomTime2(String gene, List<String> geneList) {
-        while (true) {
+    /**
+     * 这种随机生成时间的方式，初始可能出现有同班级相同时间的情况
+     * @param gene
+     * @param geneList
+     * @return
+     */
+    public static String randomTime(String gene, List<String> geneList) {
+
+        exit:
+        for (; ;) {
             int min = 1;
             int max = 25;
             String time;
-            //随机生成1到25范围的数字，并将其转化为字符串
-            int temp = min + (int) (Math.random() * (max + 1 - min));
 
+            int temp = min + (int) (Math.random() * (max + 1 - min));
+            System.out.println(temp);
             if (temp < 10) {
                 time = "0" + temp;
             } else {
                 time = "" + temp;
             }
 
-            Boolean timeRepeat = judgeTime(time, gene, geneList);
-            System.out.println(timeRepeat);
-            if (timeRepeat) {
-                // 不冲突
-                return time;
-            }
+            return time;
+//            if (isTimeRepeat(time, gene, geneList)) {
+//                return time;
+//            } else {
+//                System.out.println("执行退出了");
+//                continue exit;
+//            }
         }
-
     }
-
 
 
     /**

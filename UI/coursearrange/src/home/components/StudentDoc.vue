@@ -49,11 +49,6 @@ export default {
   },
   methods: {
 
-    // // 预览
-    // previewById(index, row) {
-      
-    // },
-
     // 下载
     downloadById(index, row) {
       console.log(row.docUrl)
@@ -72,6 +67,9 @@ export default {
       let user = window.localStorage.getItem('student')
       // 得到学生所在班级的编号
       this.toClassNo = (JSON.parse(user)).classNo
+      if (this.classNo == '' || this.classNo == null) {
+        this.$message.error('您还未加入班级呢，暂时无法查看文档哦')
+      }
       this.$axios.post("http://localhost:8080/docs-class/" + this.page, {
         classNo: this.toClassNo
       })

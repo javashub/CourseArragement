@@ -36,6 +36,18 @@
                 <span slot="title">课程表</span>
               </template>
             </el-menu-item>
+            <el-menu-item index="/studentdoc">
+              <template slot="title">
+                <i class="el-icon-document"></i>
+                <span slot="title">学习文档</span>
+              </template>
+            </el-menu-item>
+            <el-menu-item index="/courseList">
+              <template slot="title">
+                <i class="el-icon-school"></i>
+                <span slot="title">空教室查询</span>
+              </template>
+            </el-menu-item>
              <el-menu-item index="/center">
               <template slot="title">
                 <i class="el-icon-user"></i>
@@ -95,8 +107,7 @@ export default {
       // alert(command)
       if (command == "exit") {
         localStorage.removeItem("token");
-        localStorage.removeItem("admin");
-        localStorage.removeItem("teacher");
+        localStorage.removeItem("student");
         // 判断，返回指定页面
         this.$router.push("/student/login");
       } else if (command == "center") {
@@ -115,7 +126,7 @@ export default {
       this.default_active = val;
       if(val=='/index'){
         // 网课页面
-        window.open('http://localhost:80/index.html')
+        window.open('http://localhost:81/index.html')
         return;
       }
       this.$router.push(val);

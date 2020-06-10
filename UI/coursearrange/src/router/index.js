@@ -92,6 +92,11 @@ const router = new Router({
           name: 'Password',
           component: StudentPassword
         },
+        {
+          path: '/studentdoc',
+          name: 'StudentDoc',
+          component: StudentDoc
+        }
       ]
     },
     {
@@ -183,11 +188,6 @@ const router = new Router({
           path: '/exercise',
           name: 'Exercise',
           component: Exercise
-        },
-        {
-          path: '/studentdoc',
-          name: 'StudentDoc',
-          component: StudentDoc
         }
       ]
     }

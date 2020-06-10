@@ -140,7 +140,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 resultList.add(gene);
             }
         }
-        // 完整的基因编码
+        // 完整的基因编码，即分配有教室的
         return resultList;
     }
 
@@ -148,7 +148,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * 给不同的基因编码分配教室
      * @param gene 需要分配教室的基因编码
      * @param classroomList 教室
-     * @param resultList
+     * @param resultList 分配有教室的编码
      * @return
      */
     private String issueClassroom(String gene, List<Classroom> classroomList, List<String> resultList) {
@@ -215,6 +215,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * @return
      */
     private Boolean judgeClassroom(int studentNum, String gene, Classroom classroom, List<String> resultList) {
+
         String courseAttr = ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene);
         // 只要是语数英物化生政史地这些课程都是放在普通教室上课
         if (courseAttr.equals(ConstantInfo.MAIN_COURSE) || courseAttr.equals(ConstantInfo.SECONDARY_COURSE)) {
@@ -330,7 +331,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
 
 
-
     /**
      * 冲突消除,同一个讲师同一时间上多门课。解决：重新分配一个时间，直到所有的基因编码中
      * 不再存在上课时间冲突为止
@@ -339,30 +339,65 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * @return
      */
     private List<String> conflictResolution(List<String> resultGeneList) {
+        int conflictTimes = 0;
         eitx:
-        for (int i = 0; i < resultGeneList.size(); ++i) {
+        for (int i = 0; i < resultGeneList.size();i++) {
             // 得到集合中每一条基因编码的编码信息
             String gene = resultGeneList.get(i);
-            String techerNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
+            String teacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
             String classTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene);
             String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
-            for (int j = i + 1; j < resultGeneList.size(); ++j) {
+            for (int j = i + 1; j < resultGeneList.size(); j++) {
                 // 再找剩余的基因编码对比
                 String tempGene = resultGeneList.get(j);
-                String tempTecherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, tempGene);
+                String tempTeacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, tempGene);
                 String tempClassTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, tempGene);
                 String tempClassNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, tempGene);
-                // 判断是否有同一讲师同一时间上两门课
-                if (techerNo.equals(tempTecherNo) && classTime.equals(tempClassTime)) {
-                    // 说明同一讲师同一时间有两门以上的课要上，冲突出现，重新给这门课找一个时间
-                    String newClassTime = ClassUtil.randomTime(gene, resultGeneList);
-                    gene = gene.substring(0, 24) + newClassTime;
-                    continue eitx;
+                // 冲突检测
+                if (classTime.equals(tempClassTime)) {
+                    if (classNo.equals(tempClassNo) || teacherNo.equals(tempTeacherNo)){
+                        System.out.println("出现冲突情况");
+                        conflictTimes++;
+                        String newClassTime = ClassUtil.randomTime(gene, resultGeneList);
+                        String newGene = gene.substring(0, 24) + newClassTime;
+                        resultGeneList = replace(resultGeneList, gene, newGene);
+                        i = -1;
+                        continue eitx;
+                    }
                 }
+
+//                // 判断是否有同一讲师同一时间上两门课
+//                if (techerNo.equals(tempTecherNo) && classTime.equals(tempClassTime)) {
+//                    // 说明同一讲师同一时间有两门以上的课要上，冲突出现，重新给这门课找一个时间
+//                    String newClassTime = ClassUtil.randomTime(gene, resultGeneList);
+//                    String newGene = gene.substring(0, 24) + newClassTime;
+//                    resultGeneList = replace(resultGeneList, gene, newGene);
+//                    continue eitx;
+//                }
             }
         }
+        System.out.println("冲突发生次数:" + conflictTimes);
         return resultGeneList;
     }
+
+    /**
+     * 替换基因编码
+     * @param resuleGeneList
+     * @param oldGene
+     * @param newGene
+     * @return
+     */
+    private List<String> replace(List<String> resuleGeneList, String oldGene, String newGene) {
+        for (int i = 0; i < resuleGeneList.size(); i++) {
+            if (resuleGeneList.get(i).equals(oldGene)) {
+                resuleGeneList.set(i, newGene);
+                System.out.println("执行替换方法");
+                return resuleGeneList;
+            }
+        }
+        return resuleGeneList;
+    }
+
 
     // 备用冲突解决
     List<String> conflictResolution2(List<String> resultGeneList) {
@@ -432,7 +467,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         int min = 0;
         int max = resultGeneList.size() - 1;
         // 变异率，需要合理设置，太低则不容易进化得到最优解；太高则容易失去种群原来的优秀解
-        double mutationRate = 0.001; //0.002  0.003  0.004  0.005尽量设置低一些，0.01可能都大了
+        double mutationRate = 0.005; //0.002  0.003  0.004  0.005尽量设置低一些，0.01可能都大了
         // 设定每一代中需要变异的基因个数，基因数*变异率
         int mutationNumber = (int)(resultGeneList.size() * mutationRate);
 
