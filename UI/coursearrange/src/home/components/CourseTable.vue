@@ -82,7 +82,11 @@ export default {
     let student = window.localStorage.getItem("student");
     if (student != null) {
       this.value3 = JSON.parse(student).classNo;
-      this.queryCoursePlan();
+      if (this.value3 === "" || this.value3 === null) {
+        this.$message.error("您还没加入班级呢，暂时无法查询课表哦");
+      } else {
+        this.queryCoursePlan()
+      }
     } else {
       this.$message({
         message: "获取本地用户信息失败，请重新登录",

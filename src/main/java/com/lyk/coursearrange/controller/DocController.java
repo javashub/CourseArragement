@@ -75,13 +75,14 @@ public class DocController {
      * @param limit
      * @return
      */
-    @GetMapping("/docs-class/{page}")
-    public ServerResponse getDocsByClass(@PathVariable("page") Integer page, @RequestParam(name = "classNo") String toClassNo,
+    @GetMapping("/docs-class/{page}/{toClassNo}")
+    public ServerResponse getDocsByClass(@PathVariable("page") Integer page, @PathVariable("toClassNo") String toClassNo,
                                          @RequestParam(defaultValue = "10") Integer limit) {
         Page<Doc> pages = new Page<>(page, limit);
         QueryWrapper<Doc> wrapper = new QueryWrapper<Doc>().orderByDesc("create_time").eq("to_class_no", toClassNo);
 
         IPage<Doc> iPage = docService.page(pages, wrapper);
+        System.out.println(iPage);
         return ServerResponse.ofSuccess(iPage);
     }
 

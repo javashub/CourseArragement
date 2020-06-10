@@ -16,6 +16,7 @@ import ClassroomList from '@/manager/components/ClassroomList';
 import TeachBuildingList from '@/manager/components/TeachBuildingList';
 import CourseTable from '@/manager/components/CourseTable';
 import StudentCourseTable from '@/home/components/CourseTable';
+import EmptyClassroom from '@/home/components/EmptyClassroom';
 import StudentCenter from '@/home/components/Center';
 import StudentPassword from '@/home/components/Password';
 import CourseInfoList from '@/manager/components/CourseInfoList';
@@ -72,6 +73,12 @@ const router = new Router({
         noRequireAuth: true
       },
       children: [
+        
+        {
+          path: '/emptyclassroom',
+          name: 'EmptyClassroom',
+          component: EmptyClassroom
+        },
         {
           path: '',
           name: 'CourseList-default',

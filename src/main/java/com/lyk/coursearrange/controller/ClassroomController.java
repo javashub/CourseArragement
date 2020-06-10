@@ -6,14 +6,19 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.Classroom;
+import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.TeachbuildInfo;
 import com.lyk.coursearrange.entity.request.ClassroomAddRequest;
 import com.lyk.coursearrange.service.ClassroomService;
+import com.lyk.coursearrange.service.CoursePlanService;
 import com.lyk.coursearrange.service.TeachbuildInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.stereotype.Controller;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -29,8 +34,45 @@ public class ClassroomController {
     private ClassroomService classroomService;
     @Autowired
     private TeachbuildInfoService t;
+    @Autowired
+    private CoursePlanService coursePlanService;
 
-    // TODO 添加教室，添加时需要查询所有的教学楼，选择教室所在教学楼并判断教室是否已经存在
+    // 根据教学楼编号查询空教室
+    @GetMapping("/empty/{teachbuildno}")
+    public ServerResponse getEmptyClassroom(@PathVariable("teachbuildno") String teachbuildNo) {
+        // 首先查询该教学楼下面的所有教室
+        QueryWrapper<Classroom> wrapper1 = new QueryWrapper();
+        wrapper1.eq("teachbuild_no", teachbuildNo);
+        List<Classroom> allClassroom = classroomService.list(wrapper1);
+
+
+        // 查询上课任务中已经使用的教室
+        List<CoursePlan> coursePlanList = coursePlanService.list();
+        List<String> usedClaassroom = new ArrayList<>();
+        for (int i = 0; i < coursePlanList.size(); i++) {
+            // 截取占用的教室所属编号前两位，即教学楼编号
+            if (teachbuildNo.equals(coursePlanList.get(i).getClassroomNo().substring(0, 2))) {
+                usedClaassroom.add(coursePlanList.get(i).getClassroomNo());
+            }
+        }
+        List<Integer> list = new ArrayList<>();
+        // 上面已经得到对应教学楼编号下面的所有占用教室
+        for (Classroom c : allClassroom) {
+            for (String no : usedClaassroom) {
+                if (c.getClassroomNo().equals(no)) {
+                    // 说明该教学楼下的这个教室已经被占用了，去除
+                    list.add(c.getId());
+                }
+            }
+        }
+
+        // 去除对应id的教室
+        for (int i = 0; i < list.size(); i++) {
+            allClassroom.remove(list.get(i));
+        }
+
+        return ServerResponse.ofSuccess(allClassroom);
+    }
 
     /**
      * 带分页显示教室列表

@@ -42,7 +42,7 @@
                 <span slot="title">学习文档</span>
               </template>
             </el-menu-item>
-            <el-menu-item index="/courseList">
+            <el-menu-item index="/emptyclassroom">
               <template slot="title">
                 <i class="el-icon-school"></i>
                 <span slot="title">空教室查询</span>
@@ -90,19 +90,13 @@ export default {
       this.getTime();
     }, 1000);
 
-    let student = window.localStorage.getItem("student");
+    let student = window.localStorage.getItem("student")
     if (student != null) {
-      this.name = JSON.parse(student).realname;
-    } else {
-      let teacher = window.localStorage.getItem("teacher");
-      if (teacher != null) {
-        this.name = JSON.parse(teacher).realname;
-      }
+      this.name = JSON.parse(student).realname
     }
   },
 
   methods: {
-    // 下拉菜单功能，退出、个人中心
     handleCommand(command) {
       // alert(command)
       if (command == "exit") {
