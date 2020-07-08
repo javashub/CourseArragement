@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> implements ClassTaskService {
 
-//    Logger log = LoggerFactory.getLogger(ClassTaskServiceImpl.class);
-
     @Autowired
     private ClassTaskDao classTaskDao;
     @Autowired
@@ -178,7 +176,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     }
 
     /**
-     * 给不同课程的基因编码选择相应的教室
+     * 给不同课程的基因编码随机选择一个教室
      * @param studentNum 开课的班级的学生人数
      * @param gene 需要安排教室的基因编码
      * @param classroomList 教室
@@ -210,7 +208,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * 即：不同属性的课要放在对应属性的教室上课
      * @param studentNum
      * @param gene
-     * @param classroom
+     * @param classroom 随机分配教室
      * @param resultList
      * @return
      */
@@ -317,7 +315,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         for (int i = 0; i < generation; ++i) {
             // 1、选择、交叉individualMap：按班级分的课表
             individualMap = hybridization(individualMap);
-            // 2、合拢所有班级的个体准备进行变异
+            // 2、合拢所有班级的个体
             collectGene(individualMap);
             // 2,3、变异
             resultGeneList = geneMutation(collectGene(individualMap));
@@ -341,7 +339,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private List<String> conflictResolution(List<String> resultGeneList) {
         int conflictTimes = 0;
         eitx:
-        for (int i = 0; i < resultGeneList.size();i++) {
+        for (int i = 0; i < resultGeneList.size(); i++) {
             // 得到集合中每一条基因编码的编码信息
             String gene = resultGeneList.get(i);
             String teacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
@@ -355,9 +353,9 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 String tempClassNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, tempGene);
                 // 冲突检测
                 if (classTime.equals(tempClassTime)) {
-                    if (classNo.equals(tempClassNo) || teacherNo.equals(tempTeacherNo)){
+                    if (classNo.equals(tempClassNo) || teacherNo.equals(tempTeacherNo)) {
                         System.out.println("出现冲突情况");
-                        conflictTimes++;
+                        conflictTimes ++;
                         String newClassTime = ClassUtil.randomTime(gene, resultGeneList);
                         String newGene = gene.substring(0, 24) + newClassTime;
                         resultGeneList = replace(resultGeneList, gene, newGene);
@@ -365,7 +363,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                         continue eitx;
                     }
                 }
-
 //                // 判断是否有同一讲师同一时间上两门课
 //                if (techerNo.equals(tempTecherNo) && classTime.equals(tempClassTime)) {
 //                    // 说明同一讲师同一时间有两门以上的课要上，冲突出现，重新给这门课找一个时间
@@ -497,7 +494,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     }
 
     /**
-     * 交叉：种群(每个班级的初始课表基因编码)
+     * 给每个班级交叉：一个班级看作一个种群
      * @param individualMap
      * @return
      */
@@ -510,7 +507,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             List<String> oldIndividualList = individualList;
             // 交叉生成新个体,得到新生代
             individualList = selectGene(individualList);
-            // 对比子父代的适应度值，高的留下进行下一代遗传
+            // 计算并对比子父代的适应度值，高的留下进行下一代遗传
             if (ClassUtil.calculatExpectedValue(individualList) >= ClassUtil.calculatExpectedValue(oldIndividualList)) {
                 individualMap.put(classNo, individualList);
             } else {
@@ -682,7 +679,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * 	课程属性：2
      * 	上课时间：2
      * 	教室编号：6
-     * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间
+     * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间+教室编号(遗传算法执行完最后再分配教室)
      * 其中如果不固定开课时间默认填充为"00"
      * @param resultList 全部上课计划实体
      * @return

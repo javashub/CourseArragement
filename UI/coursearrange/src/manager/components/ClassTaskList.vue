@@ -49,7 +49,7 @@
     <el-table class="ckasstask-table" :data="classTaskData" size="mini" :stripe="true" :highlight-current-row="true">
       <el-table-column label="序号" type="selection"></el-table-column>
       <el-table-column prop="semester" label="学期" ></el-table-column>
-      <el-table-column prop="gradeNo" label="年级" ></el-table-column>
+      <el-table-column prop="gradeNo" label="年级" width="60px"></el-table-column>
       <el-table-column prop="classNo" label="班级" ></el-table-column>
       <el-table-column prop="courseNo" label="课号" ></el-table-column>
       <el-table-column prop="courseName" label="课名" ></el-table-column>

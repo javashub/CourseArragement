@@ -36,7 +36,7 @@ export default {
       // 登录表单的对象
       studentLoginForm: {
         username: '2020011234',
-        password: '123456'
+        password: ''
       },
       studentLoginFormRules: {
         username: [

@@ -202,18 +202,18 @@ const router = new Router({
 })
 
 router.beforeEach((to, from, next) => {
-  // if (!to.matched.some(res => res.meta.noRequireAuth)) {// 判断是否需要登录权限
-  //   if (window.localStorage.getItem('teacher') || window.localStorage.getItem("admin") ) {// 判断是否登录
-  //     next()
-  //   } else {
-  //     next({
-  //       path: '/',
-  //       query: { redirect: to.fullPath }
-  //     })
-  //   }
-  // } else {
-  //   next()
-  // }
+  if (!to.matched.some(res => res.meta.noRequireAuth)) {// 判断是否需要登录权限
+    if (window.localStorage.getItem('teacher') || window.localStorage.getItem("admin") ) {// 判断是否登录
+      next()
+    } else {
+      next({
+        path: '/',
+        query: { redirect: to.fullPath }
+      })
+    }
+  } else {
+    next()
+  }
   next()
 })
 

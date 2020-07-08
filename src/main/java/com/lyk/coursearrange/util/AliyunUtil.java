@@ -22,20 +22,23 @@ import java.util.UUID;
 public class AliyunUtil {
 
     // bucket域名：arrange.oss-cn-shenzhen.aliyuncs.com
-    @Value("${aliyun.oss.file.endpoint}")
+//    @Value("${aliyun.oss.file.endpoint}")
     private static String endpoint = "oss-cn-shenzhen.aliyuncs.com";
 
-    @Value("${aliyun.oss.file.accessKeyId}")
-    private static String accessKeyId = "LTAI4FgC4srdFY4KPjYNVx1u";
+//    @Value("${aliyun.oss.file.accessKeyId}")
+    private static String accessKeyId = "这里改成你们自己的key";
 
-    @Value("${aliyun.oss.file.accessKeySecret}")
-    private static String accessKeySecret = "IKoCvPxq7aMX4Bh9revMk7z30fjqP1";
+//    @Value("${aliyun.oss.file.accessKeySecret}")
+    private static String accessKeySecret = "这里改成你们自己的密钥";
 
-    @Value("${aliyun.oss.file.bucketName}")
+//    @Value("${aliyun.oss.file.bucketName}")
     private static String bucketName = "arrange";
 
     /**
      * 文件上传成功返回路径
+     * @param file
+     * @param directory 选择需要上传到的目录下面，暂时不用，原本想将用户头像、其他文件上传到不同的目录下面的
+     * @return
      */
     public static Map<String, Object> upload(MultipartFile file, String directory) {
 

@@ -2,13 +2,13 @@
   <div class="s-center">
     <el-form label-width="80px" :model="form">
       <el-form-item label="原始密码">
-        <el-input v-model="form.oldPass"></el-input>
+        <el-input v-model="form.oldPass" type="password" show-password></el-input>
       </el-form-item>
       <el-form-item label="新密码">
-        <el-input v-model="form.newPass" ></el-input>
+        <el-input v-model="form.newPass" type="password" show-password></el-input>
       </el-form-item>
       <el-form-item label="确认密码">
-        <el-input v-model="form.rePass"></el-input>
+        <el-input v-model="form.rePass" type="password" show-password></el-input>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" size="small" @click="save()">修改</el-button>
@@ -50,9 +50,13 @@ export default {
         .then(r => {
           if (r.data.code == 0) {
             this.$message({
-              message: r.data.message,
+              message: '密码更新成功，请重新登录！',
               type: "success"
             });
+            setTimeout(() => {
+              window.localStorage.removeItem('student')
+              this.$router.push('/student/login')
+            }, 1000);
           }else{
             this.$message({
               message: r.data.message,

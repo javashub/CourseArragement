@@ -188,7 +188,6 @@ public class ClassUtil {
     /**
      * 计算主要课程的期望值
      * 例如语文数学英语在高中阶段是需要设置多一点，设置在前面上课
-     *
      * @param classTime
      * @return
      */
@@ -207,7 +206,7 @@ public class ClassUtil {
         if (ArrayUtils.contains(tenExpectValue, classTime)) {
             return 10;
         } else if (ArrayUtils.contains(eightExpectValue, classTime)) {
-            return 8;
+            return 10;
         } else if (ArrayUtils.contains(fourExpectValue, classTime)) {
             return 4;
         } else if (ArrayUtils.contains(twoExpectValue, classTime)) {
@@ -339,7 +338,7 @@ public class ClassUtil {
 
         double Fx; // 总适应度值
 
-        // 开始计算个体的适应度
+        // 开始计算每一个个体的适应度
         for (String gene : individualList) {
             // 获得课程属性
             String courseAttr = cutGene(ConstantInfo.COURSE_ATTR, gene);
@@ -395,13 +394,13 @@ public class ClassUtil {
 
     /**
      * 计算课程离散度期望值
-     * @param individualList
+     * @param individualList 每个班级的编码集合
      * @return
      */
     private static int calculateDiscreteExpect(List<String> individualList) {
         // 离散程度期望值
         int F5 = 0;
-
+        // 返回每个班级的对应课程下面的排序上课时间
         Map<String, List<String>> classTimeMap = courseGrouping(individualList);
 
         for (List<String> classTimeList : classTimeMap.values()) {

@@ -17,8 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import org.springframework.stereotype.Controller;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -43,35 +42,47 @@ public class ClassroomController {
         // 首先查询该教学楼下面的所有教室
         QueryWrapper<Classroom> wrapper1 = new QueryWrapper();
         wrapper1.eq("teachbuild_no", teachbuildNo);
+        // 指定教学楼下的所有教室
         List<Classroom> allClassroom = classroomService.list(wrapper1);
 
-
-        // 查询上课任务中已经使用的教室
         List<CoursePlan> coursePlanList = coursePlanService.list();
-        List<String> usedClaassroom = new ArrayList<>();
+        // 得到已经使用了的教室编号
+        Set<String> usedClaassroom = new HashSet<>();
         for (int i = 0; i < coursePlanList.size(); i++) {
             // 截取占用的教室所属编号前两位，即教学楼编号
             if (teachbuildNo.equals(coursePlanList.get(i).getClassroomNo().substring(0, 2))) {
                 usedClaassroom.add(coursePlanList.get(i).getClassroomNo());
             }
         }
-        List<Integer> list = new ArrayList<>();
-        // 上面已经得到对应教学楼编号下面的所有占用教室
-        for (Classroom c : allClassroom) {
-            for (String no : usedClaassroom) {
-                if (c.getClassroomNo().equals(no)) {
-                    // 说明该教学楼下的这个教室已经被占用了，去除
-                    list.add(c.getId());
+
+        QueryWrapper<Classroom> wrapper2 = new QueryWrapper();
+        wrapper2.in("classroom_no", usedClaassroom);
+        wrapper2.orderByAsc("classroom_no");
+
+        List<Classroom> used = classroomService.list(wrapper2);
+        // 取差
+        Set<Classroom> newList = getSub(allClassroom, used);
+
+        return ServerResponse.ofSuccess(newList);
+    }
+
+    /**
+     * 集合取差
+     * @param list1
+     * @param list2
+     * @return
+     */
+    private Set<Classroom> getSub(List<Classroom> list1, List<Classroom> list2) {
+        Set<Classroom> newList = new HashSet<>();
+        for (int i = 0; i <list1.size(); i++) {
+            //遍历集合2，判断集合1中是否包含集合2中元素，若包含，则把这个共同元素加入新集合中
+            for (int j = 0; j <list2.size(); j++) {
+                if (!(list1.get(i).equals(list2.get(j)) || list1.get(i) == list2.get(j))) {
+                    newList.add(list1.get(i));
                 }
             }
         }
-
-        // 去除对应id的教室
-        for (int i = 0; i < list.size(); i++) {
-            allClassroom.remove(list.get(i));
-        }
-
-        return ServerResponse.ofSuccess(allClassroom);
+        return newList;
     }
 
     /**

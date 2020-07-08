@@ -43,6 +43,6 @@ aliyun:
   oss:
     file:
       endpoint: oss-cn-shenzhen.aliyuncs.com
-      accessKeyId: LTAI4FgC4srdFY4KPjYNVx1u
-      accessKeySecret: IKoCvPxq7aMX4Bh9revMk7z30fjqP1
+      accessKeyId: 你们自己的key
+      accessKeySecret: 你们自己的密钥
       bucketName: arrange

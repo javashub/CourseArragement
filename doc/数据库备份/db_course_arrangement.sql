@@ -11,7 +11,7 @@
  Target Server Version : 80015
  File Encoding         : 65001
 
- Date: 08/06/2020 14:00:33
+ Date: 11/06/2020 10:36:19
 */
 
 SET NAMES utf8mb4;
@@ -104,6 +104,7 @@ INSERT INTO `tb_class_info` VALUES (12, '20200302', '20年高三2班', 0, 12, '0
 INSERT INTO `tb_class_info` VALUES (13, '20200303', '20年高三3班', 0, 13, '03', 0, NULL, '2020-05-20 16:23:22');
 INSERT INTO `tb_class_info` VALUES (14, '20200304', '20年高三4班', 0, 14, '03', 0, NULL, '2020-05-20 16:23:22');
 INSERT INTO `tb_class_info` VALUES (15, '20200305', '20年高三5班', 0, 15, '03', 0, NULL, '2020-05-20 16:23:22');
+INSERT INTO `tb_class_info` VALUES (24, '20200106', '高一6班-测试班级', 0, 41, '01', 0, '2020-06-11 08:43:07', NULL);
 
 -- ----------------------------
 -- Table structure for tb_class_task
@@ -128,48 +129,83 @@ CREATE TABLE `tb_class_task`  (
   `create_time` datetime(0) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 38 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 63 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tb_class_task
 -- ----------------------------
-INSERT INTO `tb_class_task` VALUES (1, '2019-2020-1', '01', '20200101', '100001', '高一语文必修1', '10010', '梁晓明', '01', 42, 20, 6, '1', NULL, 0, '2020-06-05 00:05:33', NULL);
-INSERT INTO `tb_class_task` VALUES (2, '2019-2020-1', '01', '20200101', '100033', '高一数学必修1', '10012', '李雪雪', '01', 37, 20, 6, '1', NULL, 0, '2020-06-05 00:05:33', NULL);
-INSERT INTO `tb_class_task` VALUES (3, '2019-2020-1', '01', '20200101', '100056', '高一英语必修1', '10013', '王小芳', '01', 39, 20, 6, '1', NULL, 0, '2020-06-05 00:05:33', NULL);
-INSERT INTO `tb_class_task` VALUES (4, '2019-2020-1', '01', '20200101', '100004', '高一物理1', '10025', '张德良', '02', 42, 20, 4, '1', NULL, 0, '2020-06-05 00:05:33', NULL);
-INSERT INTO `tb_class_task` VALUES (5, '2019-2020-1', '01', '20200101', '100014', '高一化学必修1', '10033', '韩云', '02', 40, 20, 4, '1', NULL, 0, '2020-06-05 00:05:33', NULL);
-INSERT INTO `tb_class_task` VALUES (6, '2019-2020-1', '01', '20200101', '100041', '高一思想政治必修1', '10045', '江大波', '02', 40, 20, 4, '1', NULL, 0, '2020-06-05 00:05:33', NULL);
-INSERT INTO `tb_class_task` VALUES (7, '2019-2020-1', '01', '20200101', '100021', '高一历史必修1', '10044', '吴天盛', '02', 40, 20, 4, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (8, '2019-2020-1', '01', '20200101', '100007', '高一地理必修1', '10043', '王杰', '02', 40, 20, 4, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (9, '2019-2020-1', '01', '20200101', '100027', '高一生物必修1：分子与细胞', '10042', '谭咏麟', '02', 40, 20, 4, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (10, '2019-2020-1', '01', '20200101', '100051', '体育课', '10041', '张杰', '04', 40, 20, 2, '2', '14', 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (11, '2019-2020-1', '01', '20200101', '100066', '物理实验', '10025', '张德良', '03', 40, 20, 2, '2', '04', 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (12, '2019-2020-1', '01', '20200101', '100067', '化学实验', '10023', '张靓颖', '03', 40, 20, 2, '2', '15', 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (13, '2019-2020-1', '01', '20200102', '100001', '高一语文必修1', '10010', '梁晓明', '01', 42, 20, 6, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (14, '2019-2020-1', '01', '20200102', '100033', '高一数学必修1', '10012', '李雪雪', '01', 37, 20, 6, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (15, '2019-2020-1', '01', '20200102', '100056', '高一英语必修1', '10013', '王小芳', '01', 39, 20, 6, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (16, '2019-2020-1', '01', '20200102', '100004', '高一物理1', '10025', '张德良', '02', 42, 20, 2, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (17, '2019-2020-1', '01', '20200102', '100014', '高一化学必修1', '10033', '韩云', '02', 40, 20, 2, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (18, '2019-2020-1', '01', '20200102', '100041', '高一思想政治必修1', '10045', '江大波', '02', 40, 20, 4, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (19, '2019-2020-1', '01', '20200102', '100021', '高一历史必修1', '10044', '吴天盛', '02', 40, 20, 4, '1', NULL, 0, '2020-06-05 00:05:34', NULL);
-INSERT INTO `tb_class_task` VALUES (20, '2019-2020-1', '01', '20200102', '100007', '高一地理必修1', '10043', '王杰', '02', 40, 20, 4, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (21, '2019-2020-1', '01', '20200102', '100027', '高一生物必修1：分子与细胞', '10042', '谭咏麟', '02', 40, 20, 2, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (22, '2019-2020-1', '01', '20200102', '100051', '体育课', '10041', '张杰', '04', 40, 20, 2, '2', '19', 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (23, '2019-2020-1', '01', '20200102', '100066', '物理实验', '10025', '张德良', '03', 40, 20, 2, '2', '09', 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (24, '2019-2020-1', '01', '20200102', '100067', '化学实验', '10023', '张靓颖', '03', 40, 20, 2, '2', '20', 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (25, '2019-2020-1', '01', '20200103', '100001', '高一语文必修1', '10034', '韦雪琪', '01', 45, 20, 6, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (26, '2019-2020-1', '01', '20200103', '100003', '高一数学1', '10035', '张三封', '01', 45, 20, 6, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (27, '2019-2020-1', '01', '20200103', '100056', '高一英语必修1', '10029', '郑小红', '01', 45, 20, 6, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (28, '2019-2020-1', '01', '20200103', '100004', '高一物理1', '10025', '张德良', '02', 45, 20, 4, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (29, '2019-2020-1', '01', '20200103', '100015', '高一化学必修2', '10037', '莫小新', '02', 45, 20, 4, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (30, '2019-2020-1', '01', '20200103', '100028', '高一生物必修2：遗传与进化', '10038', '甘楠', '02', 45, 20, 4, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (31, '2019-2020-1', '01', '20200103', '100022', '高一历史必修2', '10036', '胡小小', '02', 45, 20, 2, '1', NULL, 0, '2020-06-05 00:05:35', NULL);
-INSERT INTO `tb_class_task` VALUES (32, '2019-2020-1', '01', '20200103', '100008', '高一地理必修2', '10031', '张小龙', '02', 45, 20, 2, '1', NULL, 0, '2020-06-05 00:05:36', NULL);
-INSERT INTO `tb_class_task` VALUES (33, '2019-2020-1', '01', '20200103', '100042', '高一思想政治必修2', '10040', '夏紫若', '02', 45, 20, 2, '1', NULL, 0, '2020-06-05 00:05:36', NULL);
-INSERT INTO `tb_class_task` VALUES (34, '2019-2020-1', '01', '20200103', '100062', '信息与技术1', '10039', '江晓东', '03', 45, 20, 2, '1', NULL, 0, '2020-06-05 00:05:36', NULL);
-INSERT INTO `tb_class_task` VALUES (35, '2019-2020-1', '01', '20200103', '100051', '体育课', '10041', '张杰', '04', 45, 20, 2, '2', '15', 0, '2020-06-05 00:05:36', NULL);
-INSERT INTO `tb_class_task` VALUES (36, '2019-2020-1', '01', '20200103', '100066', '物理实验', '10025', '张德良', '03', 45, 20, 2, '1', NULL, 0, '2020-06-05 00:05:36', NULL);
-INSERT INTO `tb_class_task` VALUES (37, '2019-2020-1', '01', '20200103', '100067', '化学实验', '10023', '张靓颖', '03', 45, 20, 2, '1', NULL, 0, '2020-06-05 00:05:36', NULL);
+INSERT INTO `tb_class_task` VALUES (1, '2019-2020-1', '01', '20200101', '100001', '高一语文必修1', '10010', '梁晓明', '01', 42, 20, 6, '1', NULL, 0, '2020-06-11 10:25:35', NULL);
+INSERT INTO `tb_class_task` VALUES (2, '2019-2020-1', '01', '20200101', '100033', '高一数学必修1', '10012', '李雪雪', '01', 37, 20, 6, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (3, '2019-2020-1', '01', '20200101', '100056', '高一英语必修1', '10013', '王小芳', '01', 39, 20, 6, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (4, '2019-2020-1', '01', '20200101', '100004', '高一物理1', '10025', '张德良', '02', 42, 20, 4, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (5, '2019-2020-1', '01', '20200101', '100014', '高一化学必修1', '10033', '韩云', '02', 40, 20, 4, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (6, '2019-2020-1', '01', '20200101', '100041', '高一思想政治必修1', '10045', '江大波', '02', 40, 20, 4, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (7, '2019-2020-1', '01', '20200101', '100021', '高一历史必修1', '10044', '吴天盛', '02', 40, 20, 4, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (8, '2019-2020-1', '01', '20200101', '100007', '高一地理必修1', '10043', '王杰', '02', 40, 20, 4, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (9, '2019-2020-1', '01', '20200101', '100027', '高一生物必修1：分子与细胞', '10042', '谭咏麟', '02', 40, 20, 4, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (10, '2019-2020-1', '01', '20200101', '100051', '体育课', '10041', '张杰', '04', 40, 20, 2, '2', '14', 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (11, '2019-2020-1', '01', '20200101', '100066', '物理实验', '10025', '张德良', '03', 40, 20, 2, '2', '04', 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (12, '2019-2020-1', '01', '20200101', '100067', '化学实验', '10023', '张靓颖', '03', 40, 20, 2, '2', '15', 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (13, '2019-2020-1', '01', '20200102', '100001', '高一语文必修1', '10010', '梁晓明', '01', 42, 20, 6, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (14, '2019-2020-1', '01', '20200102', '100033', '高一数学必修1', '10012', '李雪雪', '01', 37, 20, 6, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (15, '2019-2020-1', '01', '20200102', '100056', '高一英语必修1', '10013', '王小芳', '01', 39, 20, 6, '1', NULL, 0, '2020-06-11 10:25:36', NULL);
+INSERT INTO `tb_class_task` VALUES (16, '2019-2020-1', '01', '20200102', '100004', '高一物理1', '10025', '张德良', '02', 42, 20, 2, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (17, '2019-2020-1', '01', '20200102', '100014', '高一化学必修1', '10033', '韩云', '02', 40, 20, 2, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (18, '2019-2020-1', '01', '20200102', '100041', '高一思想政治必修1', '10045', '江大波', '02', 40, 20, 4, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (19, '2019-2020-1', '01', '20200102', '100021', '高一历史必修1', '10044', '吴天盛', '02', 40, 20, 4, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (20, '2019-2020-1', '01', '20200102', '100007', '高一地理必修1', '10043', '王杰', '02', 40, 20, 4, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (21, '2019-2020-1', '01', '20200102', '100027', '高一生物必修1：分子与细胞', '10042', '谭咏麟', '02', 40, 20, 2, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (22, '2019-2020-1', '01', '20200102', '100051', '体育课', '10041', '张杰', '04', 40, 20, 2, '2', '19', 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (23, '2019-2020-1', '01', '20200102', '100066', '物理实验', '10025', '张德良', '03', 40, 20, 2, '2', '09', 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (24, '2019-2020-1', '01', '20200102', '100067', '化学实验', '10023', '张靓颖', '03', 40, 20, 2, '2', '20', 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (25, '2019-2020-1', '01', '20200103', '100001', '高一语文必修1', '10034', '韦雪琪', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (26, '2019-2020-1', '01', '20200103', '100003', '高一数学1', '10035', '张三封', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (27, '2019-2020-1', '01', '20200103', '100056', '高一英语必修1', '10029', '郑小红', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (28, '2019-2020-1', '01', '20200103', '100004', '高一物理1', '10025', '张德良', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (29, '2019-2020-1', '01', '20200103', '100015', '高一化学必修2', '10037', '莫小新', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (30, '2019-2020-1', '01', '20200103', '100028', '高一生物必修2：遗传与进化', '10038', '甘楠', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (31, '2019-2020-1', '01', '20200103', '100022', '高一历史必修2', '10036', '胡小小', '02', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:37', NULL);
+INSERT INTO `tb_class_task` VALUES (32, '2019-2020-1', '01', '20200103', '100008', '高一地理必修2', '10031', '张小龙', '02', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (33, '2019-2020-1', '01', '20200103', '100042', '高一思想政治必修2', '10040', '夏紫若', '02', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (34, '2019-2020-1', '01', '20200103', '100062', '信息与技术1', '10039', '江晓东', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (35, '2019-2020-1', '01', '20200103', '100051', '体育课', '10041', '张杰', '04', 45, 20, 2, '2', '15', 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (36, '2019-2020-1', '01', '20200103', '100066', '物理实验', '10025', '张德良', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (37, '2019-2020-1', '01', '20200103', '100067', '化学实验', '10023', '张靓颖', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (38, '2019-2020-1', '01', '20200104', '100004', '高一物理1', '10026', '张勇', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (39, '2019-2020-1', '01', '20200104', '100070', '语文', '10028', '马芸', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (40, '2019-2020-1', '01', '20200104', '100071', '数学', '10049', '王刚', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (41, '2019-2020-1', '01', '20200104', '100072', '英语', '10040', '夏紫若', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (42, '2019-2020-1', '01', '20200104', '100073', '化学', '10020', '胡冬梅', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (43, '2019-2020-1', '01', '20200104', '100074', '政治', '10019', '汪莉莉', '02', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (44, '2019-2020-1', '01', '20200104', '100075', '地理', '10024', '侯德南', '02', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (45, '2019-2020-1', '01', '20200104', '100076', '生物', '10018', '梁忠诚', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (46, '2019-2020-1', '01', '20200104', '100066', '物理实验', '10025', '张德良', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (47, '2019-2020-1', '01', '20200104', '100067', '化学实验', '10021', '林俊杰', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:38', NULL);
+INSERT INTO `tb_class_task` VALUES (48, '2019-2020-1', '01', '20200104', '100051', '体育课', '10015', '孙振东', '04', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (49, '2019-2020-1', '01', '20200104', '100063', '信息技术2', '10032', '谭晓江', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (50, '2019-2020-1', '01', '20200105', '100070', '语文', '10028', '马芸', '01', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (51, '2019-2020-1', '01', '20200105', '100071', '数学', '10049', '王刚', '01', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (52, '2019-2020-1', '01', '20200105', '100072', '英语', '10040', '夏紫若', '01', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (53, '2019-2020-1', '01', '20200105', '100004', '高一物理1', '10026', '张勇', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (54, '2019-2020-1', '01', '20200105', '100073', '化学', '10020', '胡冬梅', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (55, '2019-2020-1', '01', '20200105', '100076', '生物', '10018', '梁忠诚', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (56, '2019-2020-1', '01', '20200105', '100066', '物理实验', '10025', '张德良', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (57, '2019-2020-1', '01', '20200105', '100067', '化学实验', '10021', '林俊杰', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (58, '2019-2020-1', '01', '20200105', '100051', '体育课', '10015', '孙振东', '04', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (59, '2019-2020-1', '01', '20200105', '100063', '信息技术2', '10032', '谭晓江', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (60, '2019-2020-1', '01', '20200105', '100074', '政治', '10019', '汪莉莉', '02', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (61, '2019-2020-1', '01', '20200105', '100075', '地理', '10024', '侯德南', '02', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (62, '2019-2020-1', '01', '20200105', '100076', '生物', '10018', '梁忠诚', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (63, '2019-2020-1', '01', '20200201', '100005', '高二语文必修5', '10019', '汪莉莉', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:39', NULL);
+INSERT INTO `tb_class_task` VALUES (64, '2019-2020-1', '01', '20200201', '100017', '高二化学选修2', '10050', '黄三毛', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
+INSERT INTO `tb_class_task` VALUES (65, '2019-2020-1', '01', '20200201', '100029', '高二生物必修3：稳态与环境', '10031', '张小龙', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
+INSERT INTO `tb_class_task` VALUES (66, '2019-2020-1', '01', '20200201', '100035', '高二数学必修3', '10051', '燕双鹰', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
+INSERT INTO `tb_class_task` VALUES (67, '2019-2020-1', '01', '20200201', '100058', '高二英语必修3', '10047', '马东锡', '01', 45, 20, 6, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
+INSERT INTO `tb_class_task` VALUES (68, '2019-2020-1', '01', '20200201', '100066', '物理实验', '10025', '张德良', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
+INSERT INTO `tb_class_task` VALUES (69, '2019-2020-1', '01', '20200201', '100067', '化学实验', '10021', '林俊杰', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
+INSERT INTO `tb_class_task` VALUES (70, '2019-2020-1', '01', '20200201', '100051', '体育课', '10015', '孙振东', '04', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
+INSERT INTO `tb_class_task` VALUES (71, '2019-2020-1', '01', '20200201', '100063', '信息技术2', '10032', '谭晓江', '03', 45, 20, 2, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
+INSERT INTO `tb_class_task` VALUES (72, '2019-2020-1', '01', '20200201', '100061', '高二物理2', '10024', '侯德南', '02', 45, 20, 4, '1', NULL, 0, '2020-06-11 10:25:40', NULL);
 
 -- ----------------------------
 -- Table structure for tb_classroom
@@ -335,7 +371,6 @@ INSERT INTO `tb_classroom` VALUES (152, '08-302', '08-302', '08', 50, '03', NULL
 INSERT INTO `tb_classroom` VALUES (153, '08-303', '08-303', '08', 50, '03', NULL, 0, NULL, NULL);
 INSERT INTO `tb_classroom` VALUES (154, '08-304', '08-304', '08', 50, '03', NULL, 0, NULL, NULL);
 INSERT INTO `tb_classroom` VALUES (155, '08-305', '08-305', '08', 50, '03', NULL, 0, NULL, NULL);
-INSERT INTO `tb_classroom` VALUES (156, '08-401', '08-401', '08', 50, NULL, NULL, 1, '2020-06-02 11:03:07', NULL);
 
 -- ----------------------------
 -- Table structure for tb_course_info
@@ -354,7 +389,7 @@ CREATE TABLE `tb_course_info`  (
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 69 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 76 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tb_course_info
@@ -427,6 +462,13 @@ INSERT INTO `tb_course_info` VALUES (65, '100065', '舞蹈课2', '05', NULL, NUL
 INSERT INTO `tb_course_info` VALUES (66, '100066', '物理实验', '03', NULL, NULL, NULL, NULL, 0, NULL, NULL);
 INSERT INTO `tb_course_info` VALUES (67, '100067', '化学实验', '03', NULL, NULL, NULL, NULL, 0, NULL, NULL);
 INSERT INTO `tb_course_info` VALUES (68, '100069', '测试课程', '02', '测试测试', NULL, NULL, '测试添加', 0, '2020-06-03 21:51:14', NULL);
+INSERT INTO `tb_course_info` VALUES (69, '100070', '语文', '01', NULL, NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `tb_course_info` VALUES (70, '100071', '数学', '01', NULL, NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `tb_course_info` VALUES (71, '100072', '英语', '01', NULL, NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `tb_course_info` VALUES (72, '100073', '化学', '02', NULL, NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `tb_course_info` VALUES (73, '100074', '政治', '02', NULL, NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `tb_course_info` VALUES (74, '100075', '地理', '02', NULL, NULL, NULL, NULL, 0, NULL, NULL);
+INSERT INTO `tb_course_info` VALUES (75, '100076', '生物', '02', NULL, NULL, NULL, NULL, 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for tb_course_plan
@@ -446,78 +488,138 @@ CREATE TABLE `tb_course_plan`  (
   `create_time` datetime(0) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 68 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 109 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tb_course_plan
 -- ----------------------------
-INSERT INTO `tb_course_plan` VALUES (1, '01', '20200103', '100051', '10041', '12-103', '15', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (2, '01', '20200103', '100001', '10034', '01-204', '10', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (3, '01', '20200103', '100001', '10034', '01-502', '11', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (4, '01', '20200103', '100001', '10034', '01-304', '24', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (5, '01', '20200103', '100003', '10035', '01-302', '01', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (6, '01', '20200103', '100003', '10035', '01-504', '02', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (7, '01', '20200103', '100003', '10035', '01-105', '03', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (8, '01', '20200103', '100056', '10029', '01-504', '04', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (9, '01', '20200103', '100056', '10029', '01-401', '06', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (10, '01', '20200103', '100056', '10029', '01-205', '16', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (11, '01', '20200103', '100004', '10025', '01-501', '14', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (12, '01', '20200103', '100004', '10025', '01-203', '12', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (13, '01', '20200103', '100015', '10037', '01-401', '25', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (14, '01', '20200103', '100015', '10037', '01-101', '05', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (15, '01', '20200103', '100028', '10038', '01-502', '17', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (16, '01', '20200103', '100028', '10038', '01-104', '13', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (17, '01', '20200103', '100022', '10036', '01-301', '09', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (18, '01', '20200103', '100008', '10031', '01-504', '08', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (19, '01', '20200103', '100042', '10040', '01-105', '20', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (20, '01', '20200103', '100062', '10039', '08-304', '18', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (21, '01', '20200103', '100066', '10025', '08-204', '21', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (22, '01', '20200103', '100067', '10023', '08-203', '23', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (23, '01', '20200102', '100051', '10041', '12-203', '19', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (24, '01', '20200102', '100066', '10025', '08-104', '09', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (25, '01', '20200102', '100067', '10023', '08-202', '20', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (26, '01', '20200102', '100001', '10010', '01-504', '22', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (27, '01', '20200102', '100001', '10010', '01-301', '13', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (28, '01', '20200102', '100001', '10010', '01-101', '24', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (29, '01', '20200102', '100033', '10012', '01-303', '23', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (30, '01', '20200102', '100033', '10012', '01-204', '16', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (31, '01', '20200102', '100033', '10012', '01-305', '12', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (32, '01', '20200102', '100056', '10013', '01-203', '01', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (33, '01', '20200102', '100056', '10013', '01-303', '10', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (34, '01', '20200102', '100056', '10013', '01-405', '06', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (35, '01', '20200102', '100004', '10025', '01-205', '17', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (36, '01', '20200102', '100014', '10033', '01-403', '21', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (37, '01', '20200102', '100041', '10045', '01-102', '18', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (38, '01', '20200102', '100041', '10045', '01-502', '25', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (39, '01', '20200102', '100021', '10044', '01-104', '15', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (40, '01', '20200102', '100021', '10044', '01-303', '02', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (41, '01', '20200102', '100007', '10043', '01-205', '04', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (42, '01', '20200102', '100007', '10043', '01-503', '11', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (43, '01', '20200102', '100027', '10042', '01-505', '08', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (44, '01', '20200101', '100051', '10041', '12-103', '14', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (45, '01', '20200101', '100066', '10025', '08-201', '04', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (46, '01', '20200101', '100067', '10023', '08-302', '15', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (47, '01', '20200101', '100001', '10010', '01-504', '10', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (48, '01', '20200101', '100001', '10010', '01-105', '06', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (49, '01', '20200101', '100001', '10010', '01-503', '02', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (50, '01', '20200101', '100033', '10012', '01-101', '18', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (51, '01', '20200101', '100033', '10012', '01-501', '19', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (52, '01', '20200101', '100033', '10012', '01-305', '03', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (53, '01', '20200101', '100056', '10013', '01-203', '24', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (54, '01', '20200101', '100056', '10013', '01-405', '13', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (55, '01', '20200101', '100056', '10013', '01-405', '20', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (56, '01', '20200101', '100004', '10025', '01-405', '16', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (57, '01', '20200101', '100004', '10025', '01-502', '12', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (58, '01', '20200101', '100014', '10033', '01-303', '05', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (59, '01', '20200101', '100014', '10033', '01-101', '07', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (60, '01', '20200101', '100041', '10045', '01-404', '21', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (61, '01', '20200101', '100041', '10045', '01-301', '08', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (62, '01', '20200101', '100021', '10044', '01-301', '23', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (63, '01', '20200101', '100021', '10044', '01-403', '22', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (64, '01', '20200101', '100007', '10043', '01-404', '11', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (65, '01', '20200101', '100007', '10043', '01-104', '17', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (66, '01', '20200101', '100027', '10042', '01-505', '25', NULL, '2019-2020-1', 0, NULL, NULL);
-INSERT INTO `tb_course_plan` VALUES (67, '01', '20200101', '100027', '10042', '01-103', '09', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (1, '01', '20200105', '100070', '10028', '01-205', '23', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (2, '01', '20200105', '100070', '10028', '01-502', '20', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (3, '01', '20200105', '100071', '10049', '01-304', '21', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (4, '01', '20200105', '100071', '10049', '01-503', '10', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (5, '01', '20200105', '100072', '10040', '01-503', '04', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (6, '01', '20200105', '100072', '10040', '01-301', '11', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (7, '01', '20200105', '100004', '10026', '01-402', '01', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (8, '01', '20200105', '100004', '10026', '01-103', '08', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (9, '01', '20200105', '100073', '10020', '01-405', '12', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (10, '01', '20200105', '100073', '10020', '01-105', '09', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (11, '01', '20200105', '100076', '10018', '01-505', '06', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (12, '01', '20200105', '100076', '10018', '01-203', '05', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (13, '01', '20200105', '100066', '10025', '08-301', '19', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (14, '01', '20200105', '100067', '10021', '08-301', '15', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (15, '01', '20200105', '100051', '10015', '12-204', '25', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (16, '01', '20200105', '100063', '10032', '08-304', '02', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (17, '01', '20200105', '100074', '10019', '01-302', '24', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (18, '01', '20200105', '100075', '10024', '01-202', '16', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (19, '01', '20200105', '100076', '10018', '01-404', '17', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (20, '01', '20200105', '100076', '10018', '01-202', '13', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (21, '01', '20200104', '100004', '10026', '01-303', '24', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (22, '01', '20200104', '100004', '10026', '01-101', '25', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (23, '01', '20200104', '100070', '10028', '01-401', '18', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (24, '01', '20200104', '100070', '10028', '01-304', '12', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (25, '01', '20200104', '100070', '10028', '01-302', '14', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (26, '01', '20200104', '100071', '10049', '01-503', '19', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (27, '01', '20200104', '100071', '10049', '01-103', '09', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (28, '01', '20200104', '100071', '10049', '01-401', '11', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (29, '01', '20200104', '100072', '10040', '01-502', '13', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (30, '01', '20200104', '100072', '10040', '01-504', '17', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (31, '01', '20200104', '100072', '10040', '01-205', '15', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (32, '01', '20200104', '100073', '10020', '01-405', '03', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (33, '01', '20200104', '100073', '10020', '01-403', '02', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (34, '01', '20200104', '100074', '10019', '01-204', '04', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (35, '01', '20200104', '100075', '10024', '01-404', '22', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (36, '01', '20200104', '100076', '10018', '01-204', '16', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (37, '01', '20200104', '100076', '10018', '01-205', '07', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (38, '01', '20200104', '100066', '10025', '08-305', '23', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (39, '01', '20200104', '100067', '10021', '08-304', '01', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (40, '01', '20200104', '100051', '10015', '12-103', '20', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (41, '01', '20200104', '100063', '10032', '08-201', '21', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (42, '01', '20200103', '100051', '10041', '12-201', '25', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (43, '01', '20200103', '100001', '10034', '01-103', '19', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (44, '01', '20200103', '100001', '10034', '01-405', '09', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (45, '01', '20200103', '100001', '10034', '01-205', '17', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (46, '01', '20200103', '100003', '10035', '01-102', '01', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (47, '01', '20200103', '100003', '10035', '01-402', '08', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (48, '01', '20200103', '100003', '10035', '01-402', '06', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (49, '01', '20200103', '100056', '10029', '01-501', '21', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (50, '01', '20200103', '100056', '10029', '01-404', '15', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (51, '01', '20200103', '100056', '10029', '01-304', '13', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (52, '01', '20200103', '100004', '10025', '01-104', '16', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (53, '01', '20200103', '100004', '10025', '01-205', '22', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (54, '01', '20200103', '100015', '10037', '01-405', '07', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (55, '01', '20200103', '100015', '10037', '01-103', '10', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (56, '01', '20200103', '100028', '10038', '01-204', '18', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (57, '01', '20200103', '100028', '10038', '01-305', '24', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (58, '01', '20200103', '100022', '10036', '01-205', '02', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (59, '01', '20200103', '100008', '10031', '01-202', '14', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (60, '01', '20200103', '100042', '10040', '01-503', '23', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (61, '01', '20200103', '100062', '10039', '08-203', '11', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (62, '01', '20200103', '100066', '10025', '08-304', '20', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (63, '01', '20200103', '100067', '10023', '08-205', '05', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (64, '01', '20200102', '100051', '10041', '12-201', '15', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (65, '01', '20200102', '100066', '10025', '08-303', '07', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (66, '01', '20200102', '100067', '10023', '08-304', '13', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (67, '01', '20200102', '100001', '10010', '01-202', '22', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (68, '01', '20200102', '100001', '10010', '01-505', '05', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (69, '01', '20200102', '100001', '10010', '01-503', '12', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (70, '01', '20200102', '100033', '10012', '01-402', '10', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (71, '01', '20200102', '100033', '10012', '01-503', '03', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (72, '01', '20200102', '100033', '10012', '01-505', '20', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (73, '01', '20200102', '100056', '10013', '01-202', '24', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (74, '01', '20200102', '100056', '10013', '01-304', '14', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (75, '01', '20200102', '100056', '10013', '01-303', '06', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (76, '01', '20200102', '100004', '10025', '01-302', '09', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (77, '01', '20200102', '100014', '10033', '01-302', '11', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (78, '01', '20200102', '100041', '10045', '01-304', '18', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (79, '01', '20200102', '100041', '10045', '01-402', '04', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (80, '01', '20200102', '100021', '10044', '01-105', '16', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (81, '01', '20200102', '100021', '10044', '01-404', '19', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (82, '01', '20200102', '100007', '10043', '01-204', '01', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (83, '01', '20200102', '100007', '10043', '01-105', '08', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (84, '01', '20200102', '100027', '10042', '01-502', '23', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (85, '01', '20200201', '100005', '10019', '01-402', '22', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (86, '01', '20200201', '100005', '10019', '01-203', '10', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (87, '01', '20200201', '100005', '10019', '01-504', '25', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (88, '01', '20200201', '100017', '10050', '01-102', '17', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (89, '01', '20200201', '100017', '10050', '01-103', '16', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (90, '01', '20200201', '100029', '10031', '01-303', '08', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (91, '01', '20200201', '100029', '10031', '01-302', '20', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (92, '01', '20200201', '100035', '10051', '01-201', '01', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (93, '01', '20200201', '100035', '10051', '01-505', '09', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (94, '01', '20200201', '100035', '10051', '01-202', '15', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (95, '01', '20200201', '100058', '10047', '01-401', '21', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (96, '01', '20200201', '100058', '10047', '01-305', '06', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (97, '01', '20200201', '100058', '10047', '01-504', '24', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (98, '01', '20200201', '100066', '10025', '08-301', '12', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (99, '01', '20200201', '100067', '10021', '08-104', '07', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (100, '01', '20200201', '100051', '10015', '12-103', '11', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (101, '01', '20200201', '100063', '10032', '08-201', '05', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (102, '01', '20200201', '100061', '10024', '01-502', '02', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (103, '01', '20200201', '100061', '10024', '01-403', '19', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (104, '01', '20200101', '100051', '10041', '12-204', '18', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (105, '01', '20200101', '100066', '10025', '08-305', '13', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (106, '01', '20200101', '100067', '10023', '08-305', '11', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (107, '01', '20200101', '100001', '10010', '01-203', '25', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (108, '01', '20200101', '100001', '10010', '01-402', '19', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (109, '01', '20200101', '100001', '10010', '01-103', '01', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (110, '01', '20200101', '100033', '10012', '01-504', '05', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (111, '01', '20200101', '100033', '10012', '01-103', '02', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (112, '01', '20200101', '100033', '10012', '01-101', '08', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (113, '01', '20200101', '100056', '10013', '01-504', '20', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (114, '01', '20200101', '100056', '10013', '01-305', '04', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (115, '01', '20200101', '100056', '10013', '01-402', '07', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (116, '01', '20200101', '100004', '10025', '01-303', '03', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (117, '01', '20200101', '100004', '10025', '01-204', '15', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (118, '01', '20200101', '100014', '10033', '01-401', '16', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (119, '01', '20200101', '100014', '10033', '01-401', '10', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (120, '01', '20200101', '100041', '10045', '01-402', '09', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (121, '01', '20200101', '100041', '10045', '01-302', '23', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (122, '01', '20200101', '100021', '10044', '01-203', '17', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (123, '01', '20200101', '100021', '10044', '01-504', '14', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (124, '01', '20200101', '100007', '10043', '01-505', '22', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (125, '01', '20200101', '100007', '10043', '01-201', '24', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (126, '01', '20200101', '100027', '10042', '01-202', '12', NULL, '2019-2020-1', 0, NULL, NULL);
+INSERT INTO `tb_course_plan` VALUES (127, '01', '20200101', '100027', '10042', '01-201', '06', NULL, '2019-2020-1', 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for tb_doc
@@ -551,6 +653,8 @@ INSERT INTO `tb_doc` VALUES (10, '进度计划表参考.docx', '进度计划参�
 INSERT INTO `tb_doc` VALUES (11, '毕业设计独创性承诺书.docx', '独创性承诺', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/毕业设计独创性承诺书.docx', '测试文件', '20200105', 1, '梁主任', 1, NULL, NULL, 0, 0, '2020-05-31 10:58:08', NULL);
 INSERT INTO `tb_doc` VALUES (12, '20200519161528.jpg', '123', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/20200519161528.jpg', '123', '123', 1, '梁主任', 1, NULL, NULL, 123123, 0, '2020-05-31 12:33:14', NULL);
 INSERT INTO `tb_doc` VALUES (13, '467345634.docx', '123', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/467345634.docx', '3123', '12312', 1, '梁主任', 1, NULL, NULL, 123123, 1, '2020-05-31 12:34:47', NULL);
+INSERT INTO `tb_doc` VALUES (14, '翻译文献未定格式.docx', '参考文献', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/翻译文献未定格式.docx', '英文翻译示例', '20200101', 1, '梁主任', 1, NULL, NULL, 0, 0, '2020-06-10 21:40:51', NULL);
+INSERT INTO `tb_doc` VALUES (15, '桂林电子科技大学毕业设计（论文）任务书.docx', '任务书', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/桂林电子科技大学毕业设计（论文）任务书.docx', '排课系统任务书', '20200101', 1, '梁晓明', 2, NULL, NULL, 0, 0, '2020-06-10 21:48:23', NULL);
 
 -- ----------------------------
 -- Table structure for tb_exercise
@@ -710,7 +814,7 @@ CREATE TABLE `tb_online_category`  (
   `create_time` datetime(0) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tb_online_category
@@ -724,6 +828,7 @@ INSERT INTO `tb_online_category` VALUES (6, '07', '生物', 0, NULL, NULL, 0, '2
 INSERT INTO `tb_online_category` VALUES (9, '08', '高一语文', 1, NULL, NULL, 0, '2020-06-08 09:47:34', NULL);
 INSERT INTO `tb_online_category` VALUES (10, '09', '高一数学', 2, NULL, NULL, 0, '2020-06-08 09:47:49', NULL);
 INSERT INTO `tb_online_category` VALUES (11, '10', '高二语文', 1, NULL, NULL, 0, '2020-06-08 09:48:20', NULL);
+INSERT INTO `tb_online_category` VALUES (12, '10', '高一英语', 3, NULL, NULL, 0, '2020-06-10 22:06:47', NULL);
 
 -- ----------------------------
 -- Table structure for tb_online_course
@@ -746,13 +851,14 @@ CREATE TABLE `tb_online_course`  (
   `create_time` datetime(0) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tb_online_course
 -- ----------------------------
 INSERT INTO `tb_online_course` VALUES (1, '100000', '高一语文', NULL, 'https://arrange.oss-cn-shenzhen.aliyuncs.com/thread_6386220_20200520072309_s_1664172_w_316_h_163_16397.gif', 9, '语文', NULL, 1, 1, '梁主任', NULL, NULL, NULL, NULL);
 INSERT INTO `tb_online_course` VALUES (2, '1000001', '语文1', '1', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/thread_6386220_20200520072309_s_1664172_w_316_h_163_16397.gif', 9, '高一语文', NULL, NULL, NULL, NULL, NULL, NULL, '2020-06-08 10:02:18', NULL);
+INSERT INTO `tb_online_course` VALUES (3, '10000011', '高一英语语法', '带学生一起学习英语语法', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/psc.jfif', 12, '高一英语', NULL, 2, 1, '梁晓明', NULL, NULL, '2020-06-10 22:07:55', NULL);
 
 -- ----------------------------
 -- Table structure for tb_online_video
@@ -772,7 +878,7 @@ CREATE TABLE `tb_online_video`  (
   `create_time` datetime(0) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tb_online_video
@@ -780,6 +886,7 @@ CREATE TABLE `tb_online_video`  (
 INSERT INTO `tb_online_video` VALUES (2, 2, '1-1', '珠海迈科智能科技股份有限公司.mp4', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/珠海迈科智能科技股份有限公司.mp4', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/thread_6386220_20200520072309_s_1664172_w_316_h_163_16397.gif', NULL, 1, '梁主任', 0, '2020-06-08 13:26:17', NULL);
 INSERT INTO `tb_online_video` VALUES (3, 2, '1-2', '1-1 课程导学【瑞客论坛 www.ruike1.com】.mp4', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/1-1 课程导学【瑞客论坛 www.ruike1.com】.mp4', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/thread_6386220_20200520072309_s_1664172_w_316_h_163_16397.gif', NULL, 1, '梁主任', 0, '2020-06-08 13:34:25', NULL);
 INSERT INTO `tb_online_video` VALUES (4, 2, '1-3', '1-2 开发准备【瑞客论坛 www.ruike1.com】.mp4', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/1-2 开发准备【瑞客论坛 www.ruike1.com】.mp4', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/thread_6386220_20200520072309_s_1664172_w_316_h_163_16397.gif', NULL, 1, '梁主任', 0, '2020-06-08 13:41:22', NULL);
+INSERT INTO `tb_online_video` VALUES (6, 3, '10.2', 'BLACKPINK镜面版 -AS IF IT\'S YOUR LAST.flv', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/BLACKPINK镜面版 -AS IF IT\'S YOUR LAST.flv', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/5555.jpg', NULL, 1, '梁晓明', 0, '2020-06-10 22:15:25', NULL);
 
 -- ----------------------------
 -- Table structure for tb_student
@@ -922,11 +1029,11 @@ INSERT INTO `tb_teacher` VALUES (1, '10010', 'lequal(梁老师)', 'aizai2015', '
 INSERT INTO `tb_teacher` VALUES (3, '10012', 'msLi', 'lixuexue', '李雪雪', 2, '高级讲师', '01', NULL, '语文', 29, '13677731235', 'teacher@guet.com', '广西桂林市桂林电子科技大学', NULL, '做人民的好教师', 1, 2, 0, 0, '2020-03-06 23:39:39', '2020-03-06 23:39:39');
 INSERT INTO `tb_teacher` VALUES (5, '10013', 'mswang', '123456', '王小芳', 2, '初级讲师', '01', NULL, '英语', 25, '13677731235', 'teacher@guet.com', '湖南省', NULL, '过好每一天', 1, 3, 0, 0, '2020-03-04 19:45:44', '2020-03-08 19:45:51');
 INSERT INTO `tb_teacher` VALUES (6, '10014', 'mssun', '123456', '孙晓明', 2, '中级讲师', '01', NULL, '数学', 28, '13677731235', 'teacher@guet.com', '湖北省', NULL, '加油', 1, 2, 0, 0, '2020-03-06 19:47:11', '2020-03-30 19:47:14');
-INSERT INTO `tb_teacher` VALUES (7, '10015', 'msming', '123456', '名小伙', 2, '实习生', '01', NULL, '化学', 22, '13677731235', 'teacher@guet.com', '江苏省', NULL, 'welcome', 1, 4, 0, 0, '2020-03-05 19:48:40', '2020-03-06 19:48:45');
+INSERT INTO `tb_teacher` VALUES (7, '10015', 'msming', '123456', '孙振东', 2, '实习生', '01', NULL, '化学', 22, '13677731235', 'teacher@guet.com', '江苏省', NULL, 'welcome', 1, 4, 0, 0, '2020-03-05 19:48:40', '2020-03-06 19:48:45');
 INSERT INTO `tb_teacher` VALUES (8, '10016', 'mstan', '123456', '谭老师', 2, '初级讲师', '01', NULL, '英语', 23, '13677731235', 'teacher@guet.com', '广西', NULL, 'come on', 1, 3, 0, 0, NULL, NULL);
 INSERT INTO `tb_teacher` VALUES (9, '10017', 'msliang', '123456', '梁老师', 2, '高级讲师', '01', NULL, '语文', 32, '13677731235', 'teacher@guet.com', '河北', NULL, '做更好的自己', 1, 1, 0, 0, NULL, NULL);
 INSERT INTO `tb_teacher` VALUES (10, '10018', 'mrliang', '123456', '梁忠诚', 2, '高级讲师', '01', NULL, '数学', 35, '13677731235', 'teacher@guet.com', '湖北', NULL, '数学好', 1, 1, 0, 0, NULL, NULL);
-INSERT INTO `tb_teacher` VALUES (11, '10019', 'mrwang', '123456', '汪老师', 2, '中级讲师', '01', NULL, '地理', 33, '13677731235', 'teacher@guet.com', '河北', NULL, '地理好', 1, 2, 0, 0, NULL, NULL);
+INSERT INTO `tb_teacher` VALUES (11, '10019', 'mrwang', '123456', '汪莉莉', 2, '中级讲师', '01', NULL, '地理', 33, '13677731235', 'teacher@guet.com', '河北', NULL, '地理好', 1, 2, 0, 0, NULL, NULL);
 INSERT INTO `tb_teacher` VALUES (12, '10020', 'mshu', '123456', '胡冬梅', 2, '中级讲师', '01', NULL, '化学', 46, '13677731235', 'teacher@guet.com', '搜索', NULL, '是', 1, 2, 0, 0, NULL, NULL);
 INSERT INTO `tb_teacher` VALUES (13, '10021', 'mrlin', '123456', '林俊杰', 2, '初级讲师', '01', NULL, '生物', 41, '13677731235', 'teacher@guet.com', '试试', NULL, '就', 1, 3, 0, 0, NULL, NULL);
 INSERT INTO `tb_teacher` VALUES (14, '10022', 'mrzhou', '123456', '周杰伦', 2, '高级讲师', '01', NULL, '生物', 39, '13677731235', 'teacher@guet.com', '看看', NULL, '看', 1, 1, 0, 0, NULL, NULL);
@@ -953,9 +1060,11 @@ INSERT INTO `tb_teacher` VALUES (34, '10041', '张老师', '123456', '张杰', 2
 INSERT INTO `tb_teacher` VALUES (35, '10042', '谭老师', '123456', '谭咏麟', 2, '高级讲师', '03', NULL, '历史', 32, '13677731235', 'teacher@guet.com', '天津', NULL, '5353', 1, 1, 0, 0, NULL, '2020-04-05 18:04:37');
 INSERT INTO `tb_teacher` VALUES (36, '10043', '王老师', '123456', '王杰', 2, '高级讲师', '03', NULL, '地理', 33, '13677731235', 'teacher@guet.com', '湖北省武汉市', NULL, '543453', 1, 1, 0, 0, NULL, '2020-04-05 18:04:09');
 INSERT INTO `tb_teacher` VALUES (38, '10044', '吴老师', '123456', '吴天盛', 2, '高级讲师', '03', NULL, '物理', 32, '13677731235', 'teacher@guet.com', '福建省福州市', NULL, NULL, 1, NULL, 0, 0, '2020-05-18 21:56:41', NULL);
-INSERT INTO `tb_teacher` VALUES (39, '10045', '江老师', '123456', '江小陆', 2, '中级讲师', '03', NULL, '数学', 37, '13677731235', 'teacher@guet.com', '甘肃省兰州市', NULL, NULL, 1, NULL, 0, 0, '2020-05-18 22:02:25', '2020-05-19 09:19:05');
+INSERT INTO `tb_teacher` VALUES (39, '10045', '江老师', '123456', '江小陆', 2, '中级讲师', '03', 'https://arrange.oss-cn-shenzhen.aliyuncs.com/timg.gif', '数学', 37, '13677731235', 'teacher@guet.com', '甘肃省兰州市', NULL, NULL, 1, NULL, 0, 0, '2020-05-18 22:02:25', '2020-05-19 09:19:05');
 INSERT INTO `tb_teacher` VALUES (40, '10047', '马东锡', '123456', '马东锡', 2, '高级讲师', NULL, 'https://arrange.oss-cn-shenzhen.aliyuncs.com/timg.gif', '物理', 35, '13677731234', 'madx@guet.com', '广西河池市', NULL, NULL, 1, NULL, 0, 0, '2020-06-01 10:35:18', '2020-06-01 10:39:05');
 INSERT INTO `tb_teacher` VALUES (41, '10048', '黄讲师', '123456', '黄桐', 2, '初级讲师', NULL, 'https://arrange.oss-cn-shenzhen.aliyuncs.com/timg (2).jfif', '数学', 32, '13677731235', 'tong@qq.com', '广西贵港市', NULL, NULL, 1, NULL, 0, 0, '2020-06-01 14:38:57', '2020-06-01 14:49:25');
 INSERT INTO `tb_teacher` VALUES (42, '10049', '王刚', '123456', '王刚', 2, '高级讲师', NULL, 'https://arrange.oss-cn-shenzhen.aliyuncs.com/timg (1).jfif', '化学', 36, '18890786676', 'gang.w@qq.com', '广西壮族自治区贺州市', NULL, NULL, 1, NULL, 0, 0, '2020-06-01 14:53:56', '2020-06-05 15:30:43');
+INSERT INTO `tb_teacher` VALUES (43, '10050', '黄三毛', '123456', '黄三毛', 2, '高级讲师', NULL, NULL, '化学', 34, '15876765634', 'huang@guet.com', '广东省汕头市', NULL, NULL, 1, NULL, 0, 0, NULL, NULL);
+INSERT INTO `tb_teacher` VALUES (44, '10051', '燕双赢', '123456', '燕双鹰', 2, '中级讲师', NULL, NULL, '数学', 29, '13454349878', 'yan@guet.com', '山东省青岛市', NULL, NULL, 1, NULL, 0, 0, NULL, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
