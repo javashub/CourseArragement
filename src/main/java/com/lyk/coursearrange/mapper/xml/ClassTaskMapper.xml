@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lyk.coursearrange.dao.ClassTaskDao">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.lyk.coursearrange.entity.ClassTask">
+        <id column="id" property="id" />
+        <result column="semester" property="semester" />
+        <result column="gradeNo" property="gradeNo" />
+        <result column="classNo" property="classNo" />
+        <result column="courseNo" property="courseNo" />
+        <result column="teacherNo" property="teacherNo" />
+        <result column="courseAttr" property="courseAttr" />
+        <result column="studentNum" property="studentNum" />
+        <result column="weeksSum" property="weeksSum" />
+        <result column="weeksNumber" property="weeksNumber" />
+        <result column="isFix" property="isFix" />
+        <result column="classTime" property="classTime" />
+        <result column="deleted" property="deleted" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+
+    <select id="selectBySemester" parameterType="com.lyk.coursearrange.entity.ClassTask" resultMap="BaseResultMap">
+        select * from tb_class_task where semester = #{semester, jdbcType=VARCHAR}
+    </select>
+
+</mapper>
