@@ -19,7 +19,7 @@
 
 #### 安装教程
 
-1.  配置好JDK环境，node.js环境，安装好Vue脚手架工具一级maven环境
+1.  配置好JDK环境，node.js环境，安装好Vue脚手架工具以及maven环境
 2.  前端项目在UI目录下的文件夹内，在CourseArrange目录下运行命令：npm install 安装完相关的前端依赖
 3.  执行 npm run dev 命令将前端项目启动
 4.  后端项目在配置好JDK环境之后，使用IDEA等IDE工具打开，将项目配置成自己本地的Maven(建议使用阿里云镜像)
