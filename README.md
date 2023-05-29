@@ -1,14 +1,24 @@
-# CourseArrange排课系统-毕业设计
+# CourseArrange
 
-#### 介绍
-基于遗传算法的高中排课系统。毕业设计
+## 介绍
+先给个Star再看嘛！
+
+# 注意！注意！注意！
+# 如果你是买的，那么你变成了大冤种哦~！
+**本人发现不少地方有倒卖我这个毕设的(可恶的是卖了没售后，不会给你讲解)，B站也看到有，本项目完全开源，毫无保留。只要你懂一点环境配置就可以跑起来，排课算法的注释非常详尽，只要花时间琢磨几遍就可以看懂算法的(前提先建议了解一下遗传算法以及相关的概念)**
+
+
+基于遗传算法的高中排课系统。
 该项目是针对高校的教学生态，本人将其全部改版成了适用于高中阶段的教学生态，
 当然了，节次数跟当前的高中肯定是不一样的，因为我当时的课题是为培训机构安排，
 大家只需要更改时间片的数量即可实现不同节次课程的编排，照葫芦画瓢即可。
-因为github经常看不到图片，所以下面放多了一个码云地址，大家可以去码云看
-项目码云地址：https://gitee.com/lequal/CourseArrange
-码云项目上新增了《JAVA遗传算法编程》这本书，方便学习前置理论知识更好地理解遗传算法。
-#### 软件架构
+
+如果喜欢GitHub，下方是项目在GitHub的地址。
+GitHub地址: https://github.com/lyk1576070851/CourseArragement
+别忘了给一个star哦！
+
+
+## 软件技术栈
 前端技术栈：
     Vue2.x + Element UI，使用npm包管理工具
 
@@ -17,7 +27,7 @@
 
 
 
-#### 安装教程
+## 安装教程
 
 1.  配置好JDK环境，node.js环境，安装好Vue脚手架工具以及maven环境
 2.  前端项目在UI目录下的文件夹内，在CourseArrange目录下运行命令：npm install 安装完相关的前端依赖
@@ -25,7 +35,8 @@
 4.  后端项目在配置好JDK环境之后，使用IDEA等IDE工具打开，将项目配置成自己本地的Maven(建议使用阿里云镜像)
 5.  运行maven安装项目所需依赖，配置好数据库的连接，待依赖安装完成启动项目的Application启动类即可(不会的也不教了哈)
 6.  用到文件上传功能时，需要配置好自己的阿里云key与密钥，在utils下面的AliyunUtil类下面
-#### 实现功能
+
+## 实现功能
 
 1.  系统有管理员（教务处主任）、讲师、学生三种用户
 2.  前端比较菜，应用启动后进入的引导页面如下，根据需求进入不同登录页面
@@ -52,9 +63,14 @@
     
 
 
-#### 后面的话
+## 后面的话
+
+1.  本人代码写得比较烂，所以大家就忽略我的那些你认为垃圾的东西
+2.  开源出来只是给大家做排课方面的小项目有一个参考
+3.  后面如果有时间我也希望去维护一下这个项目，有兴趣的小伙伴可以跟我一起搞搞
+4.  希望项目可以帮助到广大小伙伴们
 
 如果项目对你有帮助，可以请我喝喝奶茶哦~
 <center class="half">
-    <img src="http://m.qpic.cn/psc?/V52lTo3L4NX9a513Gw9D1R4m1W3nh0p9/45NBuzDIW489QBoVep5mcemy8k7JHJt1kjshzf4pJ9te5k68Pwm2Zzf9S3yRqnBih5Mw.2fVHcsRym0B6W1mYLUuBNay3.inOB8PFm0Frzs!/b&bo=OATJBQAAAAABF8A!&rf=viewer_4" width="200"/>   <img src="http://m.qpic.cn/psc?/V52lTo3L4NX9a513Gw9D1R4m1W3nh0p9/45NBuzDIW489QBoVep5mcemy8k7JHJt1kjshzf4pJ9u0eAieClhwxQmBkeoioBRsCzLWnOkrD5TUgIpWDsNUqpDafJmkSApUBWMDbickkkU!/b&bo=3gMEBgAAAAABF.8!&rf=viewer_4 " width="200"/>
+    <img src="https://images.gitee.com/uploads/images/2021/0204/085454_bc997c8b_5505532.png " width="200"/>   <img src="https://images.gitee.com/uploads/images/2021/0204/085553_f5e455d9_5505532.png " width="200"/>
 </center>
