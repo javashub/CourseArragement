@@ -1,0 +1,10 @@
+vue：4.2.2
+npm：6.13.4
+node：12.14.0
+jdk：1.8
+MySQL：8.x
+maven:3.6.1
+
+前端项目在：CourseArrange\UI\coursearrange
+
+打开项目进入前端项目CourseArrange\UI\coursearrange下执行“npm install”安装前端框架所需依赖
