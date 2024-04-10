@@ -1,0 +1,23 @@
+{
+  "id": "1645753",
+  "name": "travel",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon",
+  "description": "去哪儿",
+  "glyphs": [
+    {
+      "icon_id": "344459",
+      "name": "用户名",
+      "font_class": "icon",
+      "unicode": "e63e",
+      "unicode_decimal": 58942
+    },
+    {
+      "icon_id": "8765228",
+      "name": "密码",
+      "font_class": "mima",
+      "unicode": "e635",
+      "unicode_decimal": 58933
+    }
+  ]
+}

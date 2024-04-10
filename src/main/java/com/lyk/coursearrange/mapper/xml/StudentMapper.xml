@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lyk.coursearrange.dao.StudentDao">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.lyk.coursearrange.entity.Student">
+        <id column="id" property="id" />
+        <result column="student_no" property="studentNo" />
+        <result column="username" property="username" />
+        <result column="password" property="password" />
+        <result column="realname" property="realname" />
+        <result column="grade" property="grade" />
+        <result column="class_no" property="classNo" />
+        <result column="age" property="age" />
+        <result column="address" property="address" />
+        <result column="telephone" property="telephone" />
+        <result column="avatar" property="avatar" />
+        <result column="description" property="description" />
+        <result column="deleted" property="deleted" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+</mapper>
