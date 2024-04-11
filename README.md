@@ -15,7 +15,7 @@
 不提供帮改代码服务，除非给得多。
 
 如果喜欢GitHub，下方是项目在GitHub的地址。
-GitHub地址: https://github.com/lyk1576070851/CourseArragement
+GitHub地址: https://github.com/imlyk/CourseArragement
 别忘了给一个star哦！
 
 
