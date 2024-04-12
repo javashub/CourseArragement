@@ -36,12 +36,6 @@
                 <span slot="title">课程表</span>
               </template>
             </el-menu-item>
-            <el-menu-item index="/studentdoc">
-              <template slot="title">
-                <i class="el-icon-document"></i>
-                <span slot="title">学习文档</span>
-              </template>
-            </el-menu-item>
             <el-menu-item index="/emptyclassroom">
               <template slot="title">
                 <i class="el-icon-school"></i>

@@ -22,8 +22,6 @@ public class CoursePlanController {
 
     /**
      * 根据班级查询课程表
-     * @param classNo
-     * @return
      */
     @GetMapping("/courseplan/{classno}")
     public ServerResponse queryCoursePlanByClassNo(@PathVariable("classno") String classNo) {

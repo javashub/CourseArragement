@@ -1,9 +1,6 @@
 package com.lyk.coursearrange.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -29,6 +26,7 @@ public class Admin extends Model<Admin> {
     /**
      * id
      */
+    @TableId
     private Integer id;
 
     /**

@@ -38,7 +38,6 @@ public class ClassTaskController {
 
         LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester);
         IPage<ClassTask> ipage = classTaskService.page(new Page<>(page, limit), wrapper);
-
         return ipage != null ? ServerResponse.ofSuccess(ipage) : ServerResponse.ofError("查询开课任务失败！");
     }
 
@@ -82,8 +81,6 @@ public class ClassTaskController {
      * 获得学期集合,如：
      * 2019-2020-1
      * 2019-2020-2
-     *
-     * @return
      */
     @GetMapping("/semester")
     public ServerResponse queryAllSemester() {
@@ -97,9 +94,6 @@ public class ClassTaskController {
 
     /**
      * 排课算法接口，传入学期开始去查对应学期的开课任务，进行排课，排完课程后添加到course_plan表
-     *
-     * @param semester
-     * @return
      */
     @PostMapping("/arrange/{semester}")
     public ServerResponse arrange(@PathVariable("semester") String semester) {

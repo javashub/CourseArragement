@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.controller;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -12,10 +13,12 @@ import com.lyk.coursearrange.entity.request.StudentLoginRequest;
 import com.lyk.coursearrange.entity.request.StudentRegisterRequest;
 import com.lyk.coursearrange.service.StudentService;
 import com.lyk.coursearrange.service.impl.TokenService;
+import com.lyk.coursearrange.util.ClassUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -31,16 +34,17 @@ import java.util.Random;
 @RequestMapping("/student")
 public class StudentController {
 
-    @Autowired
+    @Resource
     private StudentService studentService;
 
-    @Autowired
+    @Resource
     private TokenService tokenService;
 
 
     /**
-     *  学生加入班级，只有加入班级后才可以看到本班的课表，文档
-     * @param id 学生id
+     * 学生加入班级，只有加入班级后才可以看到本班的课表，文档
+     *
+     * @param id      学生id
      * @param classNo 班级编号
      * @return
      */
@@ -49,18 +53,12 @@ public class StudentController {
         // TODO 学生加入年级，学生查看本班的文档(文档控制器中),查看自己所在的班级课表
         Student student = studentService.getById(id);
         student.setClassNo(classNo);
-        boolean b = studentService.saveOrUpdate(student);
-        if (b) {
-            return ServerResponse.ofSuccess("加入班级成功");
-        }
-        return ServerResponse.ofError("加入班级失败");
+        return studentService.saveOrUpdate(student) ? ServerResponse.ofSuccess("加入班级成功") : ServerResponse.ofError("加入班级失败");
     }
 
 
     /**
      * 学生登录
-     * @param studentLoginRequest
-     * @return
      */
     @PostMapping("/login")
     public ServerResponse studentLogin(@RequestBody StudentLoginRequest studentLoginRequest) {
@@ -73,13 +71,13 @@ public class StudentController {
         if (student2 == null) {
             return ServerResponse.ofError("学生账号不存在!");
 
-        }else if (student2.getStatus() != 0) {
+        } else if (student2.getStatus() != 0) {
             // 否则进行下一步验证账号的的状态
             return ServerResponse.ofError("该学生账号异常，请联系管理员");
         }
         // 调用登录
         Student student = studentService.studentLogin(studentLoginRequest.getUsername(), studentLoginRequest.getPassword());
-        if (student != null) {
+        if (null != student) {
             //允许登录,返回token
             String token = tokenService.getToken(student);
             map.put("student", student);
@@ -91,12 +89,9 @@ public class StudentController {
 
     /**
      * 学生注册
-     * @param stu
-     * @return
      */
     @PostMapping("/register")
     public ServerResponse studentRegister(@RequestBody StudentRegisterRequest stu) {
-        System.out.println(stu);
         Student student = new Student();
         student.setStudentNo(stu.getStudentNo());
         student.setUsername(stu.getUsername());
@@ -106,15 +101,12 @@ public class StudentController {
         student.setAddress(stu.getAddress());
         student.setTelephone(stu.getTelephone());
         student.setEmail(stu.getEmail());
-        boolean b = studentService.save(student);
-        if (b) {
-            return ServerResponse.ofSuccess("注册成功", student);
-        }
-        return ServerResponse.ofError("注册失败!");
+        return studentService.save(student) ? ServerResponse.ofSuccess("注册成功", student) : ServerResponse.ofError("注册失败!");
     }
 
     /**
      * 修改学生信息
+     *
      * @param student
      * @return
      */
@@ -128,37 +120,35 @@ public class StudentController {
 
     /**
      * 根据学生id获取
+     *
      * @param id
      * @return
      */
     @GetMapping("/{id}")
     @UserLoginToken
-    public ServerResponse queryStudent(@PathVariable("id")Integer id){
+    public ServerResponse queryStudent(@PathVariable("id") Integer id) {
         // 查询出来需要修改的学生实体
         return ServerResponse.ofSuccess(studentService.getById(id));
     }
 
     /**
      * 更新学生
+     *
      * @param student
      * @return
      */
     @PostMapping("/modify/{id}")
     public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody Student student) {
-
-        QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("id", id);
-        boolean b = studentService.update(student, wrapper);
-
-        if (b) {
-            return ServerResponse.ofSuccess("更新成功");
-        }
-        return ServerResponse.ofError("更新失败");
+        LambdaQueryWrapper<Student> wrapper = new LambdaQueryWrapper<Student>().eq(Student::getId, id);
+        return studentService.update(student, wrapper) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");
     }
 
     /**
      * 学生查询自己的课表,根据学生所在班级查询自己的课表
+     *
      * @return
      */
+    @Deprecated
     @GetMapping("/coursetable/{classNo}")
     public ServerResponse queryStudentCourse(@PathVariable("classNo") String classNo) {
 
@@ -167,35 +157,35 @@ public class StudentController {
 
     /**
      * 给学生创建学号
+     *
      * @param grade
      * @return
      */
     @PostMapping("/createno/{grade}")
     public ServerResponse create(@PathVariable("grade") String grade) {
-        Random r = new Random();
         // 得到当前年份字符串2020
-        String str1 = LocalDateTime.now().getYear()+"";
-        System.out.println(str1);
+        String year = LocalDateTime.now().getYear() + "";
+
         // 得到10位学号,2020 02 7845
         do {
             // 随机四位数
-            String str2 = String.valueOf(r.nextInt(10000));
+            String randomNumber = String.valueOf(ClassUtil.RANDOM.nextInt(10000));
             // 拼接学号  2020##****  十位(三个部分):  年:4位  年级:两位  随机数4位
-            String str3 = str1 + grade + str2;
+            String studentNo = year + grade + randomNumber;
             // 查询学号是否已经存在的条件
-            QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("student_no", str3);
+            LambdaQueryWrapper<Student> wrapper = new LambdaQueryWrapper<Student>().eq(Student::getStudentNo, studentNo);
             Student student = studentService.getOne(wrapper);
-            System.out.println("666666");
             // 如果查不到该学号，则学号可用，跳出循环
             if (student == null) {
-                return ServerResponse.ofSuccess(str3);
+                return ServerResponse.ofSuccess(studentNo);
             }
-        } while(true);
+        } while (true);
     }
 
 
     /**
      * 获取所有学生，带分页
+     *
      * @param page
      * @param limit
      * @return
@@ -204,7 +194,7 @@ public class StudentController {
     public ServerResponse queryStudent(@PathVariable("page") Integer page,
                                        @RequestParam(defaultValue = "10") Integer limit) {
         Page<Student> pages = new Page<>(page, limit);
-        QueryWrapper<Student> wrapper = new QueryWrapper<Student>().orderByDesc("student_no");
+        LambdaQueryWrapper<Student> wrapper = new LambdaQueryWrapper<Student>().orderByDesc(Student::getStudentNo);
         IPage<Student> iPage = studentService.page(pages, wrapper);
 
         return ServerResponse.ofSuccess(iPage);
@@ -213,6 +203,7 @@ public class StudentController {
 
     /**
      * 根据姓名关键字搜学生
+     *
      * @return
      */
     @GetMapping("/search/{keyword}")
@@ -223,20 +214,18 @@ public class StudentController {
         wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
         Page<Student> pages = new Page<>(page, limit);
         IPage<Student> iPage = studentService.page(pages, wrapper);
-        if (page != null) {
-            return ServerResponse.ofSuccess(iPage);
-        }
-        return ServerResponse.ofError("查询不到数据!");
+        return ServerResponse.ofSuccess(iPage);
     }
 
     /**
      * 管理员根据ID删除学生
+     *
      * @return
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteTeacher(@PathVariable Integer id) {
         boolean b = studentService.removeById(id);
-        if(b) {
+        if (b) {
             return ServerResponse.ofSuccess("删除成功！");
         }
         return ServerResponse.ofError("删除失败！");
@@ -244,25 +233,22 @@ public class StudentController {
 
     /**
      * 学生修改密码
+     *
      * @param passwordVO
      * @return
      */
     @PostMapping("/password")
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
-        QueryWrapper<Student> wrapper = new QueryWrapper();
-        wrapper.eq("id", passwordVO.getId());
-        wrapper.eq("password", passwordVO.getOldPass());
+
+        LambdaQueryWrapper<Student> wrapper =
+                new LambdaQueryWrapper<Student>().eq(Student::getId, passwordVO.getId()).eq(Student::getPassword, passwordVO.getOldPass());
         Student student = studentService.getOne(wrapper);
-        if (student == null) {
+        if (null == student) {
             return ServerResponse.ofError("旧密码错误");
         }
         // 否则进入修改密码流程
         student.setPassword(passwordVO.getNewPass());
-        boolean b = studentService.updateById(student);
-        if (b) {
-            return ServerResponse.ofSuccess("密码修改成功");
-        }
-        return ServerResponse.ofError("密码更新失败");
+        return studentService.updateById(student) ? ServerResponse.ofSuccess("密码修改成功") : ServerResponse.ofError("密码更新失败");
     }
 
 

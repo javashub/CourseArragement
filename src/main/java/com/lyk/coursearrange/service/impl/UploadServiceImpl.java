@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -22,16 +23,13 @@ import java.util.List;
 @Service
 public class UploadServiceImpl implements UploadService {
 
-    @Autowired
+    @Resource
     private ClassTaskService classTaskService;
-    @Autowired
+    @Resource
     private ClassTaskDao classTaskDao;
 
     /**
      * 文件上传实现并解析Excel存入数据库
-     *
-     * @param file
-     * @return
      */
     @Override
     public ServerResponse upload(MultipartFile file) {

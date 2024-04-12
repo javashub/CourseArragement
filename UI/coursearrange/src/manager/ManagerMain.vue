@@ -42,18 +42,6 @@
               </el-menu-item>
             </el-submenu>
 
-            <el-submenu index="2">
-              <template slot="title">
-                <i class="el-icon-reading"></i>课程管理
-              </template>
-              <el-menu-item index="2-1">
-                <router-link to="/onlinecourse" class="links">网课列表</router-link>
-              </el-menu-item>
-              <el-menu-item index="2-2">
-                <router-link to="/onlinecategory" class="links">网课类别</router-link>
-              </el-menu-item>
-            </el-submenu>
-
             <el-submenu index="3" v-if="!isTeacher">
               <template slot="title">
                 <i class="el-icon-user"></i>讲师管理
@@ -92,12 +80,6 @@
                 <i class="el-icon-notebook-1"></i>教学资料
               </template>
               <el-menu-item index="6-1">
-                <router-link class="links" to="/studydocs">学习文档</router-link>
-              </el-menu-item>
-              <el-menu-item index="6-2">
-                <router-link class="links" to="/exercise">在线测试</router-link>
-              </el-menu-item>
-              <el-menu-item index="6-3">
                 <router-link to="/courseinfolist" class="links">教材列表</router-link>
               </el-menu-item>
             </el-submenu>

@@ -8,10 +8,6 @@ import ManagerMain from '@/manager/ManagerMain';
 import TeacherList from '@/manager/components/TeacherList';
 import TeachAreaSetting from '@/manager/components/TeachAreaSetting';
 import SystemData from '@/manager/SystemData';
-import OnlineCourse from '@/manager/components/OnlineCourse';
-import StudyDocs from '@/manager/components/StudyDocs';
-import HomeWork from '@/manager/components/HomeWork';
-import Exercise from '@/manager/components/Exercise';
 import ClassroomList from '@/manager/components/ClassroomList';
 import TeachBuildingList from '@/manager/components/TeachBuildingList';
 import CourseTable from '@/manager/components/CourseTable';
@@ -24,8 +20,6 @@ import StudentList from '@/manager/components/StudentList';
 import ClassTaskList from '@/manager/components/ClassTaskList';
 import ClassManager from '@/manager/components/ClassManager';
 import UpdatePass from '@/pages/components/UpdatePass';
-import StudentDoc from '@/home/components/StudentDoc';
-import OnlineCategory from '@/manager/components/OnlineCategory';
 import Help from '@/manager/components/Help';
 import StudentMain from '@/home/StudentMain';
 
@@ -98,11 +92,6 @@ const router = new Router({
           path: '/password',
           name: 'Password',
           component: StudentPassword
-        },
-        {
-          path: '/studentdoc',
-          name: 'StudentDoc',
-          component: StudentDoc
         }
       ]
     },
@@ -116,11 +105,7 @@ const router = new Router({
           name: 'Help',
           component: Help
         },
-        {
-          path: '/onlinecategory',
-          name: 'OnlineCategory',
-          component: OnlineCategory
-        },
+
         {
           path: '/updatepass',
           name: 'UpdatePass',
@@ -175,26 +160,6 @@ const router = new Router({
           path: '/setteacharea',
           name: 'TeachAreaSetting',
           component: TeachAreaSetting
-        },
-        {
-          path: '/onlinecourse',
-          name: 'OnlineCourse',
-          component: OnlineCourse
-        },
-        {
-          path: '/studydocs',
-          name: 'StudyDocs',
-          component: StudyDocs
-        },
-        {
-          path: '/homework',
-          name: 'HomeWork',
-          component: HomeWork
-        },
-        {
-          path: '/exercise',
-          name: 'Exercise',
-          component: Exercise
         }
       ]
     }

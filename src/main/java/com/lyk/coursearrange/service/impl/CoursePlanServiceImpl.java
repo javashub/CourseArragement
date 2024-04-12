@@ -21,9 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * <p>
- *  服务实现类
- * </p>
  *
  * @author lequal
  * @since 2020-04-15
@@ -52,9 +49,9 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         }
 
         // 过滤出教师编号
-        List<String> teacherNos = new ArrayList<>(coursePlanList.stream().map(CoursePlan::getTeacherNo).collect(Collectors.toSet()));
+        List<String> teacherNos = coursePlanList.stream().map(CoursePlan::getTeacherNo).distinct().collect(Collectors.toList());
         // 过滤出课程编号
-        List<String> courseNos = new ArrayList<>(coursePlanList.stream().map(CoursePlan::getCourseNo).collect(Collectors.toSet()));
+        List<String> courseNos = coursePlanList.stream().map(CoursePlan::getCourseNo).distinct().collect(Collectors.toList());
 
         // 查询教师信息
         List<Teacher> teachers = teacherService.list(new LambdaQueryWrapper<Teacher>().in(Teacher::getTeacherNo, teacherNos));
@@ -68,10 +65,8 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
             BeanUtils.copyProperties(v, coursePlanVo);
 
             // 根据教师编号找到教师名称
-            String teacherName = teachers.stream().filter(t -> t.getTeacherNo().equals(v.getTeacherNo())).findFirst().get().getRealname();
-            String courseName = courseInfos.stream().filter(c -> c.getCourseNo().equals(v.getCourseNo())).findFirst().get().getCourseName();
-            coursePlanVo.setRealname(teacherName);
-            coursePlanVo.setCourseName(courseName);
+            teachers.stream().filter(t -> t.getTeacherNo().equals(v.getTeacherNo())).findFirst().ifPresent(t -> coursePlanVo.setRealname(t.getRealname()));
+            courseInfos.stream().filter(c -> c.getCourseNo().equals(v.getCourseNo())).findFirst().ifPresent(c -> coursePlanVo.setCourseName(c.getCourseName()));
             coursePlanVos.add(coursePlanVo);
         });
 

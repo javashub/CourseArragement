@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.controller;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,14 +32,15 @@ import java.util.Map;
 @RequestMapping("/teacher")
 public class TeacherController {
 
-    @Autowired
+    @Resource
     private TeacherService teacherService;
-    @Autowired
+    @Resource
     private TokenService tokenService;
 
 
     /**
      * 上传讲师证件
+     *
      * @param id
      * @param file
      * @return
@@ -45,28 +48,21 @@ public class TeacherController {
     @PostMapping("/upload/{id}")
     public ServerResponse uploadLicense(@PathVariable("id") Integer id, MultipartFile file) {
         Map<String, Object> map = AliyunUtil.upload(file, "license");
+        assert map != null;
         String license = (String) map.get("url");
         Teacher t = teacherService.getById(id);
         t.setLicense(license);
-        boolean b = teacherService.updateById(t);
-        if (b) {
-            return ServerResponse.ofSuccess("上传证件成功");
-        }
-        return ServerResponse.ofError("上传证件失败");
+        return teacherService.updateById(t) ? ServerResponse.ofSuccess("上传证件成功") : ServerResponse.ofError("上传证件失败");
     }
-
 
 
     /**
      * 讲师登录
-     * @param userLoginRequest
-     * @return
      */
     @PostMapping("/login")
     public ServerResponse teacherLogin(@RequestBody UserLoginRequest userLoginRequest) {
         Map<String, Object> map = new HashMap<>();
-        QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
-        wrapper.eq("teacher_no", userLoginRequest.getUsername());
+        LambdaQueryWrapper<Teacher> wrapper = new LambdaQueryWrapper<Teacher>().eq(Teacher::getTeacherNo, userLoginRequest.getUsername());
         // 先查询是否有该账号
         Teacher teacher2 = teacherService.getOne(wrapper);
         if (teacher2 == null) {
@@ -90,33 +86,23 @@ public class TeacherController {
 
     /**
      * 根据id查询讲师，用于更新操作
-     * @param id
-     * @return
      */
     @GetMapping("/{id}")
     public ServerResponse queryTeacherById(@PathVariable("id") Integer id) {
-
         return ServerResponse.ofSuccess(teacherService.getById(id));
     }
 
     /**
      * 更新讲师
-     * @param teacher
-     * @return
      */
     @PostMapping("/modify")
     public ServerResponse modifyTeacher(@RequestBody Teacher teacher) {
-
-        boolean b = teacherService.updateById(teacher);
-
-        if (b) {
-            return ServerResponse.ofSuccess("更新成功");
-        }
-        return ServerResponse.ofError("更新失败");
+        return teacherService.updateById(teacher) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");
     }
 
     /**
      * 分页查询讲师
+     *
      * @param page
      * @param limit
      * @return
@@ -125,44 +111,39 @@ public class TeacherController {
     public ServerResponse queryTeacher(@PathVariable(value = "page") Integer page,
                                        @RequestParam(defaultValue = "10") Integer limit) {
         Page<Teacher> pages = new Page<>(page, limit);
-        QueryWrapper<Teacher> wrapper = new QueryWrapper<Teacher>().orderByDesc("teacher_no");
+        LambdaQueryWrapper<Teacher> wrapper = new LambdaQueryWrapper<Teacher>().orderByDesc(Teacher::getTeacherNo);
         IPage<Teacher> iPage = teacherService.page(pages, wrapper);
         return ServerResponse.ofSuccess(iPage);
     }
 
     /**
      * 根据姓名关键字搜索讲师
-     * @return
      */
     @GetMapping("/search/{page}/{keyword}")
-    public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @PathVariable("page") Integer page,
+    public ServerResponse searchTeacher(@PathVariable("keyword") String keyword,
+                                        @PathVariable("page") Integer page,
                                         @RequestParam(defaultValue = "10") Integer limit) {
         QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
         wrapper.orderByDesc("update_time");
         wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
         Page<Teacher> pages = new Page<>(page, limit);
         IPage<Teacher> iPage = teacherService.page(pages, wrapper);
-        if (page != null) {
-            return ServerResponse.ofSuccess(iPage);
-        }
-        return ServerResponse.ofError("查询失败!");
+        return ServerResponse.ofSuccess(iPage);
     }
 
     /**
      * 管理员根据ID删除讲师
+     *
      * @return
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteTeacher(@PathVariable Integer id) {
-        boolean b = teacherService.removeById(id);
-        if(b) {
-            return ServerResponse.ofSuccess("删除成功！");
-        }
-        return ServerResponse.ofError("删除失败！");
+        return teacherService.removeById(id) ? ServerResponse.ofSuccess("删除成功！") : ServerResponse.ofError("删除失败！");
     }
 
     /**
      * 用于给讲师生成讲师编号,返回一个讲师编号
+     *
      * @return
      */
     @GetMapping("/no")
@@ -176,6 +157,7 @@ public class TeacherController {
 
     /**
      * 管理员添加讲师,默认密码是123456
+     *
      * @param t
      * @return
      */
@@ -193,16 +175,12 @@ public class TeacherController {
         teacher.setTelephone(t.getTelephone());
         teacher.setAddress(t.getAddress());
         teacher.setAge(t.getAge());
-        boolean b = teacherService.save(teacher);
-
-        if (b) {
-            return ServerResponse.ofSuccess("添加讲师成功！");
-        }
-        return ServerResponse.ofError("添加讲师失败！");
+        return teacherService.save(teacher) ? ServerResponse.ofSuccess("添加讲师成功！") : ServerResponse.ofError("添加讲师失败！");
     }
 
     /**
      * 根据ID封禁、解封讲师账号，状态为0时正常，1时封禁
+     *
      * @param id
      * @return
      */
@@ -224,6 +202,7 @@ public class TeacherController {
 
     /**
      * 修改密码
+     *
      * @param passwordVO
      * @return
      */
@@ -247,6 +226,7 @@ public class TeacherController {
 
     /**
      * 查询所有讲师
+     *
      * @return
      */
     @GetMapping("/all")

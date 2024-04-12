@@ -50,7 +50,7 @@ public class UploadController {
      * @return
      */
     @GetMapping(value = "/download", consumes = MediaType.ALL_VALUE)
-    public void downloadTemplate(final HttpServletResponse response) {
+    public void downloadTemplate(HttpServletResponse response) {
         // 获取文件
         File file = new File("doc/课程任务导入模板.xls");
         if (!file.exists()) {

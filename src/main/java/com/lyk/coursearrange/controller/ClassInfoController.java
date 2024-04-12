@@ -37,8 +37,6 @@ public class ClassInfoController {
 
     /**
      * 根据年级查询所有班级
-     * @param grade
-     * @return
      */
     @GetMapping("/class-grade/{grade}")
     public ServerResponse queryClass(@PathVariable("grade") String grade) {
@@ -50,10 +48,6 @@ public class ClassInfoController {
 
     /**
      * 根据班级查询学生
-     * @param page
-     * @param classNo
-     * @param limit
-     * @return
      */
     @GetMapping("/student-class/{page}/{classNo}")
     public ServerResponse queryStudentByClass(@PathVariable("page") Integer page,
@@ -69,19 +63,17 @@ public class ClassInfoController {
 
     /**
      * 查询班级信息带详细信息
-     * @return
      */
     @GetMapping("/queryclassinfo/{page}")
-    public ServerResponse queryClassInfos(@PathVariable("page") Integer page, @RequestParam(defaultValue = "10") Integer limit, @RequestParam(defaultValue = "") String gradeNo) {
-
+    public ServerResponse queryClassInfos(@PathVariable("page") Integer page,
+                                          @RequestParam(defaultValue = "10") Integer limit,
+                                          @RequestParam(defaultValue = "") String gradeNo) {
         return classInfoService.queryClassInfos(page, limit, gradeNo);
     }
 
 
     /**
      * 添加班级
-     * @param classAddVO
-     * @return
      */
     @PostMapping("/addclassinfo")
     public ServerResponse addClass(@RequestBody ClassAddVO classAddVO) {

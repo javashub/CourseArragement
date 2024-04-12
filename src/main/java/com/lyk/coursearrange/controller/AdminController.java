@@ -2,6 +2,7 @@ package com.lyk.coursearrange.controller;
 
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
@@ -18,6 +19,7 @@ import com.lyk.coursearrange.service.impl.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +32,9 @@ import java.util.Map;
 @RequestMapping("/admin")
 public class AdminController {
 
-    @Autowired
+    @Resource
     private AdminService adminService;
-    @Autowired
-    private TeacherService teacherService;
-    @Autowired
+    @Resource
     private TokenService tokenService;
 
 
@@ -84,21 +84,15 @@ public class AdminController {
      */
     @PostMapping("/password")
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
-        System.out.println(passwordVO + "======");
-        QueryWrapper<Admin> wrapper = new QueryWrapper();
-        wrapper.eq("id", passwordVO.getId());
-        wrapper.eq("password", passwordVO.getOldPass());
+        LambdaQueryWrapper<Admin> wrapper =
+                new LambdaQueryWrapper<Admin>().eq(Admin::getId, passwordVO.getId()).eq(Admin::getPassword, passwordVO.getOldPass());
         Admin admin = adminService.getOne(wrapper);
         if (admin == null) {
             return ServerResponse.ofError("旧密码错误");
         }
         // 否则进入修改密码流程
         admin.setPassword(passwordVO.getNewPass());
-        boolean b = adminService.updateById(admin);
-        if (b) {
-            return ServerResponse.ofSuccess("密码修改成功");
-        }
-        return ServerResponse.ofError("密码更新失败");
+        return adminService.updateById(admin) ? ServerResponse.ofSuccess("密码修改成功") : ServerResponse.ofError("密码更新失败");
     }
 
 

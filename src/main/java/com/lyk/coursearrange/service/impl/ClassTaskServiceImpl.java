@@ -54,6 +54,9 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 return ServerResponse.ofError("排课失败，查询不到排课任务！请导入排课任务再进行排课~");
             }
 
+            // 校验学时是否超过课表的容纳值
+            checkWeeksNumber(classTaskList);
+
             // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间
             Map<String, List<String>> geneMap = coding(classTaskList);
             // 3、给初始基因编码随机分配时间，得到同班上课时间不冲突的编码
@@ -83,6 +86,16 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             e.printStackTrace();
             return ServerResponse.ofError("排课失败，出现异常!");
         }
+    }
+
+    // 按照班级分组并判断每个班级的 weeksNumber是否超过 50，超过 50 则提示不能排课
+    private void checkWeeksNumber(List<ClassTask> classTaskList) {
+        classTaskList.stream().collect(Collectors.groupingBy(ClassTask::getClassNo)).forEach((k, v) -> {
+            int sum = v.stream().mapToInt(ClassTask::getWeeksNumber).sum();
+            if (sum > 50) {
+                throw new RuntimeException("班级：" + k + "的学时超过50，不能排课！");
+            }
+        });
     }
 
     /**
@@ -415,6 +428,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                     // 找一个这个老师还没上课的时间
                     String newClassTime = ClassUtil.randomTimeForTeacherConflict(gene, resultGeneList, teacherNo, classNo);
                     replaceConflictTime(resultGeneList, tempGene, newClassTime);
+                    continue exit; // 重新开始循环
                 }
             }
         }
@@ -438,14 +452,13 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 String tempClassTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, tempGene);
                 String tempClassNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, tempGene);
                 // 冲突检测
-                if (classTime.equals(tempClassTime)) {
-                    if (classNo.equals(tempClassNo) || teacherNo.equals(tempTeacherNo)) {
+                if (classTime.equals(tempClassTime) && (classNo.equals(tempClassNo) || teacherNo.equals(tempTeacherNo))) {
                         log.debug("出现冲突情况: {}", conflictTimes++);
                         String newClassTime = ClassUtil.randomTime();
                         String newGene = gene.substring(0, 24) + newClassTime;
                         replace(resultGeneList, tempGene, newGene);
                         continue eitx;
-                    }
+
                 }
             }
         }
