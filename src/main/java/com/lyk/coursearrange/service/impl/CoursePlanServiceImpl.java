@@ -18,7 +18,6 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -69,17 +68,10 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
             BeanUtils.copyProperties(v, coursePlanVo);
 
             // 根据教师编号找到教师名称
-            // 根据教师编号找到教师名称
-            Optional<Teacher> teacherName = teachers.stream().filter(t -> t.getTeacherNo().equals(v.getTeacherNo())).findFirst();
-            if (teacherName.isPresent()) {
-                coursePlanVo.setRealname(teacherName.get().getRealname());
-            }
-
-            Optional<CourseInfo> courseName = courseInfos.stream().filter(c -> c.getCourseNo().equals(v.getCourseNo())).findFirst();
-            if (courseName.isPresent()) {
-                coursePlanVo.setCourseName(courseName.get().getCourseName());
-            }
-
+            String teacherName = teachers.stream().filter(t -> t.getTeacherNo().equals(v.getTeacherNo())).findFirst().get().getRealname();
+            String courseName = courseInfos.stream().filter(c -> c.getCourseNo().equals(v.getCourseNo())).findFirst().get().getCourseName();
+            coursePlanVo.setRealname(teacherName);
+            coursePlanVo.setCourseName(courseName);
             coursePlanVos.add(coursePlanVo);
         });
 

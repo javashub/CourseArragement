@@ -362,7 +362,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             resultGeneList = geneMutation(allIndividual);
             // 4、冲突检测，消除冲突
             // 5、将消除冲突后的个体再分班进入下一次进化
-            List<String> list = conflictResolution1(resultGeneList);
+            List<String> list = conflictResolution(resultGeneList);
             // 合拢所有班级的个体
             individualMap.clear();
             individualMap = transformIndividual(list);
@@ -379,7 +379,48 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      *
      * @param resultGeneList 所有个体集合 （大种群）
      */
+    private List<String> conflictResolution(List<String> resultGeneList) {
+        int conflictTimes = 0;
+        exit:
+        // 标签 for 循环
+        for (int i = 0; i < resultGeneList.size(); i++) {
+            // 得到集合中每一条基因编码的编码信息
+            String gene = resultGeneList.get(i); // <1 01 20200101 10010 100001 01 00>
+            String teacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
+            String classTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene);
+            String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
 
+            // 剩余的
+            for (int j = i + 1; j < resultGeneList.size(); j++) {
+                // 再找剩余的基因编码对比
+                String tempGene = resultGeneList.get(j);
+                String tempTeacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, tempGene);
+                String tempClassTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, tempGene);
+                String tempClassNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, tempGene);
+                // 冲突检测
+                if (classTime.equals(tempClassTime) && classNo.equals(tempClassNo)) {
+                    // 一个班级在同一时间上上多门课。
+                    log.error("一个班级在同一时间上上多门课 {}", conflictTimes++);
+
+                    // 重新找个时间给 其实更优秀一点的解决办法是：在这里直接给他搞一个没用到的时间就可以解决暴力问题
+                    // 重新找个时间：找一个这个班级的课表里面找一个没用的时间
+                    String newClassTime = ClassUtil.randomTimeForClassConflict(gene, resultGeneList, classNo, teacherNo, classTime);
+
+                    replaceConflictTime(resultGeneList, tempGene, newClassTime);
+
+                    continue exit; // 重新开始循环
+                } else if (classTime.equals(tempClassTime) && teacherNo.equals(tempTeacherNo)) {
+                    log.error("同一个老师在同一时间上上多门课 {}", conflictTimes++);
+                    // 同一个老师在同一时间上上多门课
+                    // 找一个这个老师还没上课的时间
+                    String newClassTime = ClassUtil.randomTimeForTeacherConflict(gene, resultGeneList, teacherNo, classNo);
+                    replaceConflictTime(resultGeneList, tempGene, newClassTime);
+                }
+            }
+        }
+        log.error("冲突发生次数: {}", conflictTimes);
+        return resultGeneList;
+    }
 
     private List<String> conflictResolution1(List<String> resultGeneList) {
         int conflictTimes = 0;
