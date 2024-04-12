@@ -27,8 +27,8 @@ spring:
 mybatis-plus:
   mapper-locations: classpath:/mapper/xml/*Mapper.xml
   typeAliasesPackage: com.lyk.coursearrange.entity
-#  configuration:
-#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 开启 SQL 日志打印
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 开启 SQL 日志打印
   global-config:
     db-config:
       logic-delete-value: 1 #删除
