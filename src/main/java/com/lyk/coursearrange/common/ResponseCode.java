@@ -20,8 +20,8 @@ public enum ResponseCode {
     FORBIDDEN(403, "没有相关权限");
 
     // 响应状态码
-    private int code;
+    private final int code;
 
     // 提示信息
-    private String desc;
+    private final String desc;
 }
