@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 /**
  * @author lequal
  * @since 2020-04-06
+ * UPDATE tb_student
+ * SET student_no = CONCAT('2024', SUBSTRING(student_no, 5))
+ * WHERE student_no LIKE '2019%';
  */
 @Service
 @Slf4j
@@ -83,7 +86,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             return ServerResponse.ofSuccess(String.format("排课成功，耗时：%sms", System.currentTimeMillis() - start));
         } catch (Exception e) {
             log.error("排课失败： {}", e.getMessage());
-            e.printStackTrace();
             return ServerResponse.ofError("排课失败，出现异常!");
         }
     }
@@ -113,7 +115,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             // 遍历 geneList并过滤同一个course_no、teacher_no 下是否有两个一样的 class_time
             Map<String, List<String>> map = new HashMap<>();
             for (String gene : geneList) {
-                String courseNo = ClassUtil.cutGene(ConstantInfo.COURSE_NO, gene);
+//                String courseNo = ClassUtil.cutGene(ConstantInfo.COURSE_NO, gene);
                 String teacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
                 String classTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene);
                 String key = teacherNo + "--" + classTime;

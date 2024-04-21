@@ -10,7 +10,6 @@
     
     <h3 class="footer"><router-link to="/" style="text-decoration:none;">联系作者</router-link></h3>
     <h3>Copy Right：© 2020 Course Arrange System</h3>
-    
   </div>
 </template>
 
