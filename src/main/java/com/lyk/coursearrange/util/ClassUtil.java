@@ -97,36 +97,6 @@ public class ClassUtil {
                     return false;
                 }
             }
-
-//            String teacherNo2 = cutGene(ConstantInfo.TEACHER_NO,str);
-//            if(teacherNo.equals(teacherNo2)){
-//                String classTime2 = cutGene(ConstantInfo.CLASS_TIME,str);
-//                if(classTime2.equals(time)){
-//                    return false;
-//                }
-//            }
-
-            /*
-            // 判断班级编号是否相等，这种情况下只是处理了同班上课时间不冲突的情况，还有同讲师同一时间的未处理
-            if (classNo.equals(cutGene(ConstantInfo.CLASS_NO, str))) {
-                // 在班级编号相等的情况下再看看上课时间是否相等,不相等就返回true
-                String classTime = cutGene(ConstantInfo.CLASS_TIME, str);
-                if (time.equals(classTime)) {
-                    return false;
-                }
-            } else {
-                // 如果是不同班级之间判断老师的上课时间
-                String teacherNo = cutGene(ConstantInfo.TEACHER_NO, str);
-                String teacherNo2 = cutGene(ConstantInfo.TEACHER_NO, gene);
-                String classTime = cutGene(ConstantInfo.CLASS_TIME, str);
-                // 用下面这条会出现一些冲突
-//                String classTime = cutGene(ConstantInfo.CLASS_TIME, gene);
-
-                if (teacherNo.equals(teacherNo2) && time.equals(classTime)) {
-                    return false;
-                }
-            }
-             */
         }
         return true;
     }
@@ -201,8 +171,7 @@ public class ClassUtil {
             return allTime.get(randomIndex);
         }
 
-        int temp = RANDOM.nextInt(MAX_CLASS_TIME) + 1;
-        return temp < 10 ? ("0" + temp) : String.valueOf(temp);
+        return randomTime();
     }
 
 
@@ -344,7 +313,7 @@ public class ClassUtil {
      * @param individualList
      * @return
      */
-    public static double calculatExpectedValue(List<String> individualList) {
+    public static double calculateExpectedValue(List<String> individualList) {
         // <1 01 20200101 10010 100001 01 05> 优先 01 =》 5   05 =》 1
         // <1 01 20200101 10010 100001 03 00> 次
         double K1 = 0.3; // 主要课所占权重 01
@@ -368,21 +337,26 @@ public class ClassUtil {
             // 获得该课程的开课时间
             String classTime = cutGene(ConstantInfo.CLASS_TIME, gene);
 
-            if (courseAttr.equals(ConstantInfo.MAIN_COURSE)) {
-                F1 = F1 + calculateMainExpect(classTime);
-            } else if (courseAttr.equals(ConstantInfo.SECONDARY_COURSE)) {
-                F2 = F2 + calculateSecondaryExpect(classTime);
-            } else if (courseAttr.equals(ConstantInfo.PHYSICAL_COURSE)) {
-                F3 = F3 + calculatePhysicalExpect(classTime);
-            } else {
-                F4 = F4 + calculateExperimentExpect(classTime);
+            switch (courseAttr) {
+                case ConstantInfo.MAIN_COURSE:
+                    F1 = F1 + calculateMainExpect(classTime);
+                    break;
+                case ConstantInfo.SECONDARY_COURSE:
+                    F2 = F2 + calculateSecondaryExpect(classTime);
+                    break;
+                case ConstantInfo.PHYSICAL_COURSE:
+                    F3 = F3 + calculatePhysicalExpect(classTime);
+                    break;
+                default:
+                    F4 = F4 + calculateExperimentExpect(classTime);
+                    break;
             }
         }
         // 计算期望值
         F5 = calculateDiscreteExpect(individualList);
-        // 总适应度
+        // 总适应度 整个种群的适应度值
         Fx = K1 * F1 + K2 * F2 + K3 * F3 + K4 * F4 + K5 * F5;
-        return Fx; // 整个种群的适应度值
+        return Fx;
     }
 
     /**

@@ -562,7 +562,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             selectGene(individualList);
 
             // 计算并对比子父代的适应度值，高的留下进行下一代遗传，相当于进化，
-            if (ClassUtil.calculatExpectedValue(individualList) >= ClassUtil.calculatExpectedValue(oldIndividualList)) {
+            if (ClassUtil.calculateExpectedValue(individualList) >= ClassUtil.calculateExpectedValue(oldIndividualList)) {
                 // 新的适应度值更高，那就保留新的个体
                 individualMap.put(classNo, individualList);
             } else {
