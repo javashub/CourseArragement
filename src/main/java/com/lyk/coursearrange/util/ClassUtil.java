@@ -11,7 +11,7 @@ import java.util.stream.IntStream;
 /**
  * @author: 15760
  * @Date: 2020/4/1
- * @Descripe: 判断冲突，解码
+ * @Descripe: 工具类
  * 固定时间：1
  * 年级编号：2
  * 班级编号：8
@@ -24,84 +24,62 @@ import java.util.stream.IntStream;
 @Slf4j
 public class ClassUtil {
 
+    private ClassUtil() {
+    }
+
     public static final Random RANDOM = new Random();
 
     /**
      * 课程表最大节数，当前是 25，用于生成随机时间的上限
      */
-    private static final int MAX_CLASS_TIME = 25;
+    public static final int MAX_CLASS_TIME = 25;
 
     /**
      * 用于切割获得编码的染色体中需要的属性
      *
-     * @param aim
-     * @param source
-     * @return
+     * @param aim 目标信息
+     * @param source 源编码
+     * @return 切割出来的目标信息
      */
     public static String cutGene(String aim, String source) {
         switch (aim) {
             case ConstantInfo.IS_FIX:
-                return source.substring(0, 1); // 固定时间 1
+                // 固定时间 1
+                return source.substring(0, 1);
             case ConstantInfo.GRADE_NO:
-                return source.substring(1, 3); // 年级编号 2
+                // 年级编号 2
+                return source.substring(1, 3);
             case ConstantInfo.CLASS_NO:
-                return source.substring(3, 11); // 班级编号 11
+                // 班级编号 11
+                return source.substring(3, 11);
             case ConstantInfo.TEACHER_NO:
-                return source.substring(11, 16); // 讲师编号 5
+                // 讲师编号 5
+                return source.substring(11, 16);
             case ConstantInfo.COURSE_NO:
-                return source.substring(16, 22); // 课程编号 6
+                // 课程编号 6
+                return source.substring(16, 22);
             case ConstantInfo.COURSE_ATTR:
-                return source.substring(22, 24); // 课程属性 2
+                // 课程属性 2
+                return source.substring(22, 24);
             case ConstantInfo.CLASS_TIME:
-                return source.substring(24, 26); // 上课时间
+                // 上课时间
+                return source.substring(24, 26);
             case ConstantInfo.CLASSROOM_NO:
-                return source.substring(26, 32); // 教室编号
+                // 教室编号
+                return source.substring(26, 32);
             default:
                 return "";
         }
     }
 
-    public static Boolean judgeTime(String time, String gene, List<String> geneList) {
-
-        for (String str : geneList) {
-            // 讲师--时间    班级--时间
-            // 得到遍历编码中的讲师、班级编号
-            String teacherNo = cutGene(ConstantInfo.TEACHER_NO, str);
-            String classNo = cutGene(ConstantInfo.CLASS_NO, str);
-            String classTime = cutGene(ConstantInfo.CLASS_TIME, str);
-            if (((teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO, gene))) && (classTime.equals(time)))
-                    || classNo.equals(cutGene(ConstantInfo.CLASS_TIME, gene)) && time.equals(cutGene(ConstantInfo.CLASS_TIME, str))) {
-                return false;
-            }
-        }
-        return true;
-    }
 
 
     /**
-     * 判断同一个班级同一时间内是否有冲突的上课情况
-     * @param time 随机生成的时间
-     * @param gene 待分配时间的编码
-     * @param geneList
-     * @return
-     */
-    public static Boolean isTimeRepeat(String time, String gene, List<String> geneList) {
-        // 先从染色体中获得班级编号
-        String classNo = cutGene(ConstantInfo.CLASS_NO, gene);
-        String teacherNo = cutGene(ConstantInfo.TEACHER_NO,gene);
-        for (String str : geneList) {
-
-            if(time.equals(cutGene(ConstantInfo.CLASS_TIME,str))){
-                if(classNo.equals(cutGene(ConstantInfo.CLASS_NO,str)) || teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO,str))){
-                    log.info("{},time:{},老师冲突:{}{},班级冲突:{}{}",geneList.size(),time,teacherNo,teacherNo.equals(cutGene(ConstantInfo.TEACHER_NO,str)),classNo,classNo.equals(cutGene(ConstantInfo.CLASS_NO,str)));
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-
+     * @author lyk
+     * @description 生成随机时间
+     * @date 2024/4/23 21:39
+     * @return -> 两位时间
+     **/
     public static String randomTime() {
         int temp = RANDOM.nextInt(MAX_CLASS_TIME) + 1;
         return temp < 10 ? ("0" + temp) : String.valueOf(temp);
@@ -112,7 +90,6 @@ public class ClassUtil {
      * @author lyk
      * @description 生成 01 - 25 的时间集合
      * @date 2024/4/10 09:41
-     *
      * @return -> java.util.List<java.lang.String>
      **/
     private static List<String> getAllTime() {
@@ -157,8 +134,6 @@ public class ClassUtil {
     /**
      * @author lyk
      * @description 获取 01-25 内还未使用的时间
-     * @date 2024/4/10 10:03
-     * @param usedTimeList
      * @return -> java.lang.String
      **/
     private static String getFreeTime(Set<String> usedTimeList) {
@@ -178,8 +153,6 @@ public class ClassUtil {
     /**
      * 计算主要课程的期望值
      * 例如语文数学英语在高中阶段是需要设置多一点，设置在前面上课
-     * @param classTime
-     * @return
      */
     private static int calculateMainExpect(String classTime) {
         // 主要课程期望值为10时的时间片值，放在第一节课
@@ -190,8 +163,6 @@ public class ClassUtil {
         String[] fourExpectValue = {"03", "08", "13", "18", "23"};
         // 主要课程期望值为2时的时间片值
         String[] twoExpectValue = {"04", "09", "14", "19", "24"};
-        // 主要课程期望值为0时的时间片值
-        //String [] zeroExpectValue = {"05","10","15","20","25"};
 
         if (ArrayUtils.contains(tenExpectValue, classTime)) {
             return 10;
@@ -210,8 +181,6 @@ public class ClassUtil {
      * 计算次要课程的期望值
      * 物理、化学、生物
      * 政治、历史、地理
-     * @param classTime
-     * @return
      */
     private static int calculateSecondaryExpect(String classTime) {
         // 次要课程期望值为10时的时间片值
@@ -236,8 +205,8 @@ public class ClassUtil {
     /**
      * 计算体育课的期望值
      *
-     * @param classTime
-     * @return
+     * @param classTime 上课时间
+     * @return 期望值
      */
     private static int calculatePhysicalExpect(String classTime) {
         String[] tenExpectValue = {"04", "09", "14", "19"};//体育课期望值为10时的时间片值  24
@@ -259,9 +228,6 @@ public class ClassUtil {
 
     /**
      * 计算实验课的期望值
-     *
-     * @param classTime
-     * @return
      */
     private static int calculateExperimentExpect(String classTime) {
         String[] tenExpectValue = {"04", "09", "14", "19"};//实验课期望值为10时的时间片值
@@ -286,8 +252,6 @@ public class ClassUtil {
     /**
      * 判断两课程的时间差在哪个区间
      * 并返回对应的期望值
-     * @param temp
-     * @return
      */
     private static int judgingDiscreteValues(int temp) {
         int[] tenExpectValue = {5, 6, 7, 8}; // 期望值为10时两课之间的时间差
@@ -310,17 +274,21 @@ public class ClassUtil {
 
     /**
      * 计算每个个体的适应值
-     * @param individualList
-     * @return
      */
     public static double calculateExpectedValue(List<String> individualList) {
         // <1 01 20200101 10010 100001 01 05> 优先 01 =》 5   05 =》 1
         // <1 01 20200101 10010 100001 03 00> 次
-        double K1 = 0.3; // 主要课所占权重 01
-        double K2 = 0.1; // 次要课所占权重 02
-        double K3 = 0.1; // 体育课所占权重 03
-        double K4 = 0.3; // 实验课所占权重 03
-        double K5 = 0.2; // 课程离散程度所占权重
+        // 主要课所占权重 01
+        double K1 = 0.3;
+        // 次要课所占权重 02
+        double K2 = 0.1;
+        // 体育课所占权重 03
+        double K3 = 0.1;
+        // 实验课所占权重 03
+        double K4 = 0.3;
+
+        // 课程离散程度所占权重
+        double K5 = 0.2;
 
         int F1 = 0; // 主要课程期望总值
         int F2 = 0; // 次要课程期望总值
@@ -362,8 +330,6 @@ public class ClassUtil {
     /**
      * 将一个个体（班级课表）的同一门课程的所有上课时间进行统计，并且进行分组
      * 每个班级的课表都算是一个个体
-     * @param individualList
-     * @return
      */
     private static Map<String, List<String>> courseGrouping(List<String> individualList) {
         Map<String, List<String>> classTimeMap = new HashMap<>();
@@ -391,8 +357,6 @@ public class ClassUtil {
 
     /**
      * 计算课程离散度期望值
-     * @param individualList 每个班级的编码集合
-     * @return
      */
     private static int calculateDiscreteExpect(List<String> individualList) {
         // 离散程度期望值

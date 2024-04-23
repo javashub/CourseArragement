@@ -1,8 +1,7 @@
-package com.lyk.coursearrange.common;
+package com.lyk.coursearrange.common.exceptions;
 
+import com.lyk.coursearrange.common.ServerResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -19,7 +18,7 @@ public class GlobalExceptionHandler {
 
 
     // 对所有的异常进行相同的处理
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler(AbstractCourseArrangeException.class)
     @ResponseBody
     public ServerResponse error(Exception e) {
         log.error(e.getMessage());

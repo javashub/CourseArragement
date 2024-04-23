@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.exceptions.CourseArrangeException;
 import com.lyk.coursearrange.dao.*;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.Classroom;
@@ -70,7 +71,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             individualMap = geneticEvolution(individualMap);
 
             // 检测时间冲突
-            checkConfiliction(individualMap);
+            checkConflict(individualMap);
 
             // 6、分配教室并做教室冲突检测
             List<String> resultList = finalResult(individualMap);
@@ -94,8 +95,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private void checkWeeksNumber(List<ClassTask> classTaskList) {
         classTaskList.stream().collect(Collectors.groupingBy(ClassTask::getClassNo)).forEach((k, v) -> {
             int sum = v.stream().mapToInt(ClassTask::getWeeksNumber).sum();
-            if (sum > 50) {
-                throw new RuntimeException("班级：" + k + "的学时超过50，不能排课！");
+            if (sum > ClassUtil.MAX_CLASS_TIME * 2) {
+                throw new CourseArrangeException(String.format("班级：%s 的学时超过 %s，不能排课！", k, ClassUtil.MAX_CLASS_TIME * 2));
             }
         });
     }
@@ -103,7 +104,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     /**
      * 是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间
      */
-    private void checkConfiliction(Map<String, List<String>> individualMap) {
+    private void checkConflict(Map<String, List<String>> individualMap) {
 
         Map<String, Map<String, List<String>>> classMap = new HashMap<>();
 
@@ -115,7 +116,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             // 遍历 geneList并过滤同一个course_no、teacher_no 下是否有两个一样的 class_time
             Map<String, List<String>> map = new HashMap<>();
             for (String gene : geneList) {
-//                String courseNo = ClassUtil.cutGene(ConstantInfo.COURSE_NO, gene);
                 String teacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
                 String classTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene);
                 String key = teacherNo + "--" + classTime;
@@ -136,7 +136,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 String key = e.getKey();
                 if (e.getValue().size() > 1) {
                     log.error("出现冲突 {}", key);
-                    e.getValue().stream().map(item -> item.substring(11, 22) + "-" + item.substring(24, 26)).collect(Collectors.toList()).forEach(System.out::println);
+                    e.getValue().stream().map(item -> item.substring(11, 22) + "-" + item.substring(24, 26))
+                            .collect(Collectors.toList()).forEach(i -> log.error("冲突的课程：{}", i));
                 }
             }
             log.info("完成遍历 {} 班", entry.getKey());
@@ -181,8 +182,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             for (String gene : gradeGeneList) {
                 // 分配教室
                 classroomNo = issueClassroom(gene, classroomList2, resultList);
-                // 基因编码中加入教室编号，至此所有基因信息编码完成，得到染色体
-                gene = gene + classroomNo; // <1 01 20200101 10010 100001 01 07 01-201>
+                // 基因编码中加入教室编号，至此所有基因信息编码完成，得到染色体 // <1 01 20200101 10010 100001 01 07 01-201>
+                gene = gene + classroomNo;
                 // 将最终的编码加入集合中
                 resultList.add(gene);
             }
@@ -514,7 +515,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private List<String> geneMutation(List<String> resultGeneList) {
         // <1 01 20200101 10010 100001 01 19> 随机变异
         // 变异率，需要合理设置，太低则不容易进化得到最优解；太高则容易失去种群原来的优秀解
-        double mutationRate = 0.005; //0.002  0.003  0.004  0.005尽量设置低一些，0.01可能都大了
+        final double mutationRate = 0.005; //0.002  0.003  0.004  0.005尽量设置低一些，0.01可能都大了
         // 设定每一代中需要变异的基因个数，基因数*变异率
         int mutationNumber = (int) (resultGeneList.size() * mutationRate);
 
@@ -545,9 +546,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
 
     /**
      * 给每个班级交叉：一个班级看作一个种群
-     *
-     * @param individualMap
-     * @return
      */
     private Map<String, List<String>> hybridization(Map<String, List<String>> individualMap) {
         // 对每一个班级的基因编码片段进行交叉 <1, 10> <2, 20>
