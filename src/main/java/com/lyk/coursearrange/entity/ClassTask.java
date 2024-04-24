@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -16,12 +17,13 @@ import java.io.Serializable;
  * @author lequal
  * @since 2020-04-06
  */
+@EqualsAndHashCode(callSuper = true)
 @TableName("tb_class_task")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @ExcelTarget("课程计划")
-public class ClassTask extends Model<ClassTask> {
+public class ClassTask extends Model<ClassTask> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

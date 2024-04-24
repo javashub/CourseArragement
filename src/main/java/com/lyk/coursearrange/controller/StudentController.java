@@ -184,11 +184,7 @@ public class StudentController {
 
 
     /**
-     * 获取所有学生，带分页
-     *
-     * @param page
-     * @param limit
-     * @return
+     * 分页获取所有学生
      */
     @GetMapping("/students/{page}")
     public ServerResponse queryStudent(@PathVariable("page") Integer page,
@@ -203,39 +199,27 @@ public class StudentController {
 
     /**
      * 根据姓名关键字搜学生
-     *
-     * @return
      */
     @GetMapping("/search/{keyword}")
     public ServerResponse searchTeacher(@PathVariable("keyword") String keyword, @RequestParam(defaultValue = "1") Integer page,
                                         @RequestParam(defaultValue = "10") Integer limit) {
-        QueryWrapper<Student> wrapper = new QueryWrapper<>();
-        wrapper.orderByDesc("update_time");
-        wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
-        Page<Student> pages = new Page<>(page, limit);
-        IPage<Student> iPage = studentService.page(pages, wrapper);
+
+        LambdaQueryWrapper<Student> wrapper = new LambdaQueryWrapper<Student>().orderByDesc(Student::getUpdateTime)
+                .likeRight(!StringUtils.isEmpty(keyword), Student::getRealname, keyword);
+        IPage<Student> iPage = studentService.page(new Page<>(page, limit), wrapper);
         return ServerResponse.ofSuccess(iPage);
     }
 
     /**
      * 管理员根据ID删除学生
-     *
-     * @return
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteTeacher(@PathVariable Integer id) {
-        boolean b = studentService.removeById(id);
-        if (b) {
-            return ServerResponse.ofSuccess("删除成功！");
-        }
-        return ServerResponse.ofError("删除失败！");
+        return studentService.removeById(id) ? ServerResponse.ofSuccess("删除成功！") : ServerResponse.ofError("删除失败！");
     }
 
     /**
      * 学生修改密码
-     *
-     * @param passwordVO
-     * @return
      */
     @PostMapping("/password")
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {

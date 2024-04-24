@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.activerecord.Model;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
@@ -18,11 +19,12 @@ import java.io.Serializable;
  * @author lequal
  * @since 2020-03-20
  */
+@EqualsAndHashCode(callSuper = true)
 @TableName("tb_grade_info")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class GradeInfo extends Model<GradeInfo> {
+public class GradeInfo extends Model<GradeInfo> implements Serializable {
 
     private static final long serialVersionUID=1L;
 

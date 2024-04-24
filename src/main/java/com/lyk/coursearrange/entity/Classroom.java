@@ -2,7 +2,10 @@ package com.lyk.coursearrange.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.io.Serializable;
@@ -15,9 +18,12 @@ import java.io.Serializable;
  * @author lequal
  * @since 2020-03-23
  */
+@EqualsAndHashCode(callSuper = true)
 @TableName("tb_classroom")
 @Data
-public class Classroom extends Model<Classroom> {
+@NoArgsConstructor
+@AllArgsConstructor
+public class Classroom extends Model<Classroom> implements Serializable {
 
     private static final long serialVersionUID=1L;
 

@@ -1,7 +1,6 @@
 package com.lyk.coursearrange.util;
 
 import cn.hutool.system.SystemUtil;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
 /**

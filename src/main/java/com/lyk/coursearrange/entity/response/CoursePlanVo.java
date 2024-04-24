@@ -1,12 +1,10 @@
 package com.lyk.coursearrange.entity.response;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.lyk.coursearrange.entity.CoursePlan;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 
 /**
  * @author: 15760
@@ -16,8 +14,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CoursePlanVo {
+public class CoursePlanVo implements Serializable {
 
+    private static final long serialVersionUID = -4879059791317395064L;
     /**
      * 上课时间
      */

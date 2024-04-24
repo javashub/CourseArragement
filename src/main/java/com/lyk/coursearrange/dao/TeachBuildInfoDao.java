@@ -14,8 +14,5 @@ import java.util.List;
 public interface TeachBuildInfoDao extends BaseMapper<TeachbuildInfo> {
 
     @Select("select teachbuild_no from tb_location_info where grade_no = #{gradeNo}")
-    String selectBuildNo(@Param("gradeNo") String gradeNo);
-
-    @Select("select teachbuild_no from tb_location_info where grade_no = #{gradeNo}")
     List<String> selectTeachBuildList(@Param("gradeNo") String gradeNo);
 }

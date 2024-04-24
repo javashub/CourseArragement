@@ -11,6 +11,7 @@ import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.service.ClassTaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,22 +49,9 @@ public class ClassTaskController {
      * @return
      */
     @PostMapping("/addclasstask")
-    public ServerResponse addClassTask(@RequestBody() ClassTaskDTO c) {
+    public ServerResponse addClassTask(@RequestBody ClassTaskDTO c) {
         ClassTask classTask = new ClassTask();
-        classTask.setSemester(c.getSemester());
-        classTask.setGradeNo(c.getGradeNo());
-        classTask.setClassNo(c.getClassNo());
-        classTask.setCourseNo(c.getCourseNo());
-        classTask.setCourseName(c.getCourseName());
-        classTask.setTeacherNo(c.getTeacherNo());
-        classTask.setRealname(c.getRealname());
-        classTask.setCourseAttr(c.getCourseAttr());
-        classTask.setStudentNum(c.getStudentNum());
-        classTask.setWeeksNumber(c.getWeeksNumber());
-        classTask.setWeeksSum(c.getWeeksSum());
-        classTask.setIsFix(c.getIsFix());
-        classTask.setClassTime(c.getClassTime());
-
+        BeanUtils.copyProperties(c, classTask);
         return classTaskService.save(classTask) ? ServerResponse.ofSuccess("添加课程任务成功") : ServerResponse.ofError("添加课程任务失败");
     }
 
@@ -78,9 +66,7 @@ public class ClassTaskController {
     }
 
     /**
-     * 获得学期集合,如：
-     * 2019-2020-1
-     * 2019-2020-2
+     * 获得学期集合
      */
     @GetMapping("/semester")
     public ServerResponse queryAllSemester() {

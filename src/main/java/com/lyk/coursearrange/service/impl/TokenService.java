@@ -12,16 +12,13 @@ import java.util.Date;
 /**
  * @author: 15760
  * @Date: 2020/3/24
- * @Descripe: Token下发
+ * @Descripe: 年轻时不懂事，乱写的，什么时候有空了再重构吧~
  */
-
 @Service
 public class TokenService {
 
     /**
      * 验证学生
-     * @param student
-     * @return
      */
     public String getToken(Student student) {
         Date start = new Date();
@@ -37,8 +34,6 @@ public class TokenService {
 
     /**
      * 验证管理员
-     * @param admin
-     * @return
      */
     public String getToken(Admin admin) {
         Date start = new Date();
@@ -53,8 +48,6 @@ public class TokenService {
 
     /**
      * 验证讲师
-     * @param teacher
-     * @return
      */
     public String getToken(Teacher teacher) {
         Date start = new Date();

@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
@@ -30,13 +31,11 @@ import java.util.List;
 public class UploadController {
 
 
-    @Autowired
+    @Resource
     private UploadService uploadService;
 
     /**
      * 上传课程计划Excel文件
-     *
-     * @return
      */
     @PostMapping("/upload")
     public ServerResponse uploadClassTaskFile(MultipartFile file) {
@@ -46,8 +45,6 @@ public class UploadController {
 
     /**
      * 下载系统提供的Excel导入模板
-     *
-     * @return
      */
     @GetMapping(value = "/download", consumes = MediaType.ALL_VALUE)
     public void downloadTemplate(HttpServletResponse response) {
@@ -66,7 +63,7 @@ public class UploadController {
         try {
             response.setHeader("Content-Disposition", "attachment;fileName=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "utf-8"));
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.error("文件下载失败: {}", e.getMessage());
         }
         // 实现文件下载
         byte[] buffer = new byte[1024];
@@ -75,7 +72,6 @@ public class UploadController {
                 FileInputStream fis = new FileInputStream(file);
                 BufferedInputStream bis = new BufferedInputStream(fis)
         ) {
-
             // 获取字节流
             OutputStream os = response.getOutputStream();
             int i = bis.read(buffer);
@@ -85,7 +81,6 @@ public class UploadController {
             }
             log.info("文件下载成功");
         } catch (Exception e) {
-            e.printStackTrace();
             log.error("文件下载失败: {}", e.getMessage());
         }
     }
@@ -104,7 +99,7 @@ public class UploadController {
             FileOutputStream fos = new FileOutputStream("doc/课程任务导入模板_new.xls");
             workbook.write(fos);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("创建模板文件失败: {}", e.getMessage());
         }
     }
 

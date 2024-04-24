@@ -27,7 +27,6 @@ import java.util.Map;
  * @author lequal
  * @since 2020-03-13
  */
-// http://localhost:8080/teacher/add
 @RestController
 @RequestMapping("/teacher")
 public class TeacherController {
@@ -40,10 +39,6 @@ public class TeacherController {
 
     /**
      * 上传讲师证件
-     *
-     * @param id
-     * @param file
-     * @return
      */
     @PostMapping("/upload/{id}")
     public ServerResponse uploadLicense(@PathVariable("id") Integer id, MultipartFile file) {
@@ -102,10 +97,6 @@ public class TeacherController {
 
     /**
      * 分页查询讲师
-     *
-     * @param page
-     * @param limit
-     * @return
      */
     @GetMapping("/query/{page}")
     public ServerResponse queryTeacher(@PathVariable(value = "page") Integer page,
@@ -123,18 +114,14 @@ public class TeacherController {
     public ServerResponse searchTeacher(@PathVariable("keyword") String keyword,
                                         @PathVariable("page") Integer page,
                                         @RequestParam(defaultValue = "10") Integer limit) {
-        QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
-        wrapper.orderByDesc("update_time");
-        wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
-        Page<Teacher> pages = new Page<>(page, limit);
-        IPage<Teacher> iPage = teacherService.page(pages, wrapper);
+        LambdaQueryWrapper<Teacher> wrapper = new LambdaQueryWrapper<Teacher>().orderByDesc(Teacher::getUpdateTime)
+                .likeRight(!StringUtils.isEmpty(keyword), Teacher::getRealname, keyword);
+        IPage<Teacher> iPage = teacherService.page(new Page<>(page, limit), wrapper);
         return ServerResponse.ofSuccess(iPage);
     }
 
     /**
      * 管理员根据ID删除讲师
-     *
-     * @return
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteTeacher(@PathVariable Integer id) {
@@ -143,23 +130,16 @@ public class TeacherController {
 
     /**
      * 用于给讲师生成讲师编号,返回一个讲师编号
-     *
-     * @return
      */
     @GetMapping("/no")
     public ServerResponse getTeacherNo() {
-
         List<Teacher> teacherList = teacherService.list(new QueryWrapper<Teacher>().select().orderByDesc("teacher_no"));
-
         // 返回最大编号的讲师编号再+1给新添加的讲师
         return ServerResponse.ofSuccess(teacherList.get(0).getTeacherNo());
     }
 
     /**
      * 管理员添加讲师,默认密码是123456
-     *
-     * @param t
-     * @return
      */
     @PostMapping("/add")
     public ServerResponse addTeacher(@RequestBody TeacherAddRequest t) {
@@ -180,13 +160,9 @@ public class TeacherController {
 
     /**
      * 根据ID封禁、解封讲师账号，状态为0时正常，1时封禁
-     *
-     * @param id
-     * @return
      */
     @GetMapping("/lock/{id}")
     public ServerResponse lockTeacher(@PathVariable("id") Integer id) {
-
         // 先查出来再修改，
         Teacher teacher = teacherService.getById(id);
         // 修改
@@ -202,36 +178,24 @@ public class TeacherController {
 
     /**
      * 修改密码
-     *
-     * @param passwordVO
-     * @return
      */
     @PostMapping("/password")
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
-        QueryWrapper<Teacher> wrapper = new QueryWrapper();
-        wrapper.eq("id", passwordVO.getId());
-        wrapper.eq("password", passwordVO.getOldPass());
+        LambdaQueryWrapper<Teacher> wrapper = new LambdaQueryWrapper<Teacher>().eq(Teacher::getId, passwordVO.getId()).eq(Teacher::getPassword, passwordVO.getOldPass());
         Teacher teacher = teacherService.getOne(wrapper);
         if (teacher == null) {
             return ServerResponse.ofError("旧密码错误");
         }
         // 否则进入修改密码流程
         teacher.setPassword(passwordVO.getNewPass());
-        boolean b = teacherService.updateById(teacher);
-        if (b) {
-            return ServerResponse.ofSuccess("密码修改成功");
-        }
-        return ServerResponse.ofError("密码更新失败");
+        return teacherService.updateById(teacher) ? ServerResponse.ofSuccess("密码修改成功") : ServerResponse.ofError("密码更新失败");
     }
 
     /**
      * 查询所有讲师
-     *
-     * @return
      */
     @GetMapping("/all")
     public ServerResponse getAllTeacher() {
-
         return ServerResponse.ofSuccess(teacherService.list());
     }
 

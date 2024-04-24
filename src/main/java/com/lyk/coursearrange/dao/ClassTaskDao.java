@@ -18,7 +18,6 @@ import java.util.List;
 public interface ClassTaskDao extends BaseMapper<ClassTask> {
 
     // 查询指定学期的开课任务
-//    @Select("SELECT * FROM tb_class_task where semester = #{semester}")
     List<ClassTask> selectBySemester(ClassTask classTask);
 
     @Select("SELECT distinct class_no FROM tb_class_task")

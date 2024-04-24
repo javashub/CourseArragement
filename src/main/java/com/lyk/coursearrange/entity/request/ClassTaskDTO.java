@@ -2,13 +2,17 @@ package com.lyk.coursearrange.entity.request;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * @author: 15760
  * @Date: 2020/4/3
  * @Descripe:
  */
 @Data
-public class ClassTaskDTO {
+public class ClassTaskDTO implements Serializable {
+
+    private static final long serialVersionUID = -4023200004755949854L;
 
     /**
      * 学期

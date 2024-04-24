@@ -40,12 +40,10 @@ public class AdminController {
 
     /**
      * 管理员登录
-     * @param adminLoginRequest
-     * @return
      */
     @PostMapping("/login")
     public ServerResponse adminLogin(@RequestBody UserLoginRequest adminLoginRequest) {
-        Map<String, Object> map = new HashMap();
+        Map<String, Object> map = new HashMap<>();
         Admin admin = adminService.adminLogin(adminLoginRequest.getUsername(), adminLoginRequest.getPassword());
         if (admin != null){
             String token = tokenService.getToken(admin);
@@ -58,18 +56,14 @@ public class AdminController {
 
     /**
      * 管理员更新个人资料
-     * @return
      */
     @PostMapping("/modify")
     public ServerResponse modifyAdmin(@RequestBody Admin admin) {
-
         return adminService.updateById(admin) ? ServerResponse.ofSuccess("更新成功！") : ServerResponse.ofError("更新失败！");
     }
 
     /**
      * 根据ID查询管理员信息
-     * @param id
-     * @return
      */
     @GetMapping("/{id}")
     public ServerResponse queryAdmin(@PathVariable("id") Integer id) {
@@ -79,15 +73,13 @@ public class AdminController {
 
     /**
      * 管理员修改密码
-     * @param passwordVO
-     * @return
      */
     @PostMapping("/password")
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
         LambdaQueryWrapper<Admin> wrapper =
                 new LambdaQueryWrapper<Admin>().eq(Admin::getId, passwordVO.getId()).eq(Admin::getPassword, passwordVO.getOldPass());
         Admin admin = adminService.getOne(wrapper);
-        if (admin == null) {
+        if (null == admin) {
             return ServerResponse.ofError("旧密码错误");
         }
         // 否则进入修改密码流程

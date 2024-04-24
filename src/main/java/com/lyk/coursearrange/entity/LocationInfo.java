@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -15,11 +16,12 @@ import java.io.Serializable;
  * @since 2020-03-20
  * 位置信息，例如高一的教学楼有哪些
  */
+@EqualsAndHashCode(callSuper = true)
 @TableName("tb_location_info")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LocationInfo extends Model<LocationInfo> {
+public class LocationInfo extends Model<LocationInfo> implements Serializable {
 
     private static final long serialVersionUID=1L;
 

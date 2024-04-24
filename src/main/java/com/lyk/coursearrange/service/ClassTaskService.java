@@ -15,7 +15,6 @@ import java.util.Map;
  */
 public interface ClassTaskService extends IService<ClassTask> {
 
-//    Boolean classScheduling(ClassTask classTask);
     ServerResponse classScheduling(@Param("semester") String semester);
 
 }

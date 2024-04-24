@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -43,6 +45,9 @@ public class SystemController {
     private TeacherDao teacherDao;
 
 
+    /**
+     * 随便瞎写。生产环境是禁止使用 map 传参的，全部都应该使用对象传参，因为 map 不可预知集合中的内容
+     */
     @GetMapping("/systemdata")
     public ServerResponse systemData() {
         Map<String, Object> map = new HashMap<>();
@@ -62,17 +67,13 @@ public class SystemController {
         // 当前课程任务数量
         int classtasks = classTaskService.count();
 
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DATE,-1);
-        Date d = cal.getTime();
-        SimpleDateFormat sp = new SimpleDateFormat("yyyy-MM-dd");
-        //获取昨天日期
-        String yesday = sp.format(d);
+        LocalDate totay = LocalDate.now();
+        String yesterday = totay.minusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         // 昨日学生注册人数
-        int studentReg = studentDao.studentReg(yesday);
+        int studentReg = studentDao.studentReg(yesterday);
         // 昨日注册讲师
-        int teacherReg = teacherDao.teacherReg(yesday);
+        int teacherReg = teacherDao.teacherReg(yesterday);
 
 
         map.put("teachers", teachers);

@@ -2,13 +2,17 @@ package com.lyk.coursearrange.entity.request;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * @author: 15760
  * @Date: 2020/3/23
  * @Descripe:
  */
 @Data
-public class ClassroomAddRequest {
+public class ClassroomAddRequest implements Serializable {
+
+    private static final long serialVersionUID = -4307053023235633239L;
 
     /**
      * 教室编号

@@ -27,7 +27,7 @@ public class ClassInfoServiceImpl extends ServiceImpl<ClassInfoDao, ClassInfo> i
     public ServerResponse queryClassInfos(Integer page, Integer limit, String gradeNo) {
         Map<String, Object> map = new HashMap<>();
         List<ClassInfoVO> classInfoVOS;
-        if (gradeNo.equals("")) {
+        if ("".equals(gradeNo)) {
             classInfoVOS = classInfoDao.queryClassInfos((page - 1) * limit, limit);
             int total = classInfoDao.count2();
             map.put("records", classInfoVOS);

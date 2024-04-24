@@ -13,6 +13,7 @@ import com.lyk.coursearrange.entity.response.ClassInfoVO;
 import com.lyk.coursearrange.service.ClassInfoService;
 import com.lyk.coursearrange.service.StudentService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -78,11 +79,8 @@ public class ClassInfoController {
     @PostMapping("/addclassinfo")
     public ServerResponse addClass(@RequestBody ClassAddVO classAddVO) {
         ClassInfo c = new ClassInfo();
+        BeanUtils.copyProperties(classAddVO, c);
         c.setRemark(classAddVO.getGradeNo());
-        c.setClassNo(classAddVO.getClassNo());
-        c.setClassName(classAddVO.getClassName());
-        c.setTeacher(classAddVO.getId());
-        c.setNum(classAddVO.getNum());
 
         return classInfoService.save(c) ? ServerResponse.ofSuccess("添加班级成功") : ServerResponse.ofError("添加班级失败");
     }

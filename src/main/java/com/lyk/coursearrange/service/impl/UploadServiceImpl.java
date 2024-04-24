@@ -3,11 +3,14 @@ package com.lyk.coursearrange.service.impl;
 import cn.afterturn.easypoi.excel.ExcelImportUtil;
 import cn.afterturn.easypoi.excel.entity.ImportParams;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.service.UploadService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +23,7 @@ import java.util.List;
  * @Date: 2020/5/13
  * @Descripe:
  */
+@Slf4j
 @Service
 public class UploadServiceImpl implements UploadService {
 
@@ -45,21 +49,15 @@ public class UploadServiceImpl implements UploadService {
                     file.getInputStream(),
                     ClassTask.class, params);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("导入课程任务失败: {}", e.getMessage());
         }
         // 调用课程任务存入数据库方法
-        boolean b = save(list);
-        if (b) {
-            return ServerResponse.ofSuccess("导入课程任务成功");
-        }
-        return ServerResponse.ofError("导入课程任务失败");
+        assert list != null;
+        return save(list) ? ServerResponse.ofSuccess("导入课程任务成功") : ServerResponse.ofError("导入课程任务失败");
     }
 
     /**
      * 将文件中的数据插入数据库
-     *
-     * @param list
-     * @return
      */
     private boolean save(List<ClassTask> list) {
         // 清空旧任务
@@ -68,28 +66,13 @@ public class UploadServiceImpl implements UploadService {
         // 遍历课程任务插入数据库
         for (ClassTask classTask : list) {
             ClassTask c = new ClassTask();
-            c.setSemester(classTask.getSemester());
-            c.setGradeNo(classTask.getGradeNo());
-            c.setClassNo(classTask.getClassNo());
-            c.setCourseNo(classTask.getCourseNo());
-            c.setCourseName(classTask.getCourseName());
-            c.setTeacherNo(classTask.getTeacherNo());
-            c.setRealname(classTask.getRealname());
-            c.setCourseAttr(classTask.getCourseAttr());
-            c.setStudentNum(classTask.getStudentNum());
-            c.setWeeksSum(classTask.getWeeksSum());
-            c.setWeeksNumber(classTask.getWeeksNumber());
-            c.setIsFix(classTask.getIsFix());
-            c.setClassTime(classTask.getClassTime());
+            BeanUtils.copyProperties(classTask, c);
             boolean b = classTaskService.save(c);
             if (b) {
-                i = i + 1;
+                i+=1;
             }
         }
-        if (i == list.size()) {
-            return true;
-        }
-        return false;
+        return i == list.size();
     }
 
     /**

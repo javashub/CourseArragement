@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -15,11 +16,12 @@ import java.io.Serializable;
  * @since 2020-03-06
  */
 
+@EqualsAndHashCode(callSuper = true)
 @TableName("tb_admin")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class Admin extends Model<Admin> {
+public class Admin extends Model<Admin> implements Serializable {
 
     private static final long serialVersionUID=1L;
 
