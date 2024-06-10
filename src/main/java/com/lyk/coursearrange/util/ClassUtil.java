@@ -124,7 +124,7 @@ public class ClassUtil {
         // 找出当前教师在 01-25 时间之间还未使用的时间
         Set<String> usedTimeList =
                 geneList.stream().filter(item -> cutGene(ConstantInfo.TEACHER_NO, item).equals(teacherNo))
-                        .map(item -> cutGene(ConstantInfo.CLASS_TIME, item)).sorted().collect(Collectors.toSet());
+                        .map(item -> cutGene(ConstantInfo.CLASS_TIME, item)).sorted().collect(Collectors.toCollection(LinkedHashSet::new));
 
         log.debug("{} 讲师 已经用的上课时间 {}", teacherNo, usedTimeList);
 
