@@ -69,7 +69,6 @@
 3.  后面如果有时间我也希望去维护一下这个项目，有兴趣的小伙伴可以跟我一起搞搞
 4.  希望项目可以帮助到广大小伙伴们
 
-如果项目对你有帮助，可以请我喝喝奶茶哦~
-<center class="half">
-    <img src="https://images.gitee.com/uploads/images/2021/0204/085454_bc997c8b_5505532.png " width="200"/>   <img src="https://images.gitee.com/uploads/images/2021/0204/085553_f5e455d9_5505532.png " width="200"/>
-</center>
+# 如需协助，有偿解答，代码开源了就不要白嫖人力了，Q:1576070851   WX: imyikee
+
+如果项目对你有帮助，可以请我喝喝奶茶哦~（码云这边有收款码哦：https://gitee.com/lequal/CourseArrange）
