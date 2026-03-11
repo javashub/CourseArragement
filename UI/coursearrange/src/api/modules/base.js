@@ -1,0 +1,134 @@
+import request from '@/api/request';
+
+const legacyOptions = {
+  baseURL: ''
+};
+
+export function fetchTeacherPage(page = 1, limit = 10) {
+  return request.get(`/legacy-api/teacher/query/${page}`, {
+    ...legacyOptions,
+    params: { limit }
+  });
+}
+
+export function searchTeacherPage(keyword, page = 1, limit = 10) {
+  return request.get(`/legacy-api/teacher/search/${page}/${encodeURIComponent(keyword)}`, {
+    ...legacyOptions,
+    params: { limit }
+  });
+}
+
+export function fetchTeacherDetail(id) {
+  return request.get(`/legacy-api/teacher/${id}`, legacyOptions);
+}
+
+export function createTeacher(payload) {
+  return request.post('/legacy-api/teacher/add', payload, legacyOptions);
+}
+
+export function updateTeacher(payload) {
+  return request.post('/legacy-api/teacher/modify', payload, legacyOptions);
+}
+
+export function deleteTeacher(id) {
+  return request.delete(`/legacy-api/teacher/delete/${id}`, legacyOptions);
+}
+
+export function toggleTeacherStatus(id) {
+  return request.get(`/legacy-api/teacher/lock/${id}`, legacyOptions);
+}
+
+export function fetchNextTeacherNo() {
+  return request.get('/legacy-api/teacher/no', legacyOptions);
+}
+
+export function fetchStudentPage(page = 1, limit = 10) {
+  return request.get(`/legacy-api/student/students/${page}`, {
+    ...legacyOptions,
+    params: { limit }
+  });
+}
+
+export function searchStudentPage(keyword, page = 1, limit = 10) {
+  return request.get(`/legacy-api/student/search/${encodeURIComponent(keyword)}`, {
+    ...legacyOptions,
+    params: { page, limit }
+  });
+}
+
+export function fetchStudentDetail(id) {
+  return request.get(`/legacy-api/student/${id}`, legacyOptions);
+}
+
+export function createStudent(payload) {
+  return request.post('/legacy-api/student/register', payload, legacyOptions);
+}
+
+export function updateStudent(id, payload) {
+  return request.post(`/legacy-api/student/modify/${id}`, payload, legacyOptions);
+}
+
+export function deleteStudent(id) {
+  return request.delete(`/legacy-api/student/delete/${id}`, legacyOptions);
+}
+
+export function fetchNextStudentNo(grade) {
+  return request.post(`/legacy-api/student/createno/${encodeURIComponent(grade)}`, null, legacyOptions);
+}
+
+export function fetchCoursePage(page = 1, limit = 10) {
+  return request.get(`/legacy-api/courseinfo/${page}`, {
+    ...legacyOptions,
+    params: { limit }
+  });
+}
+
+export function searchCoursePage(keyword, page = 1, limit = 10) {
+  return request.get(`/legacy-api/courseinfo/search/${page}/${encodeURIComponent(keyword)}`, {
+    ...legacyOptions,
+    params: { limit }
+  });
+}
+
+export function createCourse(payload) {
+  return request.post('/legacy-api/courseinfo/add', payload, legacyOptions);
+}
+
+export function updateCourse(id, payload) {
+  return request.post(`/legacy-api/courseinfo/modify/${id}`, payload, legacyOptions);
+}
+
+export function deleteCourse(id) {
+  return request.delete(`/legacy-api/courseinfo/delete/${id}`, legacyOptions);
+}
+
+export function fetchNextCourseNo() {
+  return request.get('/legacy-api/courseinfo/get-no', legacyOptions);
+}
+
+export function fetchClassroomPage(page = 1, limit = 10) {
+  return request.get(`/legacy-api/classroom/${page}`, {
+    ...legacyOptions,
+    params: { limit }
+  });
+}
+
+export function fetchClassroomDetail(id) {
+  return request.get(`/legacy-api/classroom/query/${id}`, legacyOptions);
+}
+
+export function createClassroom(payload) {
+  return request.post('/legacy-api/classroom/add', payload, legacyOptions);
+}
+
+export function updateClassroom(payload) {
+  return request.post('/legacy-api/classroom/modify', payload, legacyOptions);
+}
+
+export function deleteClassroom(id) {
+  return request.delete(`/legacy-api/classroom/delete/${id}`, legacyOptions);
+}
+
+export function fetchTeachbuildList() {
+  return request.get('/legacy-api/teachbuildinfo/list', legacyOptions);
+}

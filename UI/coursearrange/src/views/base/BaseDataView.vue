@@ -1,137 +1,968 @@
 <template>
-  <section class="page-card">
-    <h1 class="page-title">基础数据</h1>
-    <p class="page-description">这里先展示新架构下已经接通的组织、配置与字典数据概况。</p>
-    <el-row :gutter="16" class="summary-list" v-loading="loading">
-      <el-col :span="8" v-for="item in summaryCards" :key="item.title">
-        <el-card shadow="hover">
-          <template #header>{{ item.title }}</template>
-          <div class="summary-value">{{ item.value }}</div>
-          <div class="summary-text">{{ item.description }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
-    <el-row :gutter="16" class="table-list">
-      <el-col :span="12">
-        <el-card shadow="never">
-          <template #header>校区列表</template>
-          <el-table :data="campuses" size="small" max-height="280">
-            <el-table-column prop="campusCode" label="编码" min-width="120" />
-            <el-table-column prop="campusName" label="名称" min-width="140" />
-            <el-table-column prop="status" label="状态" width="80" />
+  <section class="resource-shell">
+    <div class="hero-panel">
+      <div class="hero-copy">
+        <div class="eyebrow">Base Resource Studio</div>
+        <h1 class="hero-title">基础数据</h1>
+        <p class="hero-description">
+          先把教师、学生、课程、教室这些基础资源做成统一后台入口。当前阶段优先保证联调闭环，后续再把接口逐步升级为新规范。
+        </p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-chip">
+          <span class="stat-label">当前页签</span>
+          <strong>{{ activeTabLabel }}</strong>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">联调状态</span>
+          <strong>可新增 / 可编辑 / 可删除</strong>
+        </div>
+      </div>
+    </div>
+
+    <el-card shadow="never" class="resource-card">
+      <el-tabs v-model="activeTab" class="resource-tabs">
+        <el-tab-pane label="教师管理" name="teacher">
+          <div class="toolbar-row">
+            <el-input
+              v-model="teacherState.keyword"
+              clearable
+              placeholder="搜索教师姓名，例如 张老师"
+              @keyup.enter="loadTeachers(true)"
+              @clear="loadTeachers(true)"
+            />
+            <div class="toolbar-actions">
+              <el-button class="ghost-action" @click="resetTeacherSearch">重置</el-button>
+              <el-button class="primary-action" type="primary" @click="openTeacherDialog()">新增教师</el-button>
+            </div>
+          </div>
+
+          <el-table :data="teacherState.records" stripe v-loading="teacherState.loading">
+            <el-table-column prop="teacherNo" label="教师编号" min-width="130" />
+            <el-table-column prop="realname" label="姓名" min-width="110" />
+            <el-table-column prop="teach" label="教授科目" min-width="140" />
+            <el-table-column prop="jobtitle" label="职称" min-width="120" />
+            <el-table-column prop="telephone" label="联系电话" min-width="140" />
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 0 ? 'success' : 'warning'" effect="plain">
+                  {{ row.status === 0 ? '正常' : '封禁' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="220" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" @click="openTeacherDialog(row)">编辑</el-button>
+                <el-button link type="warning" @click="toggleTeacher(row)">
+                  {{ row.status === 0 ? '封禁' : '解封' }}
+                </el-button>
+                <el-button link type="danger" @click="removeTeacher(row)">删除</el-button>
+              </template>
+            </el-table-column>
           </el-table>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="never">
-          <template #header>学院列表</template>
-          <el-table :data="colleges" size="small" max-height="280">
-            <el-table-column prop="collegeCode" label="编码" min-width="120" />
-            <el-table-column prop="collegeName" label="名称" min-width="140" />
-            <el-table-column prop="campusId" label="校区ID" width="90" />
+
+          <div class="table-footer">
+            <el-pagination
+              background
+              layout="total, prev, pager, next"
+              :current-page="teacherState.pageNum"
+              :page-size="teacherState.pageSize"
+              :total="teacherState.total"
+              @current-change="handleTeacherPageChange"
+            />
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="学生管理" name="student">
+          <div class="toolbar-row">
+            <el-input
+              v-model="studentState.keyword"
+              clearable
+              placeholder="搜索学生姓名，例如 李同学"
+              @keyup.enter="loadStudents(true)"
+              @clear="loadStudents(true)"
+            />
+            <div class="toolbar-actions">
+              <el-button class="ghost-action" @click="resetStudentSearch">重置</el-button>
+              <el-button class="primary-action" type="primary" @click="openStudentDialog()">新增学生</el-button>
+            </div>
+          </div>
+
+          <el-table :data="studentState.records" stripe v-loading="studentState.loading">
+            <el-table-column prop="studentNo" label="学号" min-width="130" />
+            <el-table-column prop="realname" label="姓名" min-width="110" />
+            <el-table-column prop="grade" label="年级" min-width="120" />
+            <el-table-column prop="classNo" label="班级" min-width="120" />
+            <el-table-column prop="telephone" label="联系电话" min-width="140" />
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 0 ? 'success' : 'warning'" effect="plain">
+                  {{ row.status === 0 ? '正常' : '封禁' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="160" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" @click="openStudentDialog(row)">编辑</el-button>
+                <el-button link type="danger" @click="removeStudent(row)">删除</el-button>
+              </template>
+            </el-table-column>
           </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
+
+          <div class="table-footer">
+            <el-pagination
+              background
+              layout="total, prev, pager, next"
+              :current-page="studentState.pageNum"
+              :page-size="studentState.pageSize"
+              :total="studentState.total"
+              @current-change="handleStudentPageChange"
+            />
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="课程管理" name="course">
+          <div class="toolbar-row">
+            <el-input
+              v-model="courseState.keyword"
+              clearable
+              placeholder="搜索课程名称，例如 高等数学"
+              @keyup.enter="loadCourses(true)"
+              @clear="loadCourses(true)"
+            />
+            <div class="toolbar-actions">
+              <el-button class="ghost-action" @click="resetCourseSearch">重置</el-button>
+              <el-button class="primary-action" type="primary" @click="openCourseDialog()">新增课程</el-button>
+            </div>
+          </div>
+
+          <el-table :data="courseState.records" stripe v-loading="courseState.loading">
+            <el-table-column prop="courseNo" label="课程编号" min-width="130" />
+            <el-table-column prop="courseName" label="课程名称" min-width="160" />
+            <el-table-column prop="courseAttr" label="课程属性" min-width="140" />
+            <el-table-column prop="publisher" label="出版社" min-width="160" />
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 0 ? 'success' : 'info'" effect="plain">
+                  {{ row.status === 0 ? '正常' : '停用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="160" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" @click="openCourseDialog(row)">编辑</el-button>
+                <el-button link type="danger" @click="removeCourse(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <div class="table-footer">
+            <el-pagination
+              background
+              layout="total, prev, pager, next"
+              :current-page="courseState.pageNum"
+              :page-size="courseState.pageSize"
+              :total="courseState.total"
+              @current-change="handleCoursePageChange"
+            />
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="教室管理" name="classroom">
+          <div class="toolbar-row">
+            <div class="toolbar-placeholder">
+              <span>当前支持新增、编辑、删除教室，并按教学楼编号进行归属。</span>
+            </div>
+            <div class="toolbar-actions">
+              <el-button class="ghost-action" @click="loadClassrooms">刷新列表</el-button>
+              <el-button class="primary-action" type="primary" @click="openClassroomDialog()">新增教室</el-button>
+            </div>
+          </div>
+
+          <el-table :data="classroomState.records" stripe v-loading="classroomState.loading">
+            <el-table-column prop="classroomNo" label="教室编号" min-width="130" />
+            <el-table-column prop="classroomName" label="教室名称" min-width="150" />
+            <el-table-column prop="teachbuildNo" label="教学楼编号" min-width="120" />
+            <el-table-column prop="capacity" label="容量" width="90" />
+            <el-table-column prop="attr" label="教室属性" min-width="120" />
+            <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
+            <el-table-column label="操作" width="160" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" @click="openClassroomDialog(row)">编辑</el-button>
+                <el-button link type="danger" @click="removeClassroom(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <div class="table-footer">
+            <el-pagination
+              background
+              layout="total, prev, pager, next"
+              :current-page="classroomState.pageNum"
+              :page-size="classroomState.pageSize"
+              :total="classroomState.total"
+              @current-change="handleClassroomPageChange"
+            />
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+    </el-card>
+
+    <el-dialog v-model="teacherDialogVisible" :title="teacherForm.id ? '编辑教师' : '新增教师'" width="680px">
+      <el-form :model="teacherForm" label-position="top">
+        <div class="form-grid">
+          <el-form-item label="教师编号">
+            <div class="inline-field">
+              <el-input v-model="teacherForm.teacherNo" placeholder="例如 T2026001" />
+              <el-button @click="generateTeacherNo">生成编号</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="登录账号">
+            <el-input v-model="teacherForm.username" placeholder="例如 zhangsan" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="真实姓名">
+            <el-input v-model="teacherForm.realname" placeholder="例如 张老师" />
+          </el-form-item>
+          <el-form-item label="职称">
+            <el-input v-model="teacherForm.jobtitle" placeholder="例如 讲师、副教授" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="教授科目">
+            <el-input v-model="teacherForm.teach" placeholder="例如 高等数学、英语" />
+          </el-form-item>
+          <el-form-item label="年龄">
+            <el-input-number v-model="teacherForm.age" :min="18" :max="90" controls-position="right" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="联系电话">
+            <el-input v-model="teacherForm.telephone" placeholder="例如 13800000000" />
+          </el-form-item>
+          <el-form-item label="邮箱">
+            <el-input v-model="teacherForm.email" placeholder="例如 teacher@school.edu.cn" />
+          </el-form-item>
+        </div>
+        <el-form-item label="联系地址">
+          <el-input v-model="teacherForm.address" placeholder="例如 主校区教师公寓 3 栋 302" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="teacherDialogVisible = false">取消</el-button>
+        <el-button class="primary-action" type="primary" :loading="teacherSubmitting" @click="submitTeacher">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="studentDialogVisible" :title="studentForm.id ? '编辑学生' : '新增学生'" width="700px">
+      <el-form :model="studentForm" label-position="top">
+        <div class="form-grid">
+          <el-form-item label="学号">
+            <div class="inline-field">
+              <el-input v-model="studentForm.studentNo" placeholder="例如 2026020001" />
+              <el-button @click="generateStudentNo">生成学号</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="登录账号">
+            <el-input v-model="studentForm.username" placeholder="例如 lisi" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="真实姓名">
+            <el-input v-model="studentForm.realname" placeholder="例如 李同学" />
+          </el-form-item>
+          <el-form-item label="年级">
+            <el-input v-model="studentForm.grade" placeholder="例如 02、2024级、初一" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="班级">
+            <el-input v-model="studentForm.classNo" placeholder="例如 2024-1 班" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-radio-group v-model="studentForm.status">
+              <el-radio :value="0">正常</el-radio>
+              <el-radio :value="1">封禁</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </div>
+        <div v-if="!studentForm.id" class="form-grid">
+          <el-form-item label="初始密码">
+            <el-input v-model="studentForm.password" show-password placeholder="例如 123456" />
+          </el-form-item>
+          <div />
+        </div>
+        <div class="form-grid">
+          <el-form-item label="联系电话">
+            <el-input v-model="studentForm.telephone" placeholder="例如 13800000000" />
+          </el-form-item>
+          <el-form-item label="邮箱">
+            <el-input v-model="studentForm.email" placeholder="例如 student@school.edu.cn" />
+          </el-form-item>
+        </div>
+        <el-form-item label="联系地址">
+          <el-input v-model="studentForm.address" placeholder="例如 主校区宿舍 5 栋 402" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="studentDialogVisible = false">取消</el-button>
+        <el-button class="primary-action" type="primary" :loading="studentSubmitting" @click="submitStudent">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="courseDialogVisible" :title="courseForm.id ? '编辑课程' : '新增课程'" width="680px">
+      <el-form :model="courseForm" label-position="top">
+        <div class="form-grid">
+          <el-form-item label="课程编号">
+            <div class="inline-field">
+              <el-input v-model="courseForm.courseNo" placeholder="例如 10001" />
+              <el-button @click="generateCourseNo">生成编号</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="课程名称">
+            <el-input v-model="courseForm.courseName" placeholder="例如 高等数学" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="课程属性">
+            <el-input v-model="courseForm.courseAttr" placeholder="例如 必修、选修、实验课" />
+          </el-form-item>
+          <el-form-item label="出版社">
+            <el-input v-model="courseForm.publisher" placeholder="例如 高等教育出版社" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="状态">
+            <el-radio-group v-model="courseForm.status">
+              <el-radio :value="0">正常</el-radio>
+              <el-radio :value="1">停用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="优先级">
+            <el-input-number v-model="courseForm.piority" :min="0" :max="99" controls-position="right" />
+          </el-form-item>
+        </div>
+        <el-form-item label="备注">
+          <el-input v-model="courseForm.remark" type="textarea" :rows="3" placeholder="例如 大一上学期核心课程" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="courseDialogVisible = false">取消</el-button>
+        <el-button class="primary-action" type="primary" :loading="courseSubmitting" @click="submitCourse">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="classroomDialogVisible" :title="classroomForm.id ? '编辑教室' : '新增教室'" width="680px">
+      <el-form :model="classroomForm" label-position="top">
+        <div class="form-grid">
+          <el-form-item label="教室编号">
+            <el-input v-model="classroomForm.classroomNo" placeholder="例如 A101、08-302" />
+          </el-form-item>
+          <el-form-item label="教室名称">
+            <el-input v-model="classroomForm.classroomName" placeholder="例如 第一多媒体教室" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="教学楼编号">
+            <el-select v-model="classroomForm.teachbuildNo" clearable filterable placeholder="例如 08 实验楼">
+              <el-option
+                v-for="item in teachbuildOptions"
+                :key="item.id"
+                :label="`${item.teachBuildNo} ${item.teachBuildName}`"
+                :value="item.teachBuildNo"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="容量">
+            <el-input-number v-model="classroomForm.capacity" :min="0" :max="500" controls-position="right" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="教室属性">
+            <el-input v-model="classroomForm.attr" placeholder="例如 普通教室、实验室、机房" />
+          </el-form-item>
+          <div />
+        </div>
+        <el-form-item label="备注">
+          <el-input v-model="classroomForm.remark" type="textarea" :rows="3" placeholder="例如 支持投影和录播设备" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="classroomDialogVisible = false">取消</el-button>
+        <el-button class="primary-action" type="primary" :loading="classroomSubmitting" @click="submitClassroom">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
-  fetchCampusList,
-  fetchCollegeList,
-  fetchDictTypes,
-  fetchFeatureToggles,
-  fetchScheduleConfig,
-  fetchStageList
-} from '@/api/modules/system';
+  createClassroom,
+  createCourse,
+  createStudent,
+  createTeacher,
+  deleteClassroom,
+  deleteCourse,
+  deleteStudent,
+  deleteTeacher,
+  fetchClassroomDetail,
+  fetchClassroomPage,
+  fetchCoursePage,
+  fetchNextCourseNo,
+  fetchNextStudentNo,
+  fetchNextTeacherNo,
+  fetchStudentDetail,
+  fetchStudentPage,
+  fetchTeachbuildList,
+  fetchTeacherDetail,
+  fetchTeacherPage,
+  searchCoursePage,
+  searchStudentPage,
+  searchTeacherPage,
+  toggleTeacherStatus,
+  updateClassroom,
+  updateCourse,
+  updateStudent,
+  updateTeacher
+} from '@/api/modules/base';
 
-const loading = ref(false);
-const campuses = ref([]);
-const colleges = ref([]);
-const stages = ref([]);
-const featureToggles = ref([]);
-const dictTypes = ref([]);
-const scheduleRule = ref(null);
+const activeTab = ref('teacher');
+const teacherDialogVisible = ref(false);
+const studentDialogVisible = ref(false);
+const courseDialogVisible = ref(false);
+const classroomDialogVisible = ref(false);
 
-const summaryCards = computed(() => [
-  {
-    title: '校区数量',
-    value: campuses.value.length,
-    description: '支持多校区配置与独立资源范围'
-  },
-  {
-    title: '学院数量',
-    value: colleges.value.length,
-    description: '学院可继续承接大学多学院场景'
-  },
-  {
-    title: '功能开关',
-    value: featureToggles.value.length,
-    description: '走班制、跨校区、跨学院等开关统一收口'
-  },
-  {
-    title: '学段数量',
-    value: stages.value.length,
-    description: '当前已接入学段基础配置'
-  },
-  {
-    title: '字典类型',
-    value: dictTypes.value.length,
-    description: '下拉项与标签值由字典接口统一提供'
-  },
-  {
-    title: '排课规则',
-    value: scheduleRule.value?.ruleName || '--',
-    description: '每周天数、每天节次和连堂限制已可读取'
+const teacherSubmitting = ref(false);
+const studentSubmitting = ref(false);
+const courseSubmitting = ref(false);
+const classroomSubmitting = ref(false);
+
+const teachbuildOptions = ref([]);
+
+const teacherState = reactive(createPageState());
+const studentState = reactive(createPageState());
+const courseState = reactive(createPageState());
+const classroomState = reactive(createPageState());
+
+const teacherForm = ref(createTeacherForm());
+const studentForm = ref(createStudentForm());
+const courseForm = ref(createCourseForm());
+const classroomForm = ref(createClassroomForm());
+
+function createPageState() {
+  return {
+    loading: false,
+    records: [],
+    total: 0,
+    pageNum: 1,
+    pageSize: 10,
+    keyword: ''
+  };
+}
+
+function createTeacherForm() {
+  return {
+    id: null,
+    teacherNo: '',
+    username: '',
+    realname: '',
+    jobtitle: '',
+    teach: '',
+    telephone: '',
+    email: '',
+    address: '',
+    age: 30
+  };
+}
+
+function createStudentForm() {
+  return {
+    id: null,
+    studentNo: '',
+    username: '',
+    password: '123456',
+    realname: '',
+    grade: '',
+    classNo: '',
+    telephone: '',
+    email: '',
+    address: '',
+    status: 0
+  };
+}
+
+function createCourseForm() {
+  return {
+    id: null,
+    courseNo: '',
+    courseName: '',
+    courseAttr: '',
+    publisher: '',
+    status: 0,
+    piority: 0,
+    remark: ''
+  };
+}
+
+function createClassroomForm() {
+  return {
+    id: null,
+    classroomNo: '',
+    classroomName: '',
+    teachbuildNo: '',
+    capacity: 40,
+    attr: '',
+    remark: ''
+  };
+}
+
+const activeTabLabel = computed(() => {
+  const map = {
+    teacher: '教师管理',
+    student: '学生管理',
+    course: '课程管理',
+    classroom: '教室管理'
+  };
+  return map[activeTab.value] || '基础数据';
+});
+
+function applyPageData(state, pageData) {
+  state.records = pageData?.records || [];
+  state.total = pageData?.total || 0;
+}
+
+async function loadTeachers(resetPage = false) {
+  if (resetPage) {
+    teacherState.pageNum = 1;
   }
-]);
-
-async function loadBaseDataOverview() {
-  loading.value = true;
+  teacherState.loading = true;
   try {
-    const [campusRes, collegeRes, stageRes, featureRes, dictRes, scheduleRes] = await Promise.all([
-      fetchCampusList(),
-      fetchCollegeList(),
-      fetchStageList(),
-      fetchFeatureToggles(),
-      fetchDictTypes(),
-      fetchScheduleConfig()
-    ]);
-    campuses.value = campusRes.data || [];
-    colleges.value = collegeRes.data || [];
-    stages.value = stageRes.data || [];
-    featureToggles.value = featureRes.data || [];
-    dictTypes.value = dictRes.data || [];
-    scheduleRule.value = scheduleRes.data || null;
+    const response = teacherState.keyword
+      ? await searchTeacherPage(teacherState.keyword, teacherState.pageNum, teacherState.pageSize)
+      : await fetchTeacherPage(teacherState.pageNum, teacherState.pageSize);
+    applyPageData(teacherState, response.data);
   } finally {
-    loading.value = false;
+    teacherState.loading = false;
   }
 }
 
-onMounted(() => {
-  loadBaseDataOverview();
+async function loadStudents(resetPage = false) {
+  if (resetPage) {
+    studentState.pageNum = 1;
+  }
+  studentState.loading = true;
+  try {
+    const response = studentState.keyword
+      ? await searchStudentPage(studentState.keyword, studentState.pageNum, studentState.pageSize)
+      : await fetchStudentPage(studentState.pageNum, studentState.pageSize);
+    applyPageData(studentState, response.data);
+  } finally {
+    studentState.loading = false;
+  }
+}
+
+async function loadCourses(resetPage = false) {
+  if (resetPage) {
+    courseState.pageNum = 1;
+  }
+  courseState.loading = true;
+  try {
+    const response = courseState.keyword
+      ? await searchCoursePage(courseState.keyword, courseState.pageNum, courseState.pageSize)
+      : await fetchCoursePage(courseState.pageNum, courseState.pageSize);
+    applyPageData(courseState, response.data);
+  } finally {
+    courseState.loading = false;
+  }
+}
+
+async function loadClassrooms() {
+  classroomState.loading = true;
+  try {
+    const response = await fetchClassroomPage(classroomState.pageNum, classroomState.pageSize);
+    applyPageData(classroomState, response.data);
+  } finally {
+    classroomState.loading = false;
+  }
+}
+
+function resetTeacherSearch() {
+  teacherState.keyword = '';
+  loadTeachers(true);
+}
+
+function resetStudentSearch() {
+  studentState.keyword = '';
+  loadStudents(true);
+}
+
+function resetCourseSearch() {
+  courseState.keyword = '';
+  loadCourses(true);
+}
+
+function handleTeacherPageChange(page) {
+  teacherState.pageNum = page;
+  loadTeachers();
+}
+
+function handleStudentPageChange(page) {
+  studentState.pageNum = page;
+  loadStudents();
+}
+
+function handleCoursePageChange(page) {
+  courseState.pageNum = page;
+  loadCourses();
+}
+
+function handleClassroomPageChange(page) {
+  classroomState.pageNum = page;
+  loadClassrooms();
+}
+
+async function openTeacherDialog(row) {
+  if (!row) {
+    teacherForm.value = createTeacherForm();
+    teacherDialogVisible.value = true;
+    return;
+  }
+  const response = await fetchTeacherDetail(row.id);
+  teacherForm.value = {
+    ...createTeacherForm(),
+    ...(response.data || {})
+  };
+  teacherDialogVisible.value = true;
+}
+
+async function submitTeacher() {
+  teacherSubmitting.value = true;
+  try {
+    if (teacherForm.value.id) {
+      await updateTeacher(teacherForm.value);
+      ElMessage.success('教师信息更新成功');
+    } else {
+      await createTeacher(teacherForm.value);
+      ElMessage.success('教师创建成功，默认密码为 123456');
+    }
+    teacherDialogVisible.value = false;
+    await loadTeachers();
+  } finally {
+    teacherSubmitting.value = false;
+  }
+}
+
+async function generateTeacherNo() {
+  const response = await fetchNextTeacherNo();
+  const nextNo = response.data ? String(Number(response.data) + 1) : '';
+  teacherForm.value.teacherNo = nextNo;
+}
+
+async function toggleTeacher(row) {
+  await toggleTeacherStatus(row.id);
+  ElMessage.success(row.status === 0 ? '教师账号已封禁' : '教师账号已解封');
+  await loadTeachers();
+}
+
+async function removeTeacher(row) {
+  await ElMessageBox.confirm(`确认删除教师“${row.realname}”吗？`, '删除确认', { type: 'warning' });
+  await deleteTeacher(row.id);
+  ElMessage.success('教师删除成功');
+  await loadTeachers();
+}
+
+async function openStudentDialog(row) {
+  if (!row) {
+    studentForm.value = createStudentForm();
+    studentDialogVisible.value = true;
+    return;
+  }
+  const response = await fetchStudentDetail(row.id);
+  studentForm.value = {
+    ...createStudentForm(),
+    password: '',
+    ...(response.data || {})
+  };
+  studentDialogVisible.value = true;
+}
+
+async function generateStudentNo() {
+  if (!studentForm.value.grade) {
+    ElMessage.warning('请先填写年级，再生成学号');
+    return;
+  }
+  const response = await fetchNextStudentNo(studentForm.value.grade);
+  studentForm.value.studentNo = response.data || '';
+}
+
+async function submitStudent() {
+  studentSubmitting.value = true;
+  try {
+    if (studentForm.value.id) {
+      await updateStudent(studentForm.value.id, studentForm.value);
+      ElMessage.success('学生信息更新成功');
+    } else {
+      await createStudent(studentForm.value);
+      ElMessage.success('学生创建成功');
+    }
+    studentDialogVisible.value = false;
+    await loadStudents();
+  } finally {
+    studentSubmitting.value = false;
+  }
+}
+
+async function removeStudent(row) {
+  await ElMessageBox.confirm(`确认删除学生“${row.realname}”吗？`, '删除确认', { type: 'warning' });
+  await deleteStudent(row.id);
+  ElMessage.success('学生删除成功');
+  await loadStudents();
+}
+
+function openCourseDialog(row) {
+  courseForm.value = row ? { ...createCourseForm(), ...row } : createCourseForm();
+  courseDialogVisible.value = true;
+}
+
+async function generateCourseNo() {
+  const response = await fetchNextCourseNo();
+  courseForm.value.courseNo = response.data || '';
+}
+
+async function submitCourse() {
+  courseSubmitting.value = true;
+  try {
+    if (courseForm.value.id) {
+      await updateCourse(courseForm.value.id, courseForm.value);
+      ElMessage.success('课程更新成功');
+    } else {
+      await createCourse(courseForm.value);
+      ElMessage.success('课程创建成功');
+    }
+    courseDialogVisible.value = false;
+    await loadCourses();
+  } finally {
+    courseSubmitting.value = false;
+  }
+}
+
+async function removeCourse(row) {
+  await ElMessageBox.confirm(`确认删除课程“${row.courseName}”吗？`, '删除确认', { type: 'warning' });
+  await deleteCourse(row.id);
+  ElMessage.success('课程删除成功');
+  await loadCourses();
+}
+
+async function openClassroomDialog(row) {
+  if (!row) {
+    classroomForm.value = createClassroomForm();
+    classroomDialogVisible.value = true;
+    return;
+  }
+  const response = await fetchClassroomDetail(row.id);
+  classroomForm.value = {
+    ...createClassroomForm(),
+    ...(response.data || {})
+  };
+  classroomDialogVisible.value = true;
+}
+
+async function submitClassroom() {
+  classroomSubmitting.value = true;
+  try {
+    if (classroomForm.value.id) {
+      await updateClassroom(classroomForm.value);
+      ElMessage.success('教室更新成功');
+    } else {
+      await createClassroom(classroomForm.value);
+      ElMessage.success('教室创建成功');
+    }
+    classroomDialogVisible.value = false;
+    await loadClassrooms();
+  } finally {
+    classroomSubmitting.value = false;
+  }
+}
+
+async function removeClassroom(row) {
+  await ElMessageBox.confirm(`确认删除教室“${row.classroomName}”吗？`, '删除确认', { type: 'warning' });
+  await deleteClassroom(row.id);
+  ElMessage.success('教室删除成功');
+  await loadClassrooms();
+}
+
+async function loadTeachbuildOptions() {
+  const response = await fetchTeachbuildList();
+  teachbuildOptions.value = response.data || [];
+}
+
+onMounted(async () => {
+  await Promise.all([loadTeachers(), loadStudents(), loadCourses(), loadClassrooms(), loadTeachbuildOptions()]);
 });
 </script>
 
 <style scoped>
-.summary-list {
-  margin-top: 24px;
+.resource-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.summary-value {
-  font-size: 24px;
+.hero-panel {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px;
+  border: 1px solid #dbe7f6;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgb(255 255 255 / 88%), transparent 36%),
+    linear-gradient(135deg, #fffdf8 0%, #f6fbff 48%, #eef6ff 100%);
+  box-shadow: 0 18px 42px rgb(17 34 68 / 8%);
+}
+
+.eyebrow {
+  font-size: 12px;
   font-weight: 700;
-  color: #0f172a;
+  letter-spacing: 0.16em;
+  color: #7b6c45;
+  text-transform: uppercase;
 }
 
-.summary-text {
-  margin-top: 8px;
-  color: #667085;
+.hero-title {
+  margin: 10px 0 8px;
+  font-size: 34px;
+  color: #17263d;
 }
 
-.table-list {
+.hero-description {
+  max-width: 760px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #53667f;
+}
+
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.stat-chip {
+  min-width: 180px;
+  padding: 14px 16px;
+  border: 1px solid #e5edf6;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 75%);
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #8090a7;
+}
+
+.resource-card {
+  border: 1px solid #e5edf6;
+  border-radius: 24px;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 4%);
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.toolbar-row > .el-input {
+  max-width: 320px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.toolbar-placeholder {
+  font-size: 13px;
+  color: #6b7b90;
+}
+
+.table-footer {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.inline-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+:deep(.resource-tabs .el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+:deep(.resource-tabs .el-tabs__item) {
+  height: 42px;
+  padding: 0 18px;
+  font-weight: 700;
+  color: #62748b;
+}
+
+:deep(.resource-tabs .el-tabs__item.is-active) {
+  color: #165dff;
+}
+
+:deep(.resource-tabs .el-tabs__active-bar) {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #165dff 0%, #0ea5a4 100%);
+}
+
+:deep(.primary-action.el-button) {
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #165dff 0%, #0ea5a4 100%);
+  box-shadow: 0 12px 24px rgb(22 93 255 / 22%);
+}
+
+:deep(.ghost-action.el-button) {
+  border-radius: 999px;
+  border-color: #d7e1ef;
+  background: rgb(255 255 255 / 82%);
+}
+
+@media (max-width: 960px) {
+  .hero-panel,
+  .toolbar-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar-row > .el-input {
+    max-width: none;
+    width: 100%;
+  }
 }
 </style>

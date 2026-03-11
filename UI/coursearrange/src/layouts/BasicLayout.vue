@@ -11,17 +11,19 @@
             v-if="menu.children && menu.children.length"
             :index="menu.routePath || menu.menuCode"
           >
-            <template #title>{{ menu.menuName }}</template>
+            <template #title>
+              <span class="menu-title">{{ menu.menuName }}</span>
+            </template>
             <el-menu-item
               v-for="child in menu.children"
               :key="child.id || child.menuCode"
               :index="child.routePath"
             >
-              {{ child.menuName }}
+              <span class="menu-leaf">{{ child.menuName }}</span>
             </el-menu-item>
           </el-sub-menu>
           <el-menu-item v-else :index="menu.routePath">
-            {{ menu.menuName }}
+            <span class="menu-leaf">{{ menu.menuName }}</span>
           </el-menu-item>
         </template>
       </el-menu>
@@ -53,13 +55,57 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const activeMenu = computed(() => route.path);
-const visibleMenus = computed(() =>
-  (authStore.menus || []).filter((item) => item?.isHidden !== 1 && item?.routePath)
-);
+const visibleMenus = computed(() => normalizeMenus(authStore.menus || []));
 
 function handleLogout() {
   authStore.clearLoginState();
   router.push('/login');
+}
+
+function normalizeMenus(menus) {
+  const clonedMenus = JSON.parse(JSON.stringify(menus || []));
+  const topLevelMenus = clonedMenus.filter((item) => item?.isHidden !== 1);
+  const systemRoot = topLevelMenus.find((item) => item?.menuCode === 'system' || item?.routePath === '/system');
+
+  if (!systemRoot) {
+    const systemChildren = topLevelMenus.filter((item) => item?.routePath?.startsWith('/system/'));
+    if (systemChildren.length) {
+      const systemChildKeys = new Set(systemChildren.map((item) => item.id || item.menuCode));
+      const remainingMenus = topLevelMenus.filter((item) => !systemChildKeys.has(item.id || item.menuCode));
+      remainingMenus.push({
+        id: 'system-catalog',
+        menuCode: 'system',
+        parentId: 0,
+        menuName: '系统管理',
+        menuType: 'CATALOG',
+        routeName: 'SystemManage',
+        routePath: '/system',
+        icon: 'Setting',
+        sortNo: 900,
+        children: systemChildren.sort((a, b) => (a.sortNo || 0) - (b.sortNo || 0))
+      });
+      return remainingMenus.filter(shouldKeepMenu).sort(sortMenus);
+    }
+  }
+
+  return topLevelMenus
+    .map((item) => ({
+      ...item,
+      children: (item.children || []).filter(shouldKeepMenu).sort(sortMenus)
+    }))
+    .filter(shouldKeepMenu)
+    .sort(sortMenus);
+}
+
+function shouldKeepMenu(menu) {
+  if (!menu || menu.isHidden === 1) {
+    return false;
+  }
+  return Boolean(menu.routePath || (menu.children && menu.children.length));
+}
+
+function sortMenus(a, b) {
+  return (a?.sortNo || 0) - (b?.sortNo || 0);
 }
 </script>
 
@@ -96,6 +142,28 @@ function handleLogout() {
 .layout-menu {
   border-right: none;
   background: transparent;
+}
+
+.menu-title {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.menu-leaf {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-left: 14px;
+}
+
+.menu-leaf::before {
+  position: absolute;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  content: '';
+  border-radius: 999px;
+  background: rgb(148 163 184 / 72%);
 }
 
 .layout-main {
