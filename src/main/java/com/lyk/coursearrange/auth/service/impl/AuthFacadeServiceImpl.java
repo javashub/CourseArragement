@@ -73,7 +73,7 @@ public class AuthFacadeServiceImpl implements AuthFacadeService {
             if (sysUser == null || sysUser.getDeleted() != null && sysUser.getDeleted() == 1) {
                 throw new BusinessException(ResultCode.NOT_FOUND, "认证账号不存在");
             }
-            List<String> roleCodes = sysRoleService.listRoleCodesByUserId(sysUser.getId());
+            List<String> roleCodes = safeListRoleCodes(sysUser);
             if (roleCodes.isEmpty()) {
                 roleCodes = fallbackRolesByUserType(sysUser.getUserType());
             }
@@ -163,7 +163,7 @@ public class AuthFacadeServiceImpl implements AuthFacadeService {
         LoginUser loginUser = getCurrentLoginUser();
         SysUser sysUser = getBoundSysUser(loginUser);
         if (sysUser != null) {
-            List<String> permissionCodes = sysPermissionService.listPermissionCodesByUserId(sysUser.getId());
+            List<String> permissionCodes = safeListPermissionCodes(sysUser, loginUser);
             if (!permissionCodes.isEmpty()) {
                 return permissionCodes;
             }
@@ -177,7 +177,7 @@ public class AuthFacadeServiceImpl implements AuthFacadeService {
         LoginUser loginUser = getCurrentLoginUser();
         SysUser sysUser = getBoundSysUser(loginUser);
         if (sysUser != null) {
-            List<MenuTreeVO> menus = sysMenuService.listMenuTreeByUserId(sysUser.getId());
+            List<MenuTreeVO> menus = safeListMenus(sysUser, loginUser);
             if (!menus.isEmpty()) {
                 return menus;
             }
@@ -215,11 +215,40 @@ public class AuthFacadeServiceImpl implements AuthFacadeService {
         if (sysUser == null) {
             return loginUser.getRoles();
         }
-        List<String> roleCodes = sysRoleService.listRoleCodesByUserId(sysUser.getId());
+        List<String> roleCodes = safeListRoleCodes(sysUser);
         if (!roleCodes.isEmpty()) {
             return roleCodes;
         }
         return loginUser.getRoles();
+    }
+
+    private List<String> safeListRoleCodes(SysUser sysUser) {
+        try {
+            return sysRoleService.listRoleCodesByUserId(sysUser.getId());
+        } catch (Exception exception) {
+            log.error("查询用户角色失败，回退默认角色策略，sysUserId={}", sysUser.getId(), exception);
+            return new ArrayList<>();
+        }
+    }
+
+    private List<String> safeListPermissionCodes(SysUser sysUser, LoginUser loginUser) {
+        try {
+            return sysPermissionService.listPermissionCodesByUserId(sysUser.getId());
+        } catch (Exception exception) {
+            log.error("查询用户权限失败，回退默认权限策略，sysUserId={}", sysUser.getId(), exception);
+            AuthViewStrategy strategy = getStrategy(loginUser);
+            return strategy.buildPermissions(loginUser);
+        }
+    }
+
+    private List<MenuTreeVO> safeListMenus(SysUser sysUser, LoginUser loginUser) {
+        try {
+            return sysMenuService.listMenuTreeByUserId(sysUser.getId());
+        } catch (Exception exception) {
+            log.error("查询用户菜单失败，回退默认菜单策略，sysUserId={}", sysUser.getId(), exception);
+            AuthViewStrategy strategy = getStrategy(loginUser);
+            return strategy.buildMenus(loginUser);
+        }
     }
 
     private String resolveDisplayName(LoginUser loginUser, SysUser sysUser) {

@@ -17,4 +17,10 @@ public interface RbacAssignService {
     void assignMenusToRole(RoleMenuAssignRequest request);
 
     void assignPermissionsToRole(RolePermissionAssignRequest request);
+
+    java.util.List<Long> getAssignedRoleIds(Long userId);
+
+    java.util.List<Long> getAssignedMenuIds(Long roleId);
+
+    java.util.List<Long> getAssignedPermissionIds(Long roleId);
 }

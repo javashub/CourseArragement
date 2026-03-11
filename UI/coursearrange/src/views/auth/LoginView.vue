@@ -66,8 +66,10 @@ async function handleLogin() {
     });
     const result = response.data || {};
     authStore.setLoginState(result.token || '', result.admin || result.teacher || result.student || null);
+    await authStore.loadAuthContext();
     ElMessage.success('登录成功');
-    router.push((route.query.redirect || '/dashboard').toString());
+    const redirectPath = (route.query.redirect || authStore.firstAccessiblePath || '/dashboard').toString();
+    router.push(redirectPath);
   } catch (error) {
     console.error(error);
   }

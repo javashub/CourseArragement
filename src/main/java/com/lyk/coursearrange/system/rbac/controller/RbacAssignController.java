@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * RBAC 授权控制器。
@@ -40,5 +42,20 @@ public class RbacAssignController {
     public ServerResponse<?> assignRolePermissions(@Validated @RequestBody RolePermissionAssignRequest request) {
         rbacAssignService.assignPermissionsToRole(request);
         return ServerResponse.ofSuccess("分配角色权限成功");
+    }
+
+    @GetMapping("/user-roles/{userId}")
+    public ServerResponse<?> assignedUserRoles(@PathVariable("userId") Long userId) {
+        return ServerResponse.ofSuccess(rbacAssignService.getAssignedRoleIds(userId));
+    }
+
+    @GetMapping("/role-menus/{roleId}")
+    public ServerResponse<?> assignedRoleMenus(@PathVariable("roleId") Long roleId) {
+        return ServerResponse.ofSuccess(rbacAssignService.getAssignedMenuIds(roleId));
+    }
+
+    @GetMapping("/role-permissions/{roleId}")
+    public ServerResponse<?> assignedRolePermissions(@PathVariable("roleId") Long roleId) {
+        return ServerResponse.ofSuccess(rbacAssignService.getAssignedPermissionIds(roleId));
     }
 }

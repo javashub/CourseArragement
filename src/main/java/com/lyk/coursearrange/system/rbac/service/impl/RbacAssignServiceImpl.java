@@ -117,6 +117,42 @@ public class RbacAssignServiceImpl implements RbacAssignService {
                 role.getId(), role.getRoleCode(), entities.size());
     }
 
+    @Override
+    public List<Long> getAssignedRoleIds(Long userId) {
+        getUserOrThrow(userId);
+        LambdaQueryWrapper<SysUserRole> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SysUserRole::getUserId, userId)
+                .eq(SysUserRole::getDeleted, 0)
+                .orderByAsc(SysUserRole::getId);
+        return sysUserRoleService.list(wrapper).stream()
+                .map(SysUserRole::getRoleId)
+                .toList();
+    }
+
+    @Override
+    public List<Long> getAssignedMenuIds(Long roleId) {
+        getRoleOrThrow(roleId);
+        LambdaQueryWrapper<SysRoleMenu> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SysRoleMenu::getRoleId, roleId)
+                .eq(SysRoleMenu::getDeleted, 0)
+                .orderByAsc(SysRoleMenu::getId);
+        return sysRoleMenuService.list(wrapper).stream()
+                .map(SysRoleMenu::getMenuId)
+                .toList();
+    }
+
+    @Override
+    public List<Long> getAssignedPermissionIds(Long roleId) {
+        getRoleOrThrow(roleId);
+        LambdaQueryWrapper<SysRolePermission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SysRolePermission::getRoleId, roleId)
+                .eq(SysRolePermission::getDeleted, 0)
+                .orderByAsc(SysRolePermission::getId);
+        return sysRolePermissionService.list(wrapper).stream()
+                .map(SysRolePermission::getPermissionId)
+                .toList();
+    }
+
     private SysUser getUserOrThrow(Long userId) {
         SysUser user = sysUserService.getById(userId);
         if (user == null || user.getDeleted() != null && user.getDeleted() == 1) {
