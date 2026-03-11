@@ -6,7 +6,12 @@
     <el-row :gutter="16" class="rbac-layout">
       <el-col :span="8">
         <el-card shadow="never" class="rbac-card">
-          <template #header>系统用户</template>
+          <template #header>
+            <div class="card-header">
+              <span>系统用户</span>
+              <el-button type="primary" link @click="openUserDialog()">新增用户</el-button>
+            </div>
+          </template>
           <div class="filter-row">
             <el-input
               v-model="userKeyword"
@@ -37,6 +42,15 @@
             <el-table-column prop="username" label="账号" min-width="120" />
             <el-table-column prop="realName" label="姓名" min-width="120" />
             <el-table-column prop="userType" label="类型" width="100" />
+            <el-table-column prop="status" label="状态" width="80" />
+            <el-table-column label="操作" width="140" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link @click.stop="openUserDialog(row)">编辑</el-button>
+                <el-button type="warning" link @click.stop="handleToggleUserStatus(row)">
+                  {{ row.status === 1 ? '停用' : '启用' }}
+                </el-button>
+              </template>
+            </el-table-column>
           </el-table>
           <div class="rbac-pagination">
             <el-pagination
@@ -198,6 +212,87 @@
     <template #footer>
       <el-button @click="roleDialogVisible = false">取消</el-button>
       <el-button type="primary" @click="handleSaveRole">保存</el-button>
+    </template>
+  </el-dialog>
+
+  <el-dialog v-model="userDialogVisible" :title="userForm.id ? '编辑用户' : '新增用户'" width="620px">
+    <el-form :model="userForm" label-position="top">
+      <el-row :gutter="12">
+        <el-col :span="12">
+          <el-form-item label="用户编码">
+            <el-input v-model="userForm.userCode" placeholder="例如 A_900001" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="登录账号">
+            <el-input v-model="userForm.username" placeholder="请输入登录账号" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="12">
+        <el-col :span="12">
+          <el-form-item label="真实姓名">
+            <el-input v-model="userForm.realName" placeholder="请输入真实姓名" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="显示名称">
+            <el-input v-model="userForm.displayName" placeholder="为空则回退真实姓名" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="12">
+        <el-col :span="12">
+          <el-form-item :label="userForm.id ? '重置密码' : '登录密码'">
+            <el-input
+              v-model="userForm.password"
+              type="password"
+              show-password
+              :placeholder="userForm.id ? '不修改可留空' : '请输入登录密码'"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="用户类型">
+            <el-select v-model="userForm.userType" placeholder="请选择用户类型">
+              <el-option label="管理员" value="ADMIN" />
+              <el-option label="教师" value="TEACHER" />
+              <el-option label="学生" value="STUDENT" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="12">
+        <el-col :span="12">
+          <el-form-item label="手机号">
+            <el-input v-model="userForm.mobile" placeholder="请输入手机号" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="邮箱">
+            <el-input v-model="userForm.email" placeholder="请输入邮箱" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="12">
+        <el-col :span="12">
+          <el-form-item label="来源类型">
+            <el-input v-model="userForm.sourceType" placeholder="ADMIN / TEACHER / STUDENT" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="来源ID">
+            <el-input-number v-model="userForm.sourceId" :min="1" class="full-width" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-form-item label="备注">
+        <el-input v-model="userForm.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="userDialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="handleSaveUser">保存</el-button>
     </template>
   </el-dialog>
 
@@ -442,6 +537,7 @@ import {
   assignRolePermissions,
   assignUserRoles,
   changeRoleStatus,
+  changeUserStatus,
   changeMenuStatus,
   changePermissionStatus,
   deleteRole,
@@ -454,6 +550,7 @@ import {
   fetchPermissionList,
   fetchRoleList,
   fetchUserPage,
+  saveUser,
   saveMenu,
   savePermission,
   saveRole
@@ -474,6 +571,8 @@ const selectedRoleId = ref(null);
 const selectedRoleIds = ref([]);
 const selectedPermissionIds = ref([]);
 const menuTreeRef = ref();
+const userDialogVisible = ref(false);
+const userForm = ref(createDefaultUserForm());
 const roleDialogVisible = ref(false);
 const roleForm = ref(createDefaultRoleForm());
 const menuDialogVisible = ref(false);
@@ -678,6 +777,24 @@ function createDefaultRoleForm() {
   };
 }
 
+function createDefaultUserForm() {
+  return {
+    id: null,
+    userCode: '',
+    username: '',
+    password: '',
+    realName: '',
+    displayName: '',
+    mobile: '',
+    email: '',
+    userType: 'ADMIN',
+    sourceType: '',
+    sourceId: null,
+    status: 1,
+    remark: ''
+  };
+}
+
 function createDefaultMenuForm() {
   return {
     id: null,
@@ -733,6 +850,27 @@ function openRoleDialog(role) {
       }
     : createDefaultRoleForm();
   roleDialogVisible.value = true;
+}
+
+function openUserDialog(user) {
+  userForm.value = user
+    ? {
+        id: user.id,
+        userCode: user.userCode || '',
+        username: user.username,
+        password: '',
+        realName: user.realName,
+        displayName: user.displayName || '',
+        mobile: user.mobile || '',
+        email: user.email || '',
+        userType: user.userType,
+        sourceType: user.sourceType || '',
+        sourceId: user.sourceId || null,
+        status: user.status,
+        remark: user.remark || ''
+      }
+    : createDefaultUserForm();
+  userDialogVisible.value = true;
 }
 
 function openMenuDialog(menu) {
@@ -798,6 +936,28 @@ async function handleToggleRoleStatus(role) {
   await changeRoleStatus(role.id, targetStatus);
   await loadRoles();
   ElMessage.success('修改角色状态成功');
+}
+
+async function handleSaveUser() {
+  if (!userForm.value.userCode || !userForm.value.username || !userForm.value.realName || !userForm.value.userType) {
+    ElMessage.warning('请填写完整用户信息');
+    return;
+  }
+  if (!userForm.value.id && !userForm.value.password) {
+    ElMessage.warning('新增用户时密码不能为空');
+    return;
+  }
+  await saveUser(userForm.value);
+  userDialogVisible.value = false;
+  await loadUsers();
+  ElMessage.success('保存用户成功');
+}
+
+async function handleToggleUserStatus(user) {
+  const targetStatus = user.status === 1 ? 0 : 1;
+  await changeUserStatus(user.id, targetStatus);
+  await loadUsers();
+  ElMessage.success('修改用户状态成功');
 }
 
 async function handleSaveMenu() {

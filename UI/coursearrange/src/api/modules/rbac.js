@@ -4,6 +4,14 @@ export function fetchUserPage(params) {
   return request.get('/rbac/users/page', { params });
 }
 
+export function saveUser(payload) {
+  return request.post('/rbac/users', payload);
+}
+
+export function changeUserStatus(userId, status) {
+  return request.post(`/rbac/users/${userId}/status/${status}`);
+}
+
 export function fetchRoleList(params = {}) {
   return request.get('/rbac/roles/list', { params });
 }
