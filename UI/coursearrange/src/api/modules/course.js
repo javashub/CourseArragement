@@ -1,0 +1,39 @@
+import request from '@/api/request';
+
+const legacyOptions = {
+  baseURL: ''
+};
+
+export function fetchSemesterList() {
+  return request.get('/legacy-api/semester', legacyOptions);
+}
+
+export function fetchClassTaskPage(page = 1, semester, limit = 10) {
+  return request.get(`/legacy-api/classtask/${page}/${encodeURIComponent(semester)}`, {
+    ...legacyOptions,
+    params: { limit }
+  });
+}
+
+export function createClassTask(payload) {
+  return request.post('/legacy-api/addclasstask', payload, legacyOptions);
+}
+
+export function deleteClassTask(id) {
+  return request.delete(`/legacy-api/deleteclasstask/${id}`, legacyOptions);
+}
+
+export function arrangeClassTask(semester) {
+  return request.post(`/legacy-api/arrange/${encodeURIComponent(semester)}`, null, legacyOptions);
+}
+
+export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
+  return request.get(`/legacy-api/queryclassinfo/${page}`, {
+    ...legacyOptions,
+    params: { limit, gradeNo }
+  });
+}
+
+export function fetchCoursePlanByClassNo(classNo) {
+  return request.get(`/legacy-api/courseplan/${encodeURIComponent(classNo)}`, legacyOptions);
+}
