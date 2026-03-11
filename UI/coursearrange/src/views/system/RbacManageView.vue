@@ -35,7 +35,33 @@
         <el-row :gutter="16">
           <el-col :span="10">
             <el-card shadow="never" class="rbac-card">
-              <template #header>角色分配</template>
+              <template #header>
+                <div class="card-header">
+                  <span>角色分配</span>
+                  <el-button type="primary" link @click="openRoleDialog()">新增角色</el-button>
+                </div>
+              </template>
+              <div class="role-maintenance-list">
+                <div v-for="role in roles" :key="role.id" class="role-maintenance-item">
+                  <div>
+                    <div class="role-maintenance-title">{{ role.roleName }}</div>
+                    <div class="role-maintenance-meta">
+                      {{ role.roleCode }} · {{ role.roleType }} · {{ role.status === 1 ? '启用' : '停用' }}
+                    </div>
+                  </div>
+                  <div class="role-maintenance-actions">
+                    <el-button type="primary" link @click="openRoleDialog(role)">编辑</el-button>
+                    <el-button
+                      :type="role.status === 1 ? 'warning' : 'success'"
+                      link
+                      @click="handleToggleRoleStatus(role)"
+                    >
+                      {{ role.status === 1 ? '停用' : '启用' }}
+                    </el-button>
+                    <el-button type="danger" link @click="handleDeleteRole(role)">删除</el-button>
+                  </div>
+                </div>
+              </div>
               <div class="section-hint" v-if="selectedUser">
                 当前用户：{{ selectedUser.realName || selectedUser.username }}
               </div>
@@ -100,22 +126,70 @@
       </el-col>
     </el-row>
   </section>
+
+  <el-dialog v-model="roleDialogVisible" :title="roleForm.id ? '编辑角色' : '新增角色'" width="520px">
+    <el-form :model="roleForm" label-position="top">
+      <el-form-item label="角色编码">
+        <el-input v-model="roleForm.roleCode" placeholder="例如 ADMIN" />
+      </el-form-item>
+      <el-form-item label="角色名称">
+        <el-input v-model="roleForm.roleName" placeholder="请输入角色名称" />
+      </el-form-item>
+      <el-row :gutter="12">
+        <el-col :span="12">
+          <el-form-item label="角色类型">
+            <el-input v-model="roleForm.roleType" placeholder="SYSTEM / BUSINESS" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="数据范围">
+            <el-input v-model="roleForm.dataScopeType" placeholder="ALL / CAMPUS / COLLEGE" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="12">
+        <el-col :span="12">
+          <el-form-item label="排序">
+            <el-input-number v-model="roleForm.sortNo" :min="1" :max="999" class="full-width" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="状态">
+            <el-radio-group v-model="roleForm.status">
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="0">停用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-form-item label="备注">
+        <el-input v-model="roleForm.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="roleDialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="handleSaveRole">保存</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   assignRoleMenus,
   assignRolePermissions,
   assignUserRoles,
+  changeRoleStatus,
+  deleteRole,
   fetchAssignedMenuIds,
   fetchAssignedPermissionIds,
   fetchAssignedRoleIds,
   fetchMenuTree,
   fetchPermissionList,
   fetchRoleList,
-  fetchUserPage
+  fetchUserPage,
+  saveRole
 } from '@/api/modules/rbac';
 
 const loading = ref(false);
@@ -132,6 +206,8 @@ const selectedRoleId = ref(null);
 const selectedRoleIds = ref([]);
 const selectedPermissionIds = ref([]);
 const menuTreeRef = ref();
+const roleDialogVisible = ref(false);
+const roleForm = ref(createDefaultRoleForm());
 
 const menuTreeProps = {
   children: 'children',
@@ -156,6 +232,9 @@ async function loadRoles() {
   roles.value = response.data || [];
   if (!selectedRoleId.value && roles.value.length > 0) {
     selectedRoleId.value = roles.value[0].id;
+  }
+  if (selectedRoleId.value && !roles.value.some((item) => item.id === selectedRoleId.value)) {
+    selectedRoleId.value = roles.value[0]?.id || null;
   }
 }
 
@@ -242,6 +321,66 @@ async function handleSaveRolePermissions() {
   ElMessage.success('保存角色权限成功');
 }
 
+function createDefaultRoleForm() {
+  return {
+    id: null,
+    roleCode: '',
+    roleName: '',
+    roleType: 'BUSINESS',
+    dataScopeType: 'ALL',
+    sortNo: 99,
+    status: 1,
+    remark: ''
+  };
+}
+
+function openRoleDialog(role) {
+  roleForm.value = role
+    ? {
+        id: role.id,
+        roleCode: role.roleCode,
+        roleName: role.roleName,
+        roleType: role.roleType,
+        dataScopeType: role.dataScopeType,
+        sortNo: role.sortNo || 99,
+        status: role.status,
+        remark: role.remark || ''
+      }
+    : createDefaultRoleForm();
+  roleDialogVisible.value = true;
+}
+
+async function handleSaveRole() {
+  if (!roleForm.value.roleCode || !roleForm.value.roleName || !roleForm.value.roleType || !roleForm.value.dataScopeType) {
+    ElMessage.warning('请填写完整角色信息');
+    return;
+  }
+  await saveRole(roleForm.value);
+  roleDialogVisible.value = false;
+  await loadRoles();
+  ElMessage.success('保存角色成功');
+}
+
+async function handleToggleRoleStatus(role) {
+  const targetStatus = role.status === 1 ? 0 : 1;
+  await changeRoleStatus(role.id, targetStatus);
+  await loadRoles();
+  ElMessage.success('修改角色状态成功');
+}
+
+async function handleDeleteRole(role) {
+  await ElMessageBox.confirm(`确认删除角色“${role.roleName}”吗？`, '删除确认', {
+    type: 'warning'
+  });
+  await deleteRole(role.id);
+  if (selectedRoleId.value === role.id) {
+    selectedRoleId.value = null;
+  }
+  await loadRoles();
+  await loadSelectedRoleResources();
+  ElMessage.success('删除角色成功');
+}
+
 async function initializePage() {
   loading.value = true;
   try {
@@ -266,6 +405,12 @@ onMounted(() => {
   min-height: 620px;
 }
 
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .rbac-table {
   margin-top: 12px;
 }
@@ -279,6 +424,39 @@ onMounted(() => {
 .section-hint {
   margin-bottom: 12px;
   color: #667085;
+}
+
+.role-maintenance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.role-maintenance-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.role-maintenance-title {
+  font-weight: 700;
+}
+
+.role-maintenance-meta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #667085;
+}
+
+.role-maintenance-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .checkbox-group {
@@ -314,5 +492,9 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.full-width {
+  width: 100%;
 }
 </style>

@@ -8,6 +8,18 @@ export function fetchRoleList(params = {}) {
   return request.get('/rbac/roles/list', { params });
 }
 
+export function saveRole(payload) {
+  return request.post('/rbac/roles', payload);
+}
+
+export function changeRoleStatus(roleId, status) {
+  return request.post(`/rbac/roles/${roleId}/status/${status}`);
+}
+
+export function deleteRole(roleId) {
+  return request.delete(`/rbac/roles/${roleId}`);
+}
+
 export function fetchPermissionList(params = {}) {
   return request.get('/rbac/permissions/list', { params });
 }
