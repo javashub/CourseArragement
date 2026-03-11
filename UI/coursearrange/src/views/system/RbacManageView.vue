@@ -7,7 +7,26 @@
       <el-col :span="8">
         <el-card shadow="never" class="rbac-card">
           <template #header>系统用户</template>
-          <el-input v-model="userKeyword" placeholder="按账号/姓名搜索" clearable @keyup.enter="loadUsers" />
+          <div class="filter-row">
+            <el-input
+              v-model="userKeyword"
+              placeholder="按账号/姓名搜索"
+              clearable
+              @keyup.enter="handleUserSearch"
+              @clear="handleUserSearchClear"
+            />
+            <el-select
+              v-model="userTypeFilter"
+              placeholder="用户类型"
+              clearable
+              @change="handleUserSearch"
+              @clear="handleUserTypeClear"
+            >
+              <el-option label="管理员" value="ADMIN" />
+              <el-option label="教师" value="TEACHER" />
+              <el-option label="学生" value="STUDENT" />
+            </el-select>
+          </div>
           <el-table
             class="rbac-table"
             :data="users"
@@ -195,6 +214,7 @@ import {
 const loading = ref(false);
 const users = ref([]);
 const userKeyword = ref('');
+const userTypeFilter = ref('');
 const userPageNum = ref(1);
 const userPageSize = ref(10);
 const userTotal = ref(0);
@@ -220,11 +240,29 @@ async function loadUsers() {
   const response = await fetchUserPage({
     pageNum: userPageNum.value,
     pageSize: userPageSize.value,
-    keyword: userKeyword.value
+    keyword: userKeyword.value,
+    userType: userTypeFilter.value
   });
   const pageData = response.data || {};
   users.value = pageData.records || [];
   userTotal.value = pageData.total || 0;
+}
+
+function handleUserSearch() {
+  userPageNum.value = 1;
+  loadUsers();
+}
+
+function handleUserSearchClear() {
+  userKeyword.value = '';
+  userPageNum.value = 1;
+  loadUsers();
+}
+
+function handleUserTypeClear() {
+  userTypeFilter.value = '';
+  userPageNum.value = 1;
+  loadUsers();
 }
 
 async function loadRoles() {
@@ -409,6 +447,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 140px;
+  gap: 12px;
 }
 
 .rbac-table {
