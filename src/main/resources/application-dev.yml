@@ -5,7 +5,7 @@ spring:
   application:
     name: course-arrange
   datasource:
-    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/db_course_arrangement?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/course_arrange_v2?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -25,7 +25,7 @@ spring:
       max-request-size: 100MB
 
 mybatis-plus:
-  mapper-locations: classpath:/mapper/xml/*Mapper.xml
+  mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.lyk.coursearrange.entity
   configuration:
     map-underscore-to-camel-case: true

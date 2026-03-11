@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.OnlineCategory;
 import com.lyk.coursearrange.service.OnlineCategoryService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +16,7 @@ import java.util.List;
  * @since 2020-06-04
  */
 @RestController
+@Slf4j
 @RequestMapping("/category")
 public class OnlineCategoryController {
 
@@ -95,10 +97,9 @@ public class OnlineCategoryController {
         QueryWrapper<OnlineCategory> wrapper = new QueryWrapper<OnlineCategory>().select("category_no").orderByDesc("category_no");
         List<OnlineCategory> list = ocs.list(wrapper);
         String no = String.valueOf(Integer.parseInt(list.get(0).getCategoryNo()) + 1);
-        System.out.println("no = " + no);
+        log.info("生成在线分类编号成功，categoryNo={}", no);
         // 返回自动生成的编号，从res.data.message中获取
         return ServerResponse.ofSuccess(no);
     }
 
 }
-

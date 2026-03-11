@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lyk.coursearrange.system.rbac.mapper.SysMenuMapper">
+
+    <resultMap id="SysMenuResultMap" type="com.lyk.coursearrange.system.rbac.entity.SysMenu">
+        <id property="id" column="id"/>
+        <result property="menuCode" column="menu_code"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="menuName" column="menu_name"/>
+        <result property="menuType" column="menu_type"/>
+        <result property="routeName" column="route_name"/>
+        <result property="routePath" column="route_path"/>
+        <result property="componentPath" column="component_path"/>
+        <result property="icon" column="icon"/>
+        <result property="permissionCode" column="permission_code"/>
+        <result property="isHidden" column="is_hidden"/>
+        <result property="isKeepAlive" column="is_keep_alive"/>
+        <result property="sortNo" column="sort_no"/>
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <!--
+        场景说明：
+        1. 用户菜单需要跨用户角色、角色菜单、菜单三张表关联。
+        2. 为保证排序、条件、字段映射清晰，这类联表查询统一落到 XML。
+    -->
+    <select id="selectMenusByUserId" resultMap="SysMenuResultMap">
+        select distinct m.*
+        from sys_user_role ur
+                 inner join sys_role_menu rm on ur.role_id = rm.role_id
+                 inner join sys_menu m on rm.menu_id = m.id
+        where ur.user_id = #{userId}
+          and ur.deleted = 0
+          and rm.deleted = 0
+          and m.deleted = 0
+          and m.status = 1
+        order by m.parent_id asc, m.sort_no asc, m.id asc
+    </select>
+
+</mapper>

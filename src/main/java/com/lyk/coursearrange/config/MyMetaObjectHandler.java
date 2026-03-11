@@ -14,6 +14,18 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
 
     @Override
     public void insertFill(MetaObject metaObject) {
+        if (metaObject.hasSetter("createdAt") && getFieldValByName("createdAt", metaObject) == null) {
+            strictInsertFill(metaObject, "createdAt", LocalDateTime.class, LocalDateTime.now());
+        }
+        if (metaObject.hasSetter("updatedAt") && getFieldValByName("updatedAt", metaObject) == null) {
+            strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, LocalDateTime.now());
+        }
+        if (metaObject.hasSetter("createdBy") && getFieldValByName("createdBy", metaObject) == null) {
+            strictInsertFill(metaObject, "createdBy", Long.class, 0L);
+        }
+        if (metaObject.hasSetter("updatedBy") && getFieldValByName("updatedBy", metaObject) == null) {
+            strictInsertFill(metaObject, "updatedBy", Long.class, 0L);
+        }
         if (metaObject.hasSetter("createTime") && getFieldValByName("createTime", metaObject) == null) {
             strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
         }
@@ -24,6 +36,12 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
 
     @Override
     public void updateFill(MetaObject metaObject) {
+        if (metaObject.hasSetter("updatedAt")) {
+            strictUpdateFill(metaObject, "updatedAt", LocalDateTime.class, LocalDateTime.now());
+        }
+        if (metaObject.hasSetter("updatedBy")) {
+            strictUpdateFill(metaObject, "updatedBy", Long.class, 0L);
+        }
         if (metaObject.hasSetter("updateTime")) {
             strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
         }

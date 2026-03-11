@@ -14,7 +14,7 @@ spring:
     time-zone: Asia/Shanghai
 
 mybatis-plus:
-  mapper-locations: classpath:/mapper/xml/*Mapper.xml
+  mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.lyk.coursearrange.entity
   configuration:
     map-underscore-to-camel-case: true

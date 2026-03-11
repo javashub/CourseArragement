@@ -5,19 +5,23 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lyk.coursearrange.auth.service.AuthAccountSyncService;
+import com.lyk.coursearrange.auth.service.AuthLoginService;
+import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.constants.SystemConstants;
 import com.lyk.coursearrange.common.UserLoginToken;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.request.PasswordVO;
 import com.lyk.coursearrange.entity.request.StudentLoginRequest;
 import com.lyk.coursearrange.entity.request.StudentRegisterRequest;
 import com.lyk.coursearrange.service.StudentService;
-import com.lyk.coursearrange.service.impl.TokenService;
+import com.lyk.coursearrange.system.rbac.entity.SysUser;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +33,7 @@ import java.util.Random;
  * @since 2020-03-13
  */
 @RestController
+@Slf4j
 @RequestMapping("/student")
 public class StudentController {
 
@@ -36,7 +41,11 @@ public class StudentController {
     private StudentService studentService;
 
     @Autowired
-    private TokenService tokenService;
+    private PasswordService passwordService;
+    @Autowired
+    private AuthLoginService authLoginService;
+    @Autowired
+    private AuthAccountSyncService authAccountSyncService;
 
 
     /**
@@ -78,17 +87,16 @@ public class StudentController {
             // 否则进行下一步验证账号的的状态
             return ServerResponse.ofError("该学生账号异常，请联系管理员");
         }
-        // 调用登录
-        Student student = studentService.studentLogin(studentLoginRequest.getUsername(), studentLoginRequest.getPassword());
-        if (student != null) {
-            //允许登录,返回token
-            StpUtil.login("student:" + student.getId());
+        SysUser sysUser = authLoginService.loginStudent(studentLoginRequest.getUsername(), studentLoginRequest.getPassword());
+        if (sysUser != null) {
+            StpUtil.login("sys_user:" + sysUser.getId());
             String token = StpUtil.getTokenValue();
+            Student student = studentService.getById(sysUser.getSourceId().intValue());
             map.put("student", student);
             map.put("token", token);
             return ServerResponse.ofSuccess(map);
         }
-        return ServerResponse.ofSuccess("密码错误！");
+        return ServerResponse.ofError("密码错误！");
     }
 
     /**
@@ -98,11 +106,12 @@ public class StudentController {
      */
     @PostMapping("/register")
     public ServerResponse studentRegister(@RequestBody StudentRegisterRequest stu) {
-        System.out.println(stu);
+        log.info("学生注册请求，studentNo={}, username={}", stu.getStudentNo(), stu.getUsername());
         Student student = new Student();
         student.setStudentNo(stu.getStudentNo());
         student.setUsername(stu.getUsername());
-        student.setPassword(stu.getPassword());
+        // 注册密码统一加密存储。
+        student.setPassword(passwordService.encode(stu.getPassword()));
         student.setRealname(stu.getRealname());
         student.setGrade(stu.getGrade());
         student.setAddress(stu.getAddress());
@@ -110,6 +119,7 @@ public class StudentController {
         student.setEmail(stu.getEmail());
         boolean b = studentService.save(student);
         if (b) {
+            authAccountSyncService.syncStudentAccount(student);
             return ServerResponse.ofSuccess("注册成功", student);
         }
         return ServerResponse.ofError("注册失败!");
@@ -177,7 +187,7 @@ public class StudentController {
         Random r = new Random();
         // 得到当前年份字符串2020
         String str1 = LocalDateTime.now().getYear()+"";
-        System.out.println(str1);
+        log.debug("生成学号，year={}, grade={}", str1, grade);
         // 得到10位学号,2020 02 7845
         do {
             // 随机四位数
@@ -187,9 +197,9 @@ public class StudentController {
             // 查询学号是否已经存在的条件
             QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("student_no", str3);
             Student student = studentService.getOne(wrapper);
-            System.out.println("666666");
             // 如果查不到该学号，则学号可用，跳出循环
             if (student == null) {
+                log.info("生成学号成功，studentNo={}", str3);
                 return ServerResponse.ofSuccess(str3);
             }
         } while(true);
@@ -251,17 +261,21 @@ public class StudentController {
      */
     @PostMapping("/password")
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
-        QueryWrapper<Student> wrapper = new QueryWrapper();
-        wrapper.eq("id", passwordVO.getId());
-        wrapper.eq("password", passwordVO.getOldPass());
-        Student student = studentService.getOne(wrapper);
+        Student student = studentService.getById(passwordVO.getId());
         if (student == null) {
+            return ServerResponse.ofError("学生不存在");
+        }
+        boolean passwordMatched = passwordService.isEncoded(student.getPassword())
+                ? passwordService.matches(passwordVO.getOldPass(), student.getPassword())
+                : passwordVO.getOldPass().equals(student.getPassword());
+        if (!passwordMatched) {
             return ServerResponse.ofError("旧密码错误");
         }
-        // 否则进入修改密码流程
-        student.setPassword(passwordVO.getNewPass());
+        // 新密码统一使用 BCrypt 存储。
+        student.setPassword(passwordService.encode(passwordVO.getNewPass()));
         boolean b = studentService.updateById(student);
         if (b) {
+            authAccountSyncService.updatePasswordBySource(SystemConstants.SourceType.STUDENT, student.getId().longValue(), student.getPassword());
             return ServerResponse.ofSuccess("密码修改成功");
         }
         return ServerResponse.ofError("密码更新失败");
@@ -269,4 +283,3 @@ public class StudentController {
 
 
 }
-

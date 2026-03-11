@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.common.api;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +26,21 @@ public class PageResponse<T> {
                 .pageSize(pageSize)
                 .total(0L)
                 .records(Collections.emptyList())
+                .build();
+    }
+
+    /**
+     * 统一转换 MyBatis-Plus 分页结果。
+     */
+    public static <T> PageResponse<T> of(IPage<T> page) {
+        if (page == null) {
+            return PageResponse.empty(1L, 10L);
+        }
+        return PageResponse.<T>builder()
+                .pageNum(page.getCurrent())
+                .pageSize(page.getSize())
+                .total(page.getTotal())
+                .records(page.getRecords())
                 .build();
     }
 }

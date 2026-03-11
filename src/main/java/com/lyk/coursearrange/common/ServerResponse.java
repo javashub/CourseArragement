@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.lyk.coursearrange.common.api.ApiResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ServerResponse {
+public class ServerResponse<T> {
 
     // 响应码
     private int code;
@@ -24,11 +25,11 @@ public class ServerResponse {
     private String message;
 
     // 数据
-    private Object data;
+    private T data;
 
 
 
-    private  ServerResponse(int code, String message) {
+    private ServerResponse(int code, String message) {
         this.code = code;
         this.message = message;
     }
@@ -40,53 +41,60 @@ public class ServerResponse {
     }
 
 
-    public static ServerResponse ofSuccess() {
+    public static <T> ServerResponse<T> ofSuccess() {
         return new ServerResponse(ResponseCode.SUCCESS.getCode(), ResponseCode.SUCCESS.getDesc());
     }
 
 
-    public static ServerResponse ofSuccess(Object obj) {
+    public static <T> ServerResponse<T> ofSuccess(T obj) {
         return new ServerResponse(ResponseCode.SUCCESS.getCode(), ResponseCode.SUCCESS.getDesc(), obj);
     }
 
 
-    public static ServerResponse ofSuccess(int code, String msg, Object obj) {
+    public static <T> ServerResponse<T> ofSuccess(int code, String msg, T obj) {
         return new ServerResponse(code, msg, obj);
     }
 
 
-    public static ServerResponse ofSuccess(String msg) {
+    public static <T> ServerResponse<T> ofSuccess(String msg) {
         return new ServerResponse(ResponseCode.SUCCESS.getCode(), msg);
     }
 
 
-    public static ServerResponse ofSuccess(String msg, Object obj) {
+    public static <T> ServerResponse<T> ofSuccess(String msg, T obj) {
         return new ServerResponse(ResponseCode.SUCCESS.getCode(), msg, obj);
     }
 
 
-    public static ServerResponse ofError(int code, String msg, Object obj) {
+    public static <T> ServerResponse<T> ofError(int code, String msg, T obj) {
         return new ServerResponse(code, msg, obj);
     }
 
 
-    public static ServerResponse ofError() {
+    public static <T> ServerResponse<T> ofError() {
         return new ServerResponse(ResponseCode.ERROR.getCode(), ResponseCode.ERROR.getDesc());
     }
 
 
-    public static ServerResponse ofError(String msg) {
+    public static <T> ServerResponse<T> ofError(String msg) {
         return new ServerResponse(ResponseCode.ERROR.getCode(), msg);
     }
 
 
-    public static ServerResponse ofError(Object obj) {
+    public static <T> ServerResponse<T> ofError(T obj) {
         return new ServerResponse(ResponseCode.ERROR.getCode(),ResponseCode.ERROR.getDesc(), obj);
     }
 
 
 
-    public static ServerResponse ofError(String msg, Object obj) {
+    public static <T> ServerResponse<T> ofError(String msg, T obj) {
         return new ServerResponse(ResponseCode.ERROR.getCode(), msg, obj);
+    }
+
+    /**
+     * 将旧响应结构平滑转换为新的统一响应结构。
+     */
+    public ApiResponse<T> toApiResponse() {
+        return new ApiResponse<>(this.code, this.message, this.data);
     }
 }

@@ -52,4 +52,19 @@ public class ApiResponse<T> {
                 .message(message)
                 .build();
     }
+
+    public static <T> ApiResponse<T> fail(Integer code, String message) {
+        return ApiResponse.<T>builder()
+                .code(code)
+                .message(message)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> fail(Integer code, String message, T data) {
+        return ApiResponse.<T>builder()
+                .code(code)
+                .message(message)
+                .data(data)
+                .build();
+    }
 }

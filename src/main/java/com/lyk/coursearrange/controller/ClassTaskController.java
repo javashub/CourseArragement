@@ -9,10 +9,8 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.service.ClassTaskService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -24,6 +22,7 @@ import java.util.stream.Collectors;
  * @since 2020-04-06
  */
 @RestController
+@Slf4j
 public class ClassTaskController {
 
     @Resource
@@ -52,6 +51,8 @@ public class ClassTaskController {
     public ServerResponse addClassTask(@RequestBody ClassTaskDTO c) {
         ClassTask classTask = new ClassTask();
         BeanUtils.copyProperties(c, classTask);
+        log.info("新增课程任务，semester={}, courseNo={}, classNo={}",
+                classTask.getSemester(), classTask.getCourseNo(), classTask.getClassNo());
         return classTaskService.save(classTask) ? ServerResponse.ofSuccess("添加课程任务成功") : ServerResponse.ofError("添加课程任务失败");
     }
 
@@ -83,7 +84,7 @@ public class ClassTaskController {
      */
     @PostMapping("/arrange/{semester}")
     public ServerResponse arrange(@PathVariable("semester") String semester) {
+        log.info("开始执行排课，semester={}", semester);
         return classTaskService.classScheduling(semester);
     }
 }
-

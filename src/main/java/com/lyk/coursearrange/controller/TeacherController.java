@@ -5,13 +5,17 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lyk.coursearrange.auth.service.AuthAccountSyncService;
+import com.lyk.coursearrange.auth.service.AuthLoginService;
+import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.constants.SystemConstants;
 import com.lyk.coursearrange.entity.Teacher;
 import com.lyk.coursearrange.entity.request.PasswordVO;
 import com.lyk.coursearrange.entity.request.TeacherAddRequest;
 import com.lyk.coursearrange.entity.request.UserLoginRequest;
 import com.lyk.coursearrange.service.TeacherService;
-import com.lyk.coursearrange.service.impl.TokenService;
+import com.lyk.coursearrange.system.rbac.entity.SysUser;
 import com.lyk.coursearrange.util.AliyunUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +37,11 @@ public class TeacherController {
     @Autowired
     private TeacherService teacherService;
     @Autowired
-    private TokenService tokenService;
+    private PasswordService passwordService;
+    @Autowired
+    private AuthLoginService authLoginService;
+    @Autowired
+    private AuthAccountSyncService authAccountSyncService;
 
 
     /**
@@ -65,22 +73,18 @@ public class TeacherController {
     @PostMapping("/login")
     public ServerResponse teacherLogin(@RequestBody UserLoginRequest userLoginRequest) {
         Map<String, Object> map = new HashMap<>();
-        QueryWrapper<Teacher> wrapper = new QueryWrapper<>();
-        wrapper.eq("teacher_no", userLoginRequest.getUsername());
-        // 先查询是否有该账号
-        Teacher teacher2 = teacherService.getOne(wrapper);
-        if (teacher2 == null) {
+        QueryWrapper<Teacher> wrapper = new QueryWrapper<Teacher>().eq("teacher_no", userLoginRequest.getUsername());
+        Teacher teacherProfile = teacherService.getOne(wrapper);
+        if (teacherProfile == null) {
             return ServerResponse.ofError("账号不存在");
-        } else if (teacher2.getStatus() != 0) {
+        } else if (teacherProfile.getStatus() != 0) {
             return ServerResponse.ofError("账号状态异常，请联系管理员");
         }
-        // 登录,使用编号登录
-        Teacher teacher = teacherService.teacherLogin(userLoginRequest.getUsername(), userLoginRequest.getPassword());
-
-        if (teacher != null) {
-            // 允许登录
-            StpUtil.login("teacher:" + teacher.getId());
+        SysUser sysUser = authLoginService.loginTeacher(userLoginRequest.getUsername(), userLoginRequest.getPassword());
+        if (sysUser != null) {
+            StpUtil.login("sys_user:" + sysUser.getId());
             String token = StpUtil.getTokenValue();
+            Teacher teacher = teacherService.getById(sysUser.getSourceId().intValue());
             map.put("teacher", teacher);
             map.put("token", token);
             return ServerResponse.ofSuccess(map);
@@ -186,8 +190,8 @@ public class TeacherController {
         teacher.setTeacherNo(t.getTeacherNo());
         teacher.setUsername(t.getUsername());
         teacher.setEmail(t.getEmail());
-        // 每一个新增的讲师密码默认是123456
-        teacher.setPassword("123456");
+        // 默认密码统一进行 BCrypt 加密，避免新账号继续写入明文密码。
+        teacher.setPassword(passwordService.encode("123456"));
         teacher.setRealname(t.getRealname());
         teacher.setJobtitle(t.getJobtitle());
         teacher.setTeach(t.getTeach());
@@ -196,6 +200,7 @@ public class TeacherController {
         teacher.setAge(t.getAge());
         boolean b = teacherService.save(teacher);
         if (b) {
+            authAccountSyncService.syncTeacherAccount(teacher);
             return ServerResponse.ofSuccess("添加讲师成功！");
         }
         return ServerResponse.ofError("添加讲师失败！");
@@ -229,17 +234,21 @@ public class TeacherController {
      */
     @PostMapping("/password")
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
-        QueryWrapper<Teacher> wrapper = new QueryWrapper();
-        wrapper.eq("id", passwordVO.getId());
-        wrapper.eq("password", passwordVO.getOldPass());
-        Teacher teacher = teacherService.getOne(wrapper);
+        Teacher teacher = teacherService.getById(passwordVO.getId());
         if (teacher == null) {
+            return ServerResponse.ofError("讲师不存在");
+        }
+        boolean passwordMatched = passwordService.isEncoded(teacher.getPassword())
+                ? passwordService.matches(passwordVO.getOldPass(), teacher.getPassword())
+                : passwordVO.getOldPass().equals(teacher.getPassword());
+        if (!passwordMatched) {
             return ServerResponse.ofError("旧密码错误");
         }
-        // 否则进入修改密码流程
-        teacher.setPassword(passwordVO.getNewPass());
+        // 新密码统一使用 BCrypt 存储。
+        teacher.setPassword(passwordService.encode(passwordVO.getNewPass()));
         boolean b = teacherService.updateById(teacher);
         if (b) {
+            authAccountSyncService.updatePasswordBySource(SystemConstants.SourceType.TEACHER, teacher.getId().longValue(), teacher.getPassword());
             return ServerResponse.ofSuccess("密码修改成功");
         }
         return ServerResponse.ofError("密码更新失败");
@@ -256,4 +265,3 @@ public class TeacherController {
     }
 
 }
-

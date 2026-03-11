@@ -22,14 +22,14 @@ public class GlobalExceptionHandler {
 
     @ResponseBody
     @ExceptionHandler(BusinessException.class)
-    public ServerResponse handleBusinessException(BusinessException exception) {
+    public ServerResponse<?> handleBusinessException(BusinessException exception) {
         log.warn("业务异常: {}", exception.getMessage());
-        return ServerResponse.ofError(exception.getMessage());
+        return ServerResponse.ofError(exception.getCode(), exception.getMessage(), null);
     }
 
     @ResponseBody
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ServerResponse handleMethodArgumentNotValidException(MethodArgumentNotValidException exception) {
+    public ServerResponse<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException exception) {
         String message = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
 
     @ResponseBody
     @ExceptionHandler(BindException.class)
-    public ServerResponse handleBindException(BindException exception) {
+    public ServerResponse<?> handleBindException(BindException exception) {
         String message = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
@@ -47,21 +47,21 @@ public class GlobalExceptionHandler {
 
     @ResponseBody
     @ExceptionHandler(NotLoginException.class)
-    public ServerResponse handleNotLoginException(NotLoginException exception) {
+    public ServerResponse<?> handleNotLoginException(NotLoginException exception) {
         log.warn("登录校验失败: {}", exception.getMessage());
         return ServerResponse.ofError(ResultCode.UNAUTHORIZED.getCode(), ResultCode.UNAUTHORIZED.getMessage(), null);
     }
 
     @ResponseBody
     @ExceptionHandler(NotPermissionException.class)
-    public ServerResponse handleNotPermissionException(NotPermissionException exception) {
+    public ServerResponse<?> handleNotPermissionException(NotPermissionException exception) {
         log.warn("权限校验失败: {}", exception.getMessage());
         return ServerResponse.ofError(ResultCode.FORBIDDEN.getCode(), ResultCode.FORBIDDEN.getMessage(), null);
     }
 
     @ResponseBody
     @ExceptionHandler(Exception.class)
-    public ServerResponse handleException(Exception exception) {
+    public ServerResponse<?> handleException(Exception exception) {
         log.error("系统异常", exception);
         return ServerResponse.ofError(ResultCode.SYSTEM_ERROR.getCode(), ResultCode.SYSTEM_ERROR.getMessage(), null);
     }
