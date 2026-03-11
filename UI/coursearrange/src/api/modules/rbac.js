@@ -28,6 +28,30 @@ export function fetchMenuTree() {
   return request.get('/rbac/menus/tree');
 }
 
+export function saveMenu(payload) {
+  return request.post('/rbac/menus', payload);
+}
+
+export function changeMenuStatus(menuId, status) {
+  return request.post(`/rbac/menus/${menuId}/status/${status}`);
+}
+
+export function deleteMenu(menuId) {
+  return request.delete(`/rbac/menus/${menuId}`);
+}
+
+export function savePermission(payload) {
+  return request.post('/rbac/permissions', payload);
+}
+
+export function changePermissionStatus(permissionId, status) {
+  return request.post(`/rbac/permissions/${permissionId}/status/${status}`);
+}
+
+export function deletePermission(permissionId) {
+  return request.delete(`/rbac/permissions/${permissionId}`);
+}
+
 export function fetchAssignedRoleIds(userId) {
   return request.get(`/rbac/assign/user-roles/${userId}`);
 }
