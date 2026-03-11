@@ -8,7 +8,10 @@
         <el-card shadow="never" class="rbac-card">
           <template #header>
             <div class="card-header">
-              <span>系统用户</span>
+              <div>
+                <div class="section-title">系统用户</div>
+                <div class="section-caption">统一认证账号池，业务资料账号由同步链路自动进入这里。</div>
+              </div>
               <el-button type="primary" link @click="openUserDialog()">新增用户</el-button>
             </div>
           </template>
@@ -42,7 +45,13 @@
             <el-table-column prop="username" label="账号" min-width="120" />
             <el-table-column prop="realName" label="姓名" min-width="120" />
             <el-table-column prop="userType" label="类型" width="100" />
-            <el-table-column prop="status" label="状态" width="80" />
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="plain">
+                  {{ row.status === 1 ? '启用' : '停用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="140" fixed="right">
               <template #default="{ row }">
                 <el-button type="primary" link @click.stop="openUserDialog(row)">编辑</el-button>
@@ -217,6 +226,12 @@
 
   <el-dialog v-model="userDialogVisible" :title="userForm.id ? '编辑用户' : '新增用户'" width="620px">
     <el-form :model="userForm" label-position="top">
+      <div class="dialog-hint">
+        <div class="dialog-hint-title">账号说明</div>
+        <div class="dialog-hint-text">
+          普通管理员可在这里维护独立后台账号。教师、学生等业务账号会自动同步到 `sys_user`，来源绑定信息不建议手工修改。
+        </div>
+      </div>
       <el-row :gutter="12">
         <el-col :span="12">
           <el-form-item label="用户编码">
@@ -254,7 +269,7 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="用户类型">
-            <el-select v-model="userForm.userType" placeholder="请选择用户类型">
+            <el-select v-model="userForm.userType" placeholder="请选择用户类型" :disabled="isBoundSourceUser">
               <el-option label="管理员" value="ADMIN" />
               <el-option label="教师" value="TEACHER" />
               <el-option label="学生" value="STUDENT" />
@@ -274,18 +289,29 @@
           </el-form-item>
         </el-col>
       </el-row>
-      <el-row :gutter="12">
-        <el-col :span="12">
-          <el-form-item label="来源类型">
-            <el-input v-model="userForm.sourceType" placeholder="ADMIN / TEACHER / STUDENT" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="来源ID">
-            <el-input-number v-model="userForm.sourceId" :min="1" class="full-width" />
-          </el-form-item>
-        </el-col>
-      </el-row>
+      <div v-if="isBoundSourceUser" class="binding-panel">
+        <div class="binding-panel-header">
+          <span class="binding-panel-title">系统绑定信息</span>
+          <el-tag type="warning" effect="plain">只读</el-tag>
+        </div>
+        <div class="binding-panel-text">
+          该账号来自业务资料同步，用于把统一认证账号和教师/学生/管理员资料绑定在一起。
+        </div>
+        <el-row :gutter="12">
+          <el-col :span="12">
+            <div class="binding-field">
+              <span class="binding-label">来源类型</span>
+              <strong>{{ userForm.sourceType }}</strong>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="binding-field">
+              <span class="binding-label">来源 ID</span>
+              <strong>{{ userForm.sourceId }}</strong>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
       <el-form-item label="备注">
         <el-input v-model="userForm.remark" type="textarea" :rows="3" placeholder="请输入备注" />
       </el-form-item>
@@ -337,19 +363,19 @@
       <el-row :gutter="12">
         <el-col :span="12">
           <el-form-item label="菜单编码">
-            <el-input v-model="menuForm.menuCode" placeholder="例如 dashboard" />
+            <el-input v-model="menuForm.menuCode" placeholder="例如 system-rbac（菜单唯一编码）" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="菜单名称">
-            <el-input v-model="menuForm.menuName" placeholder="请输入菜单名称" />
+            <el-input v-model="menuForm.menuName" placeholder="例如 权限管理、系统配置" />
           </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="12">
         <el-col :span="8">
           <el-form-item label="父级菜单">
-            <el-select v-model="menuForm.parentId" placeholder="请选择父级">
+            <el-select v-model="menuForm.parentId" placeholder="例如 选择“系统管理”作为上级菜单">
               <el-option label="根节点" :value="0" />
               <el-option v-for="item in menuParentOptions" :key="item.id" :label="item.menuName" :value="item.id" />
             </el-select>
@@ -357,7 +383,7 @@
         </el-col>
         <el-col :span="8">
           <el-form-item label="菜单类型">
-            <el-select v-model="menuForm.menuType" placeholder="请选择类型">
+            <el-select v-model="menuForm.menuType" placeholder="例如 目录、菜单、按钮">
               <el-option label="目录" value="CATALOG" />
               <el-option label="菜单" value="MENU" />
               <el-option label="按钮" value="BUTTON" />
@@ -376,31 +402,31 @@
       <el-row :gutter="12">
         <el-col :span="12">
           <el-form-item label="路由名称">
-            <el-input v-model="menuForm.routeName" placeholder="请输入 route name" />
+            <el-input v-model="menuForm.routeName" placeholder="例如 RbacManage（前端路由名称）" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="路由路径">
-            <el-input v-model="menuForm.routePath" placeholder="请输入 route path" />
+            <el-input v-model="menuForm.routePath" placeholder="例如 /system/rbac（浏览器访问路径）" />
           </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="12">
         <el-col :span="12">
           <el-form-item label="组件路径">
-            <el-input v-model="menuForm.componentPath" placeholder="请输入组件路径" />
+            <el-input v-model="menuForm.componentPath" placeholder="例如 system/RbacManageView（views 下的组件路径）" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="权限编码">
-            <el-input v-model="menuForm.permissionCode" placeholder="请输入权限编码" />
+            <el-input v-model="menuForm.permissionCode" placeholder="例如 page:system:rbac:view（页面权限标识）" />
           </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="12">
         <el-col :span="8">
           <el-form-item label="图标">
-            <el-input v-model="menuForm.icon" placeholder="例如 House" />
+            <el-input v-model="menuForm.icon" placeholder="例如 Setting、User、House" />
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -421,7 +447,7 @@
         </el-col>
       </el-row>
       <el-form-item label="备注">
-        <el-input v-model="menuForm.remark" type="textarea" :rows="2" placeholder="请输入备注" />
+        <el-input v-model="menuForm.remark" type="textarea" :rows="2" placeholder="例如 仅管理员可见的权限管理菜单" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -591,6 +617,7 @@ const menuTreeProps = {
 };
 
 const selectedRole = computed(() => roles.value.find((item) => item.id === selectedRoleId.value) || null);
+const isBoundSourceUser = computed(() => Boolean(userForm.value.sourceType || userForm.value.sourceId));
 const flatMenuList = computed(() => flattenMenus(menuTree.value));
 const menuParentOptions = computed(() =>
   flatMenuList.value.filter((item) => item.id !== menuForm.value.id && item.menuType !== 'BUTTON')
@@ -1061,6 +1088,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .filter-row {
@@ -1069,14 +1097,88 @@ onMounted(() => {
   gap: 12px;
 }
 
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.section-caption {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #667085;
+}
+
 .dialog-toolbar {
   display: grid;
   grid-template-columns: 1fr 140px 140px;
   gap: 12px;
 }
 
+.dialog-hint {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid #d9e8ff;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+}
+
+.dialog-hint-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dialog-hint-text {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #526071;
+}
+
 .dialog-table {
   margin-top: 16px;
+}
+
+.binding-panel {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px dashed #f5c97a;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fffaf0 0%, #fff6df 100%);
+}
+
+.binding-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.binding-panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8a5a00;
+}
+
+.binding-panel-text {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #7a5a1f;
+}
+
+.binding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 58%);
+}
+
+.binding-label {
+  font-size: 12px;
+  color: #8a6c34;
 }
 
 .rbac-table {

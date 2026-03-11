@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 配置写服务实现。
@@ -73,6 +75,24 @@ public class ConfigWriteServiceImpl implements ConfigWriteService {
     public List<CfgTimeSlot> saveTimeSlots(CfgTimeSlotBatchSaveRequest request) {
         if (scheduleRuleService.getById(request.getScheduleRuleId()) == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "排课规则不存在");
+        }
+        LambdaQueryWrapper<CfgTimeSlot> existingWrapper = new LambdaQueryWrapper<>();
+        existingWrapper.eq(CfgTimeSlot::getScheduleRuleId, request.getScheduleRuleId())
+                .eq(CfgTimeSlot::getDeleted, 0);
+        List<CfgTimeSlot> existingSlots = timeSlotService.list(existingWrapper);
+        Set<Long> keepIds = request.getItems().stream()
+                .map(CfgTimeSlotBatchSaveRequest.Item::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        List<CfgTimeSlot> deleteSlots = existingSlots.stream()
+                .filter(item -> !keepIds.contains(item.getId()))
+                .toList();
+        if (!deleteSlots.isEmpty()) {
+            List<Long> deleteIds = deleteSlots.stream()
+                    .map(CfgTimeSlot::getId)
+                    .toList();
+            timeSlotService.removeByIds(deleteIds);
+            log.info("移除旧时间片成功，scheduleRuleId={}, deleteCount={}", request.getScheduleRuleId(), deleteIds.size());
         }
         List<CfgTimeSlot> result = new ArrayList<>();
         for (CfgTimeSlotBatchSaveRequest.Item item : request.getItems()) {
