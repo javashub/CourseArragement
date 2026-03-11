@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lyk.coursearrange.system.rbac.mapper.SysUserRoleMapper">
+
+    <!--
+        场景说明：
+        1. 关系表字段比通用基类更少，直接使用 MP 查全列会命中不存在的扩展字段。
+        2. 这里改为 XML 精准查询所需 role_id，避免结构不一致导致回显失败。
+    -->
+    <select id="selectRoleIdsByUserId" resultType="java.lang.Long">
+        select role_id
+        from sys_user_role
+        where user_id = #{userId}
+          and deleted = 0
+        order by id asc
+    </select>
+
+</mapper>

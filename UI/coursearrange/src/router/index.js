@@ -10,6 +10,7 @@ import CampusView from '@/views/organization/CampusView.vue';
 import CollegeView from '@/views/organization/CollegeView.vue';
 import StageView from '@/views/organization/StageView.vue';
 import SystemConfigView from '@/views/system/SystemConfigView.vue';
+import RbacManageView from '@/views/system/RbacManageView.vue';
 import TeacherDashboardView from '@/views/teacher/TeacherDashboardView.vue';
 import TeacherTimetableView from '@/views/teacher/TeacherTimetableView.vue';
 import StudentDashboardView from '@/views/student/StudentDashboardView.vue';
@@ -101,6 +102,15 @@ const routes = [
         meta: {
           title: '系统配置',
           permission: 'page:config:view'
+        }
+      },
+      {
+        path: 'system/rbac',
+        name: 'RbacManagePage',
+        component: RbacManageView,
+        meta: {
+          title: '权限管理',
+          permission: 'page:rbac:view'
         }
       },
       {

@@ -27,6 +27,7 @@ public class AdminAuthViewStrategy implements AuthViewStrategy {
                 "page:college:view",
                 "page:stage:view",
                 "page:config:view",
+                "page:rbac:view",
                 "btn:config:edit",
                 "btn:timetable:drag-adjust"
         );

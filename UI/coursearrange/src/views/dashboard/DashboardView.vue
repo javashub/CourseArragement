@@ -25,6 +25,15 @@
         </el-card>
       </el-col>
     </el-row>
+    <el-card shadow="never" class="quick-action-card" v-if="canOpenRbac">
+      <div class="quick-action-content">
+        <div>
+          <div class="quick-action-title">权限管理联调入口</div>
+          <div class="quick-action-text">当前已接通用户、角色、菜单、权限分配接口，可以直接进入 RBAC 管理页测试。</div>
+        </div>
+        <el-button type="primary" @click="router.push('/system/rbac')">进入权限管理</el-button>
+      </div>
+    </el-card>
     <el-row :gutter="16" class="panel-list">
       <el-col :span="8" v-for="item in panels" :key="item.title">
         <el-card shadow="hover">
@@ -37,9 +46,13 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
+const router = useRouter();
 const authStore = useAuthStore();
+const canOpenRbac = computed(() => authStore.hasPermission('page:rbac:view'));
 
 const panels = [
   { title: '前端栈', description: 'Vue 3 + Vite + Pinia + Element Plus + 路由守卫' },
@@ -51,6 +64,29 @@ const panels = [
 <style scoped>
 .panel-list {
   margin-top: 24px;
+}
+
+.quick-action-card {
+  margin-top: 24px;
+  border: 1px solid #dbe7ff;
+  background: linear-gradient(90deg, #f7fbff 0%, #eef4ff 100%);
+}
+
+.quick-action-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.quick-action-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.quick-action-text {
+  margin-top: 8px;
+  color: #667085;
 }
 
 .overview-card {

@@ -4,9 +4,13 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.lyk.coursearrange.system.rbac.entity.SysUserRole;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
  * 用户角色关联 Mapper。
  */
 @Mapper
 public interface SysUserRoleMapper extends BaseMapper<SysUserRole> {
+
+    List<Long> selectRoleIdsByUserId(Long userId);
 }

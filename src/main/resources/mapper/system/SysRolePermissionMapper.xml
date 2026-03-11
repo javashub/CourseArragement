@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lyk.coursearrange.system.rbac.mapper.SysRolePermissionMapper">
+
+    <select id="selectPermissionIdsByRoleId" resultType="java.lang.Long">
+        select permission_id
+        from sys_role_permission
+        where role_id = #{roleId}
+          and deleted = 0
+        order by id asc
+    </select>
+
+</mapper>

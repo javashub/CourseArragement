@@ -10,6 +10,9 @@ import com.lyk.coursearrange.system.rbac.entity.SysRoleMenu;
 import com.lyk.coursearrange.system.rbac.entity.SysRolePermission;
 import com.lyk.coursearrange.system.rbac.entity.SysUser;
 import com.lyk.coursearrange.system.rbac.entity.SysUserRole;
+import com.lyk.coursearrange.system.rbac.mapper.SysRoleMenuMapper;
+import com.lyk.coursearrange.system.rbac.mapper.SysRolePermissionMapper;
+import com.lyk.coursearrange.system.rbac.mapper.SysUserRoleMapper;
 import com.lyk.coursearrange.system.rbac.request.RoleMenuAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.RolePermissionAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.UserRoleAssignRequest;
@@ -42,6 +45,9 @@ public class RbacAssignServiceImpl implements RbacAssignService {
     private final SysUserRoleService sysUserRoleService;
     private final SysRoleMenuService sysRoleMenuService;
     private final SysRolePermissionService sysRolePermissionService;
+    private final SysUserRoleMapper sysUserRoleMapper;
+    private final SysRoleMenuMapper sysRoleMenuMapper;
+    private final SysRolePermissionMapper sysRolePermissionMapper;
 
     public RbacAssignServiceImpl(SysUserService sysUserService,
                                  SysRoleService sysRoleService,
@@ -49,7 +55,10 @@ public class RbacAssignServiceImpl implements RbacAssignService {
                                  SysPermissionService sysPermissionService,
                                  SysUserRoleService sysUserRoleService,
                                  SysRoleMenuService sysRoleMenuService,
-                                 SysRolePermissionService sysRolePermissionService) {
+                                 SysRolePermissionService sysRolePermissionService,
+                                 SysUserRoleMapper sysUserRoleMapper,
+                                 SysRoleMenuMapper sysRoleMenuMapper,
+                                 SysRolePermissionMapper sysRolePermissionMapper) {
         this.sysUserService = sysUserService;
         this.sysRoleService = sysRoleService;
         this.sysMenuService = sysMenuService;
@@ -57,6 +66,9 @@ public class RbacAssignServiceImpl implements RbacAssignService {
         this.sysUserRoleService = sysUserRoleService;
         this.sysRoleMenuService = sysRoleMenuService;
         this.sysRolePermissionService = sysRolePermissionService;
+        this.sysUserRoleMapper = sysUserRoleMapper;
+        this.sysRoleMenuMapper = sysRoleMenuMapper;
+        this.sysRolePermissionMapper = sysRolePermissionMapper;
     }
 
     @Override
@@ -120,37 +132,19 @@ public class RbacAssignServiceImpl implements RbacAssignService {
     @Override
     public List<Long> getAssignedRoleIds(Long userId) {
         getUserOrThrow(userId);
-        LambdaQueryWrapper<SysUserRole> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SysUserRole::getUserId, userId)
-                .eq(SysUserRole::getDeleted, 0)
-                .orderByAsc(SysUserRole::getId);
-        return sysUserRoleService.list(wrapper).stream()
-                .map(SysUserRole::getRoleId)
-                .toList();
+        return sysUserRoleMapper.selectRoleIdsByUserId(userId);
     }
 
     @Override
     public List<Long> getAssignedMenuIds(Long roleId) {
         getRoleOrThrow(roleId);
-        LambdaQueryWrapper<SysRoleMenu> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SysRoleMenu::getRoleId, roleId)
-                .eq(SysRoleMenu::getDeleted, 0)
-                .orderByAsc(SysRoleMenu::getId);
-        return sysRoleMenuService.list(wrapper).stream()
-                .map(SysRoleMenu::getMenuId)
-                .toList();
+        return sysRoleMenuMapper.selectMenuIdsByRoleId(roleId);
     }
 
     @Override
     public List<Long> getAssignedPermissionIds(Long roleId) {
         getRoleOrThrow(roleId);
-        LambdaQueryWrapper<SysRolePermission> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SysRolePermission::getRoleId, roleId)
-                .eq(SysRolePermission::getDeleted, 0)
-                .orderByAsc(SysRolePermission::getId);
-        return sysRolePermissionService.list(wrapper).stream()
-                .map(SysRolePermission::getPermissionId)
-                .toList();
+        return sysRolePermissionMapper.selectPermissionIdsByRoleId(roleId);
     }
 
     private SysUser getUserOrThrow(Long userId) {
