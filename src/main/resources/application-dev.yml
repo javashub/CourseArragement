@@ -1,48 +1,60 @@
-# 数据库连接
+server:
+  port: 8080
+
 spring:
+  application:
+    name: course-arrange
   datasource:
-    url: jdbc:mysql://localhost:3306/db_course_arrangement?characterEncoding=utf-8&useSSL=false
-    type: com.alibaba.druid.pool.DruidDataSource
-    username: root
-    password: root
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/db_course_arrangement?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
-  # 返回json的全局时间格式
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      pool-name: CourseArrangeHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: GMT+8
-  # 热部署配置
-#  devtools:
-#    restart:
-#      enable: true
-#      additional-paths: src/main/java
-#      exclude: WEB-INF/**
-
-  #设置文件传输大小限制
+    time-zone: Asia/Shanghai
   servlet:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
 
-
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml
-  typeAliasesPackage: com.lyk.coursearrange.entity
+  mapper-locations: classpath:/mapper/xml/*Mapper.xml
+  type-aliases-package: com.lyk.coursearrange.entity
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 开启 SQL 日志打印
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
-      logic-delete-value: 1 #删除
-      logic-not-delete-value: 0 #不删除
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
 
-server:
-  port: 8080
+sa-token:
+  token-name: satoken
+  timeout: 2592000
+  active-timeout: -1
+  is-concurrent: false
+  is-share: false
+  token-style: uuid
+  is-log: true
 
+logging:
+  level:
+    com.lyk.coursearrange: info
+    org.springframework.web: info
 
-# 阿里云OSS
 aliyun:
   oss:
     file:
-      endpoint: oss-cn-shenzhen.aliyuncs.com
-      accessKeyId: 你们自己的key
-      accessKeySecret: 你们自己的密钥
-      bucketName: arrange
+      endpoint: ${ALIYUN_OSS_ENDPOINT:oss-cn-shenzhen.aliyuncs.com}
+      accessKeyId: ${ALIYUN_OSS_ACCESS_KEY_ID:replace-me}
+      accessKeySecret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:replace-me}
+      bucketName: ${ALIYUN_OSS_BUCKET_NAME:arrange}

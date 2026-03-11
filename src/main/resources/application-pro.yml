@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: course-arrange
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/xml/*Mapper.xml
+  type-aliases-package: com.lyk.coursearrange.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+sa-token:
+  token-name: satoken
+  timeout: 2592000
+  active-timeout: 1800
+  is-concurrent: false
+  is-share: false
+  token-style: uuid
+  is-log: false
+
+logging:
+  level:
+    com.lyk.coursearrange: info

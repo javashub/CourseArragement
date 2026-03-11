@@ -138,7 +138,7 @@ public class Teacher extends Model<Teacher> implements Serializable {
     private LocalDateTime updateTime;
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

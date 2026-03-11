@@ -1,0 +1,43 @@
+:root {
+  --app-primary: #1677ff;
+  --app-text-color: #1f2329;
+  --app-bg-color: #f5f7fa;
+  --app-border-color: #dcdfe6;
+  --app-header-height: 64px;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--app-text-color);
+  background-color: var(--app-bg-color);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--app-bg-color);
+}
+
+.page-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 6%);
+}
+
+.page-title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.page-description {
+  margin: 0;
+  color: #667085;
+}

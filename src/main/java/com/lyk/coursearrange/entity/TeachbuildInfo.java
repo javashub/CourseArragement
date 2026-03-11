@@ -65,7 +65,7 @@ public class TeachbuildInfo extends Model<TeachbuildInfo> implements Serializabl
 
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

@@ -79,7 +79,7 @@ public class Classroom extends Model<Classroom> implements Serializable {
 
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

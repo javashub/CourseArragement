@@ -46,7 +46,7 @@ public class GradeInfo extends Model<GradeInfo> implements Serializable {
 
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

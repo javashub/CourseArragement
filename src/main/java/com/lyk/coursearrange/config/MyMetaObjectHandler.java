@@ -7,28 +7,25 @@ import org.springframework.context.annotation.Configuration;
 import java.time.LocalDateTime;
 
 /**
- * @author: 15760
- * @Date: 2020/3/4
- * @Descripe: 自动更新
+ * MyBatis-Plus 自动填充配置。
  */
-
 @Configuration
 public class MyMetaObjectHandler implements MetaObjectHandler {
 
-    // 自动插入公公字段
     @Override
     public void insertFill(MetaObject metaObject) {
-        if (metaObject.hasSetter("createTime")&&getFieldValByName("createTime",metaObject)==null) {
-            setInsertFieldValByName("createTime", LocalDateTime.now(), metaObject);
-            //setInsertFieldValByName("updateTime", LocalDateTime.now(), metaObject);
+        if (metaObject.hasSetter("createTime") && getFieldValByName("createTime", metaObject) == null) {
+            strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
+        }
+        if (metaObject.hasSetter("updateTime") && getFieldValByName("updateTime", metaObject) == null) {
+            strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
         }
     }
 
-    // 自动更新公共字段
     @Override
     public void updateFill(MetaObject metaObject) {
-        if (metaObject.hasSetter("updateTime")&&getFieldValByName("updateTime",metaObject)==null) {
-            setUpdateFieldValByName("updateTime", LocalDateTime.now(), metaObject);
+        if (metaObject.hasSetter("updateTime")) {
+            strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
         }
     }
 }

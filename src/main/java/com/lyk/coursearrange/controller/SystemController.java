@@ -7,11 +7,7 @@ import com.lyk.coursearrange.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,55 +21,69 @@ import java.util.Map;
 @RestController
 public class SystemController {
 
-    @Resource
+    @Autowired
     private TeacherService teacherService;
-    @Resource
+    @Autowired
     private StudentService studentService;
-    @Resource
+    @Autowired
     private CourseInfoService courseInfoService;
-    @Resource
+    @Autowired
     private ClassInfoService classInfoService;
-    @Resource
+    @Autowired
     private ClassTaskService classTaskService;
-    @Resource
+    @Autowired
     private TeachbuildInfoService teachbuildInfoService;
-    @Resource
+    @Autowired
+    private DocService docService;
+    @Autowired
+    private ExerciseService exerciseService;
+    @Autowired
     private ClassroomService classroomService;
-    @Resource
+    @Autowired
     private StudentDao studentDao;
-    @Resource
+    @Autowired
+    private  OnlineCourseService onlineCourseService;
+    @Autowired
     private TeacherDao teacherDao;
 
 
-    /**
-     * 随便瞎写。生产环境是禁止使用 map 传参的，全部都应该使用对象传参，因为 map 不可预知集合中的内容
-     */
     @GetMapping("/systemdata")
     public ServerResponse systemData() {
         Map<String, Object> map = new HashMap<>();
 
         // 讲师人数
-        int teachers = teacherService.count();
+        long teachers = teacherService.count();
         // 学生人数
-        int students = studentService.count();
+        long students = studentService.count();
         // 教材数量
-        int courses = courseInfoService.count();
+        long courses = courseInfoService.count();
         // 班级数量
-        int classes = classInfoService.count();
+        long classes = classInfoService.count();
         // 教学楼数量
-        int teachbuilds = teachbuildInfoService.count();
+        long teachbuilds = teachbuildInfoService.count();
         // 教室数量
-        int classrooms = classroomService.count();
+        long classrooms = classroomService.count();
         // 当前课程任务数量
-        int classtasks = classTaskService.count();
+        long classtasks = classTaskService.count();
+        // 学习文档数
+        long docs = docService.count();
+        // 题库数量
+        long exercises = exerciseService.count();
+        // 网课数量
+        long onlineCourse = onlineCourseService.count();
 
-        LocalDate totay = LocalDate.now();
-        String yesterday = totay.minusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE,-1);
+        Date d = cal.getTime();
+        SimpleDateFormat sp = new SimpleDateFormat("yyyy-MM-dd");
+        //获取昨天日期
+        String yesday = sp.format(d);
+//        String yesday = "2020-03-26";
 
         // 昨日学生注册人数
-        int studentReg = studentDao.studentReg(yesterday);
+        int studentReg = studentDao.studentReg(yesday);
         // 昨日注册讲师
-        int teacherReg = teacherDao.teacherReg(yesterday);
+        int teacherReg = teacherDao.teacherReg(yesday);
 
 
         map.put("teachers", teachers);
@@ -82,8 +92,11 @@ public class SystemController {
         map.put("classes", classes);
         map.put("teachbuilds", teachbuilds);
         map.put("classtasks", classtasks);
+        map.put("docs", docs);
+        map.put("exercises", exercises);
         map.put("classrooms", classrooms);
         map.put("studentReg", studentReg);
+        map.put("onlineCourse", onlineCourse);
         map.put("teacherReg", teacherReg);
 
         return ServerResponse.ofSuccess(map);

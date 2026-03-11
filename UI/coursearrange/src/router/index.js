@@ -1,186 +1,92 @@
-import Vue from 'vue';
-import Router from 'vue-router';
-import Home from '@/home/Home';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import Admin from '@/pages/Admin';
-import ManagerMain from '@/manager/ManagerMain';
-import TeacherList from '@/manager/components/TeacherList';
-import TeachAreaSetting from '@/manager/components/TeachAreaSetting';
-import SystemData from '@/manager/SystemData';
-import ClassroomList from '@/manager/components/ClassroomList';
-import TeachBuildingList from '@/manager/components/TeachBuildingList';
-import CourseTable from '@/manager/components/CourseTable';
-import StudentCourseTable from '@/home/components/CourseTable';
-import EmptyClassroom from '@/home/components/EmptyClassroom';
-import StudentCenter from '@/home/components/Center';
-import StudentPassword from '@/home/components/Password';
-import CourseInfoList from '@/manager/components/CourseInfoList';
-import StudentList from '@/manager/components/StudentList';
-import ClassTaskList from '@/manager/components/ClassTaskList';
-import ClassManager from '@/manager/components/ClassManager';
-import UpdatePass from '@/pages/components/UpdatePass';
-import Help from '@/manager/components/Help';
-import StudentMain from '@/home/StudentMain';
+import { createRouter, createWebHashHistory } from 'vue-router';
+import BasicLayout from '@/layouts/BasicLayout.vue';
+import LoginView from '@/views/auth/LoginView.vue';
+import DashboardView from '@/views/dashboard/DashboardView.vue';
+import CoursePlanView from '@/views/course/CoursePlanView.vue';
+import ScheduleView from '@/views/course/ScheduleView.vue';
+import BaseDataView from '@/views/base/BaseDataView.vue';
+import SystemGuideView from '@/views/system/SystemGuideView.vue';
+import { useAuthStore } from '@/stores/auth';
 
-Vue.use(Router)
-
-const router = new Router({
-  routes: [
-    {
-      path: '/',
-      name: 'Home',
-      component: Home,
-      meta: { 
-        noRequireAuth: true
-      },
-    },
-    {
-      path: '/student/login',
-      name: 'Login',
-      component: Login,
-      meta: { 
-        noRequireAuth: true
-      },
-    },
-    {
-      path: '/student/register',
-      name: 'Register',
-      component: Register,
-      meta: { 
-        noRequireAuth: true
-      },
-    },
-    {
-      path: '/admin/login',
-      name: 'AdminLogin',
-      component: Admin,
-      meta: { 
-        noRequireAuth: true
-      },
-    },
-    {
-      path: '/student',
-      name: 'Student',
-      component: StudentMain,
-      meta: { 
-        noRequireAuth: true
-      },
-      children: [
-        
-        {
-          path: '/emptyclassroom',
-          name: 'EmptyClassroom',
-          component: EmptyClassroom
-        },
-        {
-          path: '',
-          name: 'CourseList-default',
-          component: StudentCourseTable
-        },
-        {
-          path: '/courseList',
-          name: 'CourseList',
-          component: StudentCourseTable
-        },
-        {
-          path: '/center',
-          name: 'StudentCenter',
-          component: StudentCenter
-        },
-        {
-          path: '/password',
-          name: 'Password',
-          component: StudentPassword
-        }
-      ]
-    },
-    {
-      path: '/admin',
-      name: 'Admin',
-      component: ManagerMain,
-      children: [
-        {
-          path: '/help',
-          name: 'Help',
-          component: Help
-        },
-
-        {
-          path: '/updatepass',
-          name: 'UpdatePass',
-          component: UpdatePass
-        },
-        {
-          path: '/systemdata',
-          name: 'SystemData',
-          component: SystemData
-        },
-        {
-          path: '/teacherlist',
-          name: 'TeacherList',
-          component: TeacherList
-        },
-        {
-          path: '/studentlist',
-          name: 'StudentList',
-          component: StudentList
-        },
-        {
-          path: '/teachbuildinglist',
-          name: 'TeachBuildingList',
-          component: TeachBuildingList
-        },
-        {
-          path: '/classroomlist',
-          name: 'ClassroomList',
-          component: ClassroomList
-        },
-        {
-          path: '/coursetable',
-          name: 'CourseTable',
-          component: CourseTable
-        },
-        {
-          path: '/courseinfolist',
-          name: 'CourseInfoList',
-          component: CourseInfoList
-        },
-        {
-          path: '/classtasklist',
-          name: 'ClassTaskList',
-          component: ClassTaskList
-        },
-        {
-          path: '/classmanager',
-          name: 'ClasssManager',
-          component: ClassManager
-        },
-        {
-          path: '/setteacharea',
-          name: 'TeachAreaSetting',
-          component: TeachAreaSetting
-        }
-      ]
+const routes = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginView,
+    meta: {
+      public: true,
+      title: '登录'
     }
-  ]
-})
-
-router.beforeEach((to, from, next) => {
-  if (!to.matched.some(res => res.meta.noRequireAuth)) {// 判断是否需要登录权限
-    if (window.localStorage.getItem('teacher') || window.localStorage.getItem("admin") ) {// 判断是否登录
-      next()
-    } else {
-      next({
-        path: '/',
-        query: { redirect: to.fullPath }
-      })
-    }
-  } else {
-    next()
+  },
+  {
+    path: '/',
+    component: BasicLayout,
+    redirect: '/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: DashboardView,
+        meta: {
+          title: '工作台'
+        }
+      },
+      {
+        path: 'course-plan',
+        name: 'CoursePlan',
+        component: CoursePlanView,
+        meta: {
+          title: '排课任务'
+        }
+      },
+      {
+        path: 'schedule',
+        name: 'Schedule',
+        component: ScheduleView,
+        meta: {
+          title: '课表管理'
+        }
+      },
+      {
+        path: 'base-data',
+        name: 'BaseData',
+        component: BaseDataView,
+        meta: {
+          title: '基础数据'
+        }
+      },
+      {
+        path: 'guide',
+        name: 'Guide',
+        component: SystemGuideView,
+        meta: {
+          title: '重构说明'
+        }
+      }
+    ]
   }
-  next()
-})
+];
 
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes
+});
 
-export default router
+router.beforeEach((to) => {
+  document.title = `${to.meta?.title || '页面'} - ${import.meta.env.VITE_APP_TITLE || '课程排课系统'}`;
+  const authStore = useAuthStore();
+  if (to.meta?.public) {
+    return true;
+  }
+  if (!authStore.isLoggedIn) {
+    return {
+      path: '/login',
+      query: {
+        redirect: to.fullPath
+      }
+    };
+  }
+  return true;
+});
+
+export default router;

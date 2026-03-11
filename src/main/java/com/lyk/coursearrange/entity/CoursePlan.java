@@ -90,7 +90,7 @@ public class CoursePlan extends Model<CoursePlan> implements Serializable {
 
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

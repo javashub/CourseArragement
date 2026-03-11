@@ -1,16 +1,13 @@
 HELP.md
 target/
+node_modules/
+dist/
+coverage/
+logs/
+.DS_Store
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**
 !**/src/test/**
-
-!.gitignore
-
-Mvnw
-Mvnm.cmd
-/logs
-**/logs/
-
 
 ### STS ###
 .apt_generated
@@ -30,14 +27,11 @@ Mvnm.cmd
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
-/dist/
 /nbdist/
 /.nb-gradle/
 
 ### VS Code ###
 .vscode/
-node_modules/
-**/node_modules/
-.DS_Store
+
+# ignore macOS metadata after src/main negation
 **/.DS_Store
-**/.mvn/**

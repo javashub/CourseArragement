@@ -118,7 +118,7 @@ public class Student extends Model<Student> implements Serializable {
     private LocalDateTime updateTime;
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

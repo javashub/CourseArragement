@@ -139,7 +139,7 @@ public class ClassTask extends Model<ClassTask> implements Serializable {
 
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

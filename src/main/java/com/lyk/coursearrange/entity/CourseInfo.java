@@ -79,7 +79,7 @@ public class CourseInfo extends Model<CourseInfo> implements Serializable {
     private LocalDateTime updateTime;
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

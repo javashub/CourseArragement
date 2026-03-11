@@ -68,7 +68,7 @@ public class ClassInfo extends Model<ClassInfo> implements Serializable {
     private LocalDateTime updateTime;
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 

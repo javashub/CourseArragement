@@ -55,7 +55,7 @@ public class LocationInfo extends Model<LocationInfo> implements Serializable {
 
 
     @Override
-    protected Serializable pkVal() {
+    public Serializable pkVal() {
         return this.id;
     }
 
