@@ -439,6 +439,36 @@ const formValidation = computed(() => {
   };
 });
 
+function getImportResult(payload) {
+  return payload?.data || payload?.response?.data?.data || null;
+}
+
+function buildImportSummary(payload) {
+  const result = getImportResult(payload);
+  if (!result) {
+    return '课程任务导入成功';
+  }
+  const totalCount = result.totalCount ?? 0;
+  const successCount = result.successCount ?? 0;
+  const failedCount = result.failedCount ?? 0;
+  return `课程任务导入完成，合计 ${totalCount} 条，成功 ${successCount} 条，失败 ${failedCount} 条`;
+}
+
+async function showImportErrors(payload) {
+  const result = getImportResult(payload);
+  const errors = Array.isArray(result?.errors) ? result.errors : [];
+  if (!errors.length) {
+    return;
+  }
+  const previewErrors = errors.slice(0, 12).join('<br/>');
+  const appendix = errors.length > 12 ? `<br/><br/>仅展示前 12 条，共 ${errors.length} 条。` : '';
+  await ElMessageBox.alert(`${previewErrors}${appendix}`, '课程任务导入失败明细', {
+    type: 'error',
+    dangerouslyUseHTMLString: true,
+    confirmButtonText: '我知道了'
+  });
+}
+
 function createTaskForm() {
   return {
     semester: selectedSemester.value || '',
@@ -571,10 +601,11 @@ async function handleTemplateDownload() {
 
 async function handleExcelUpload(file) {
   try {
-    await uploadClassTaskExcel(file);
-    ElMessage.success('课程任务导入成功');
+    const response = await uploadClassTaskExcel(file);
+    ElMessage.success(buildImportSummary(response));
     await Promise.all([loadClassTasks(true), loadExecutionLogs()]);
   } catch (error) {
+    await showImportErrors(error);
     return false;
   }
   return false;

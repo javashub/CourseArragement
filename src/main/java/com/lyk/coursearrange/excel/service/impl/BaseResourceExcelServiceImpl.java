@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lyk.coursearrange.auth.service.AuthAccountSyncService;
 import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.vo.ImportResultVO;
 import com.lyk.coursearrange.entity.CourseInfo;
 import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.Student;
@@ -239,7 +240,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             authAccountSyncService.syncTeacherAccount(teacher);
             imported++;
         }
-        return buildImportResponse(errors, imported, "教师");
+        return buildImportResponse(rows.size(), errors, imported, "教师");
     }
 
     @Override
@@ -284,7 +285,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             authAccountSyncService.syncStudentAccount(student);
             imported++;
         }
-        return buildImportResponse(errors, imported, "学生");
+        return buildImportResponse(rows.size(), errors, imported, "学生");
     }
 
     @Override
@@ -323,7 +324,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             courseInfoService.saveOrUpdate(courseInfo);
             imported++;
         }
-        return buildImportResponse(errors, imported, "课程");
+        return buildImportResponse(rows.size(), errors, imported, "课程");
     }
 
     @Override
@@ -359,7 +360,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             teachbuildInfoService.saveOrUpdate(teachbuildInfo);
             imported++;
         }
-        return buildImportResponse(errors, imported, "教学楼");
+        return buildImportResponse(rows.size(), errors, imported, "教学楼");
     }
 
     @Override
@@ -398,7 +399,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             classroomService.saveOrUpdate(classroom);
             imported++;
         }
-        return buildImportResponse(errors, imported, "教室");
+        return buildImportResponse(rows.size(), errors, imported, "教室");
     }
 
     private TeacherExcelRow toTeacherRow(Teacher teacher) {
@@ -510,11 +511,12 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         }
     }
 
-    private ServerResponse buildImportResponse(List<String> errors, int imported, String resourceName) {
+    private ServerResponse buildImportResponse(int totalCount, List<String> errors, int imported, String resourceName) {
         if (!errors.isEmpty()) {
-            return ServerResponse.ofError(String.join("；", errors));
+            return ServerResponse.ofError(resourceName + "导入失败，请修正后重试", buildImportResult(totalCount, imported, errors));
         }
-        return ServerResponse.ofSuccess(String.format("%s导入成功，共 %s 条", resourceName, imported));
+        return ServerResponse.ofSuccess(String.format("%s导入成功，共 %s 条", resourceName, imported),
+                buildImportResult(totalCount, imported, List.of()));
     }
 
     private Integer parseStatus(String statusText, int defaultValue) {
@@ -533,6 +535,15 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
 
     private String trim(String value) {
         return value == null ? null : value.trim();
+    }
+
+    private ImportResultVO buildImportResult(int totalCount, int successCount, List<String> errors) {
+        return ImportResultVO.builder()
+                .totalCount(totalCount)
+                .successCount(successCount)
+                .failedCount(Math.max(totalCount - successCount, 0))
+                .errors(errors)
+                .build();
     }
 
     private <T> void writeExcel(HttpServletResponse response, String fileName, String sheetName,

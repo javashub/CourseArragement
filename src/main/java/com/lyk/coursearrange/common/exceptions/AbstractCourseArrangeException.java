@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.common.exceptions;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
@@ -11,6 +12,7 @@ import java.io.Serializable;
  * @description
  */
 @NoArgsConstructor
+@Getter
 public abstract class AbstractCourseArrangeException extends RuntimeException implements Serializable {
 
     protected String message;

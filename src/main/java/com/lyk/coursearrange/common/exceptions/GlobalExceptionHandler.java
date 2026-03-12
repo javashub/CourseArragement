@@ -4,6 +4,7 @@ import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
+import com.lyk.coursearrange.common.exceptions.AbstractCourseArrangeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -24,7 +25,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ServerResponse<?> handleBusinessException(BusinessException exception) {
         log.warn("业务异常: {}", exception.getMessage());
-        return ServerResponse.ofError(exception.getCode(), exception.getMessage(), null);
+        return ServerResponse.ofError(exception.getCode(), exception.getMessage(), exception.getData());
+    }
+
+    @ResponseBody
+    @ExceptionHandler(AbstractCourseArrangeException.class)
+    public ServerResponse<?> handleCourseArrangeException(AbstractCourseArrangeException exception) {
+        log.warn("排课业务异常: {}", exception.getMessage());
+        return ServerResponse.ofError(exception.getErrorCode(), exception.getMessage(), null);
     }
 
     @ResponseBody
@@ -43,6 +51,13 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
         return ServerResponse.ofError(ResultCode.BAD_REQUEST.getCode(), message, null);
+    }
+
+    @ResponseBody
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ServerResponse<?> handleIllegalArgumentException(IllegalArgumentException exception) {
+        log.warn("非法参数: {}", exception.getMessage());
+        return ServerResponse.ofError(ResultCode.BAD_REQUEST.getCode(), exception.getMessage(), null);
     }
 
     @ResponseBody

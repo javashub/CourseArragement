@@ -623,6 +623,36 @@ function createClassroomForm() {
   };
 }
 
+function getImportResult(payload) {
+  return payload?.data || payload?.response?.data?.data || null;
+}
+
+function buildImportSummary(resourceName, payload, fallbackMessage) {
+  const result = getImportResult(payload);
+  if (!result) {
+    return fallbackMessage;
+  }
+  const totalCount = result.totalCount ?? 0;
+  const successCount = result.successCount ?? 0;
+  const failedCount = result.failedCount ?? 0;
+  return `${resourceName}导入完成，合计 ${totalCount} 条，成功 ${successCount} 条，失败 ${failedCount} 条`;
+}
+
+async function showImportErrors(title, payload) {
+  const result = getImportResult(payload);
+  const errors = Array.isArray(result?.errors) ? result.errors : [];
+  if (!errors.length) {
+    return;
+  }
+  const previewErrors = errors.slice(0, 12).join('<br/>');
+  const appendix = errors.length > 12 ? `<br/><br/>仅展示前 12 条，共 ${errors.length} 条。` : '';
+  await ElMessageBox.alert(`${previewErrors}${appendix}`, title, {
+    type: 'error',
+    dangerouslyUseHTMLString: true,
+    confirmButtonText: '我知道了'
+  });
+}
+
 const activeTabLabel = computed(() => {
   const map = {
     teacher: '教师管理',
@@ -851,10 +881,11 @@ async function handleTeacherTemplateDownload() {
 
 async function handleTeacherImport(file) {
   try {
-    await importTeacherExcel(file);
-    ElMessage.success('教师数据导入成功');
+    const response = await importTeacherExcel(file);
+    ElMessage.success(buildImportSummary('教师', response, '教师数据导入成功'));
     await loadTeachers(true);
   } catch (error) {
+    await showImportErrors('教师导入失败明细', error);
     return false;
   }
   return false;
@@ -930,10 +961,11 @@ async function handleStudentTemplateDownload() {
 
 async function handleStudentImport(file) {
   try {
-    await importStudentExcel(file);
-    ElMessage.success('学生数据导入成功');
+    const response = await importStudentExcel(file);
+    ElMessage.success(buildImportSummary('学生', response, '学生数据导入成功'));
     await loadStudents(true);
   } catch (error) {
+    await showImportErrors('学生导入失败明细', error);
     return false;
   }
   return false;
@@ -1004,10 +1036,11 @@ async function handleCourseTemplateDownload() {
 
 async function handleCourseImport(file) {
   try {
-    await importCourseExcel(file);
-    ElMessage.success('课程数据导入成功');
+    const response = await importCourseExcel(file);
+    ElMessage.success(buildImportSummary('课程', response, '课程数据导入成功'));
     await loadCourses(true);
   } catch (error) {
+    await showImportErrors('课程导入失败明细', error);
     return false;
   }
   return false;
@@ -1082,10 +1115,11 @@ async function handleClassroomExport() {
 
 async function handleClassroomImport(file) {
   try {
-    await importClassroomExcel(file);
-    ElMessage.success('教室数据导入成功');
+    const response = await importClassroomExcel(file);
+    ElMessage.success(buildImportSummary('教室', response, '教室数据导入成功'));
     await loadClassrooms();
   } catch (error) {
+    await showImportErrors('教室导入失败明细', error);
     return false;
   }
   return false;
@@ -1112,10 +1146,11 @@ async function handleTeachbuildExport() {
 
 async function handleTeachbuildImport(file) {
   try {
-    await importTeachbuildExcel(file);
-    ElMessage.success('教学楼数据导入成功');
+    const response = await importTeachbuildExcel(file);
+    ElMessage.success(buildImportSummary('教学楼', response, '教学楼数据导入成功'));
     await Promise.all([loadTeachbuildOptions(), loadClassrooms()]);
   } catch (error) {
+    await showImportErrors('教学楼导入失败明细', error);
     return false;
   }
   return false;

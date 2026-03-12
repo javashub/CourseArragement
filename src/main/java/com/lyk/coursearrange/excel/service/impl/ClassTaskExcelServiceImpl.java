@@ -3,6 +3,7 @@ package com.lyk.coursearrange.excel.service.impl;
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.vo.ImportResultVO;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.excel.model.ClassTaskExcelRow;
 import com.lyk.coursearrange.excel.service.ClassTaskExcelService;
@@ -81,15 +82,19 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
             semesters.add(classTask.getSemester());
         }
         if (!errors.isEmpty()) {
-            return ServerResponse.ofError(String.join("；", errors));
+            return ServerResponse.ofError("课程任务导入失败，请修正后重试", buildImportResult(rows.size(), classTasks.size(), errors));
         }
 
         classTaskService.remove(new LambdaQueryWrapper<ClassTask>().in(ClassTask::getSemester, semesters));
         boolean saved = classTaskService.saveBatch(classTasks);
         if (!saved) {
-            return ServerResponse.ofError("课程任务导入失败，保存数据时出现异常");
+            return ServerResponse.ofError("课程任务导入失败，保存数据时出现异常",
+                    buildImportResult(rows.size(), 0, List.of("保存课程任务到数据库失败")));
         }
-        return ServerResponse.ofSuccess(String.format("课程任务导入成功，共 %s 条，已覆盖学期：%s", classTasks.size(), String.join("、", semesters)));
+        return ServerResponse.ofSuccess(
+                String.format("课程任务导入成功，共 %s 条，已覆盖学期：%s", classTasks.size(), String.join("、", semesters)),
+                buildImportResult(rows.size(), classTasks.size(), List.of())
+        );
     }
 
     private List<ClassTaskExcelRow> buildTemplateRows() {
@@ -172,5 +177,14 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
 
     private String trim(String value) {
         return value == null ? null : value.trim();
+    }
+
+    private ImportResultVO buildImportResult(int totalCount, int successCount, List<String> errors) {
+        return ImportResultVO.builder()
+                .totalCount(totalCount)
+                .successCount(successCount)
+                .failedCount(Math.max(totalCount - successCount, 0))
+                .errors(errors)
+                .build();
     }
 }
