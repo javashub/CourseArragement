@@ -22,8 +22,9 @@
         <java.version>17</java.version>
         <aliyun.oss.version>3.18.1</aliyun.oss.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
-        <easypoi.version>4.5.0</easypoi.version>
+        <easyexcel.version>3.3.4</easyexcel.version>
         <fastjson.version>1.2.83</fastjson.version>
+        <hutool.version>5.8.36</hutool.version>
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <sa-token.version>1.44.0</sa-token.version>
         <lombok.version>1.18.36</lombok.version>
@@ -86,9 +87,9 @@
             <version>${aliyun.oss.version}</version>
         </dependency>
         <dependency>
-            <groupId>cn.afterturn</groupId>
-            <artifactId>easypoi-spring-boot-starter</artifactId>
-            <version>${easypoi.version}</version>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>${easyexcel.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -104,6 +105,11 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>${fastjson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-system</artifactId>
+            <version>${hutool.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

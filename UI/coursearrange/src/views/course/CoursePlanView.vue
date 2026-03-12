@@ -561,8 +561,12 @@ function openTaskDialog() {
   taskDialogVisible.value = true;
 }
 
-function handleTemplateDownload() {
-  downloadClassTaskTemplate();
+async function handleTemplateDownload() {
+  try {
+    await downloadClassTaskTemplate();
+  } catch (error) {
+    ElMessage.error('模板下载失败，请稍后重试');
+  }
 }
 
 async function handleExcelUpload(file) {
