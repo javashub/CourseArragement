@@ -33,8 +33,8 @@
             <strong>{{ selectedSemester || '--' }}</strong>
           </div>
           <div class="summary-chip">
-            <span class="summary-label">任务数量</span>
-            <strong>{{ taskState.total }}</strong>
+            <span class="summary-label">当前页任务</span>
+            <strong>{{ taskState.filteredCount }}</strong>
           </div>
           <div class="summary-chip accent-chip">
             <span class="summary-label">最近执行</span>
@@ -47,7 +47,62 @@
         </div>
       </div>
 
-      <el-table :data="taskState.records" stripe v-loading="taskState.loading">
+      <div class="filter-row">
+        <el-input
+          v-model="taskState.keyword"
+          clearable
+          class="filter-input"
+          placeholder="搜索班级 / 课程 / 教师"
+          @input="applyTaskFilters"
+          @clear="applyTaskFilters"
+        />
+        <el-select
+          v-model="taskState.courseFilter"
+          clearable
+          filterable
+          class="filter-select"
+          placeholder="按课程筛选"
+          @change="applyTaskFilters"
+          @clear="applyTaskFilters"
+        >
+          <el-option
+            v-for="item in courseOptions"
+            :key="item.id"
+            :label="`${item.courseNo} ${item.courseName}`"
+            :value="item.courseNo"
+          />
+        </el-select>
+        <el-select
+          v-model="taskState.teacherFilter"
+          clearable
+          filterable
+          class="filter-select"
+          placeholder="按教师筛选"
+          @change="applyTaskFilters"
+          @clear="applyTaskFilters"
+        >
+          <el-option
+            v-for="item in teacherOptions"
+            :key="item.id"
+            :label="`${item.teacherNo} ${item.realname || ''}`"
+            :value="item.teacherNo"
+          />
+        </el-select>
+        <el-select
+          v-model="taskState.fixFilter"
+          clearable
+          class="filter-select filter-select--narrow"
+          placeholder="固定排课"
+          @change="applyTaskFilters"
+          @clear="applyTaskFilters"
+        >
+          <el-option label="固定" value="1" />
+          <el-option label="非固定" value="0" />
+        </el-select>
+        <el-button class="ghost-action" @click="resetTaskFilters">重置筛选</el-button>
+      </div>
+
+      <el-table :data="taskState.displayRecords" stripe v-loading="taskState.loading">
         <el-table-column prop="classNo" label="班级编号" min-width="120" />
         <el-table-column prop="courseName" label="课程名称" min-width="150" />
         <el-table-column prop="realname" label="教师姓名" min-width="110" />
@@ -316,9 +371,15 @@ const executionLogLimit = 8;
 const taskState = reactive({
   loading: false,
   records: [],
+  displayRecords: [],
   total: 0,
   pageNum: 1,
-  pageSize: 10
+  pageSize: 10,
+  keyword: '',
+  courseFilter: '',
+  teacherFilter: '',
+  fixFilter: '',
+  filteredCount: 0
 });
 
 const taskForm = ref(createTaskForm());
@@ -420,12 +481,39 @@ async function loadClassTasks(resetPage = false) {
     const pageData = response.data || {};
     taskState.records = pageData.records || [];
     taskState.total = pageData.total || 0;
+    applyTaskFilters();
   } catch (error) {
     taskState.records = [];
+    taskState.displayRecords = [];
     taskState.total = 0;
+    taskState.filteredCount = 0;
   } finally {
     taskState.loading = false;
   }
+}
+
+function applyTaskFilters() {
+  const keyword = taskState.keyword.trim().toLowerCase();
+  taskState.displayRecords = taskState.records.filter((item) => {
+    const matchKeyword = !keyword || [item.classNo, item.courseName, item.realname, item.courseNo, item.teacherNo]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(keyword);
+    const matchCourse = !taskState.courseFilter || item.courseNo === taskState.courseFilter;
+    const matchTeacher = !taskState.teacherFilter || item.teacherNo === taskState.teacherFilter;
+    const matchFix = !taskState.fixFilter || item.isFix === taskState.fixFilter;
+    return matchKeyword && matchCourse && matchTeacher && matchFix;
+  });
+  taskState.filteredCount = taskState.displayRecords.length;
+}
+
+function resetTaskFilters() {
+  taskState.keyword = '';
+  taskState.courseFilter = '';
+  taskState.teacherFilter = '';
+  taskState.fixFilter = '';
+  applyTaskFilters();
 }
 
 async function loadExecutionLogs() {
@@ -686,6 +774,25 @@ onMounted(async () => {
   margin-bottom: 16px;
 }
 
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filter-input {
+  width: 260px;
+}
+
+.filter-select {
+  width: 220px;
+}
+
+.filter-select--narrow {
+  width: 140px;
+}
+
 .summary-group {
   display: flex;
   flex-wrap: wrap;
@@ -839,6 +946,12 @@ onMounted(async () => {
   .log-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .filter-input,
+  .filter-select,
+  .filter-select--narrow {
+    width: 100%;
   }
 
   .tips-grid,
