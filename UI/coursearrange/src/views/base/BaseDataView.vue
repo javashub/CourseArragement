@@ -31,13 +31,24 @@
               @keyup.enter="loadTeachers(true)"
               @clear="loadTeachers(true)"
             />
+            <el-select
+              v-model="teacherState.statusFilter"
+              clearable
+              placeholder="筛选状态"
+              class="toolbar-select"
+              @change="applyTeacherFilter"
+              @clear="applyTeacherFilter"
+            >
+              <el-option label="正常" :value="0" />
+              <el-option label="封禁" :value="1" />
+            </el-select>
             <div class="toolbar-actions">
               <el-button class="ghost-action" @click="resetTeacherSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openTeacherDialog()">新增教师</el-button>
             </div>
           </div>
 
-          <el-table :data="teacherState.records" stripe v-loading="teacherState.loading">
+          <el-table :data="teacherState.displayRecords" stripe v-loading="teacherState.loading">
             <el-table-column prop="teacherNo" label="教师编号" min-width="130" />
             <el-table-column prop="realname" label="姓名" min-width="110" />
             <el-table-column prop="teach" label="教授科目" min-width="140" />
@@ -82,13 +93,24 @@
               @keyup.enter="loadStudents(true)"
               @clear="loadStudents(true)"
             />
+            <el-select
+              v-model="studentState.statusFilter"
+              clearable
+              placeholder="筛选状态"
+              class="toolbar-select"
+              @change="applyStudentFilter"
+              @clear="applyStudentFilter"
+            >
+              <el-option label="正常" :value="0" />
+              <el-option label="封禁" :value="1" />
+            </el-select>
             <div class="toolbar-actions">
               <el-button class="ghost-action" @click="resetStudentSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openStudentDialog()">新增学生</el-button>
             </div>
           </div>
 
-          <el-table :data="studentState.records" stripe v-loading="studentState.loading">
+          <el-table :data="studentState.displayRecords" stripe v-loading="studentState.loading">
             <el-table-column prop="studentNo" label="学号" min-width="130" />
             <el-table-column prop="realname" label="姓名" min-width="110" />
             <el-table-column prop="grade" label="年级" min-width="120" />
@@ -101,9 +123,12 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="160" fixed="right">
+            <el-table-column label="操作" width="220" fixed="right">
               <template #default="{ row }">
                 <el-button link type="primary" @click="openStudentDialog(row)">编辑</el-button>
+                <el-button link type="warning" @click="toggleStudent(row)">
+                  {{ row.status === 0 ? '封禁' : '解封' }}
+                </el-button>
                 <el-button link type="danger" @click="removeStudent(row)">删除</el-button>
               </template>
             </el-table-column>
@@ -130,13 +155,24 @@
               @keyup.enter="loadCourses(true)"
               @clear="loadCourses(true)"
             />
+            <el-select
+              v-model="courseState.statusFilter"
+              clearable
+              placeholder="筛选状态"
+              class="toolbar-select"
+              @change="applyCourseFilter"
+              @clear="applyCourseFilter"
+            >
+              <el-option label="正常" :value="0" />
+              <el-option label="停用" :value="1" />
+            </el-select>
             <div class="toolbar-actions">
               <el-button class="ghost-action" @click="resetCourseSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openCourseDialog()">新增课程</el-button>
             </div>
           </div>
 
-          <el-table :data="courseState.records" stripe v-loading="courseState.loading">
+          <el-table :data="courseState.displayRecords" stripe v-loading="courseState.loading">
             <el-table-column prop="courseNo" label="课程编号" min-width="130" />
             <el-table-column prop="courseName" label="课程名称" min-width="160" />
             <el-table-column prop="courseAttr" label="课程属性" min-width="140" />
@@ -148,9 +184,12 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="160" fixed="right">
+            <el-table-column label="操作" width="220" fixed="right">
               <template #default="{ row }">
                 <el-button link type="primary" @click="openCourseDialog(row)">编辑</el-button>
+                <el-button link type="warning" @click="toggleCourse(row)">
+                  {{ row.status === 0 ? '停用' : '启用' }}
+                </el-button>
                 <el-button link type="danger" @click="removeCourse(row)">删除</el-button>
               </template>
             </el-table-column>
@@ -170,16 +209,36 @@
 
         <el-tab-pane label="教室管理" name="classroom">
           <div class="toolbar-row">
-            <div class="toolbar-placeholder">
-              <span>当前支持新增、编辑、删除教室，并按教学楼编号进行归属。</span>
-            </div>
+            <el-input
+              v-model="classroomState.keyword"
+              clearable
+              placeholder="搜索教室编号或名称，例如 A101、第一多媒体教室"
+              @clear="applyClassroomFilter"
+              @input="applyClassroomFilter"
+            />
+            <el-select
+              v-model="classroomState.teachbuildFilter"
+              clearable
+              filterable
+              placeholder="筛选教学楼"
+              class="toolbar-select"
+              @change="applyClassroomFilter"
+              @clear="applyClassroomFilter"
+            >
+              <el-option
+                v-for="item in teachbuildOptions"
+                :key="item.id"
+                :label="`${item.teachBuildNo} ${item.teachBuildName}`"
+                :value="item.teachBuildNo"
+              />
+            </el-select>
             <div class="toolbar-actions">
-              <el-button class="ghost-action" @click="loadClassrooms">刷新列表</el-button>
+              <el-button class="ghost-action" @click="resetClassroomSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openClassroomDialog()">新增教室</el-button>
             </div>
           </div>
 
-          <el-table :data="classroomState.records" stripe v-loading="classroomState.loading">
+          <el-table :data="classroomState.displayRecords" stripe v-loading="classroomState.loading">
             <el-table-column prop="classroomNo" label="教室编号" min-width="130" />
             <el-table-column prop="classroomName" label="教室名称" min-width="150" />
             <el-table-column prop="teachbuildNo" label="教学楼编号" min-width="120" />
@@ -458,10 +517,13 @@ function createPageState() {
   return {
     loading: false,
     records: [],
+    displayRecords: [],
     total: 0,
     pageNum: 1,
     pageSize: 10,
-    keyword: ''
+    keyword: '',
+    statusFilter: '',
+    teachbuildFilter: ''
   };
 }
 
@@ -534,6 +596,44 @@ const activeTabLabel = computed(() => {
 function applyPageData(state, pageData) {
   state.records = pageData?.records || [];
   state.total = pageData?.total || 0;
+  state.displayRecords = [...state.records];
+}
+
+function applyTeacherFilter() {
+  teacherState.displayRecords = teacherState.records.filter((item) => {
+    if (teacherState.statusFilter === '' || teacherState.statusFilter === null || teacherState.statusFilter === undefined) {
+      return true;
+    }
+    return item.status === teacherState.statusFilter;
+  });
+}
+
+function applyStudentFilter() {
+  studentState.displayRecords = studentState.records.filter((item) => {
+    if (studentState.statusFilter === '' || studentState.statusFilter === null || studentState.statusFilter === undefined) {
+      return true;
+    }
+    return item.status === studentState.statusFilter;
+  });
+}
+
+function applyCourseFilter() {
+  courseState.displayRecords = courseState.records.filter((item) => {
+    if (courseState.statusFilter === '' || courseState.statusFilter === null || courseState.statusFilter === undefined) {
+      return true;
+    }
+    return item.status === courseState.statusFilter;
+  });
+}
+
+function applyClassroomFilter() {
+  const keyword = classroomState.keyword.trim().toLowerCase();
+  classroomState.displayRecords = classroomState.records.filter((item) => {
+    const matchKeyword = !keyword
+      || [item.classroomNo, item.classroomName, item.remark].filter(Boolean).join(' ').toLowerCase().includes(keyword);
+    const matchTeachbuild = !classroomState.teachbuildFilter || item.teachbuildNo === classroomState.teachbuildFilter;
+    return matchKeyword && matchTeachbuild;
+  });
 }
 
 async function loadTeachers(resetPage = false) {
@@ -546,6 +646,7 @@ async function loadTeachers(resetPage = false) {
       ? await searchTeacherPage(teacherState.keyword, teacherState.pageNum, teacherState.pageSize)
       : await fetchTeacherPage(teacherState.pageNum, teacherState.pageSize);
     applyPageData(teacherState, response.data);
+    applyTeacherFilter();
   } finally {
     teacherState.loading = false;
   }
@@ -561,6 +662,7 @@ async function loadStudents(resetPage = false) {
       ? await searchStudentPage(studentState.keyword, studentState.pageNum, studentState.pageSize)
       : await fetchStudentPage(studentState.pageNum, studentState.pageSize);
     applyPageData(studentState, response.data);
+    applyStudentFilter();
   } finally {
     studentState.loading = false;
   }
@@ -576,6 +678,7 @@ async function loadCourses(resetPage = false) {
       ? await searchCoursePage(courseState.keyword, courseState.pageNum, courseState.pageSize)
       : await fetchCoursePage(courseState.pageNum, courseState.pageSize);
     applyPageData(courseState, response.data);
+    applyCourseFilter();
   } finally {
     courseState.loading = false;
   }
@@ -586,6 +689,7 @@ async function loadClassrooms() {
   try {
     const response = await fetchClassroomPage(classroomState.pageNum, classroomState.pageSize);
     applyPageData(classroomState, response.data);
+    applyClassroomFilter();
   } finally {
     classroomState.loading = false;
   }
@@ -593,17 +697,26 @@ async function loadClassrooms() {
 
 function resetTeacherSearch() {
   teacherState.keyword = '';
+  teacherState.statusFilter = '';
   loadTeachers(true);
 }
 
 function resetStudentSearch() {
   studentState.keyword = '';
+  studentState.statusFilter = '';
   loadStudents(true);
 }
 
 function resetCourseSearch() {
   courseState.keyword = '';
+  courseState.statusFilter = '';
   loadCourses(true);
+}
+
+function resetClassroomSearch() {
+  classroomState.keyword = '';
+  classroomState.teachbuildFilter = '';
+  loadClassrooms();
 }
 
 function handleTeacherPageChange(page) {
@@ -724,6 +837,15 @@ async function removeStudent(row) {
   await loadStudents();
 }
 
+async function toggleStudent(row) {
+  await updateStudent(row.id, {
+    ...row,
+    status: row.status === 0 ? 1 : 0
+  });
+  ElMessage.success(row.status === 0 ? '学生账号已封禁' : '学生账号已解封');
+  await loadStudents();
+}
+
 function openCourseDialog(row) {
   courseForm.value = row ? { ...createCourseForm(), ...row } : createCourseForm();
   courseDialogVisible.value = true;
@@ -755,6 +877,15 @@ async function removeCourse(row) {
   await ElMessageBox.confirm(`确认删除课程“${row.courseName}”吗？`, '删除确认', { type: 'warning' });
   await deleteCourse(row.id);
   ElMessage.success('课程删除成功');
+  await loadCourses();
+}
+
+async function toggleCourse(row) {
+  await updateCourse(row.id, {
+    ...row,
+    status: row.status === 0 ? 1 : 0
+  });
+  ElMessage.success(row.status === 0 ? '课程已停用' : '课程已启用');
   await loadCourses();
 }
 
@@ -887,6 +1018,10 @@ onMounted(async () => {
   max-width: 320px;
 }
 
+.toolbar-select {
+  width: 170px;
+}
+
 .toolbar-actions {
   display: flex;
   gap: 12px;
@@ -962,6 +1097,10 @@ onMounted(async () => {
 
   .toolbar-row > .el-input {
     max-width: none;
+    width: 100%;
+  }
+
+  .toolbar-select {
     width: 100%;
   }
 }
