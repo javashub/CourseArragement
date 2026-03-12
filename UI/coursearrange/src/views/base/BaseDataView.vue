@@ -43,6 +43,10 @@
               <el-option label="封禁" :value="1" />
             </el-select>
             <div class="toolbar-actions">
+              <el-upload class="excel-upload" :show-file-list="false" :auto-upload="false" :before-upload="handleTeacherImport" accept=".xls,.xlsx">
+                <el-button class="ghost-action">导入教师</el-button>
+              </el-upload>
+              <el-button class="ghost-action" @click="handleTeacherTemplateDownload">模板</el-button>
               <el-button class="ghost-action" @click="handleTeacherExport">导出教师</el-button>
               <el-button class="ghost-action" @click="resetTeacherSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openTeacherDialog()">新增教师</el-button>
@@ -106,6 +110,10 @@
               <el-option label="封禁" :value="1" />
             </el-select>
             <div class="toolbar-actions">
+              <el-upload class="excel-upload" :show-file-list="false" :auto-upload="false" :before-upload="handleStudentImport" accept=".xls,.xlsx">
+                <el-button class="ghost-action">导入学生</el-button>
+              </el-upload>
+              <el-button class="ghost-action" @click="handleStudentTemplateDownload">模板</el-button>
               <el-button class="ghost-action" @click="handleStudentExport">导出学生</el-button>
               <el-button class="ghost-action" @click="resetStudentSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openStudentDialog()">新增学生</el-button>
@@ -169,6 +177,10 @@
               <el-option label="停用" :value="1" />
             </el-select>
             <div class="toolbar-actions">
+              <el-upload class="excel-upload" :show-file-list="false" :auto-upload="false" :before-upload="handleCourseImport" accept=".xls,.xlsx">
+                <el-button class="ghost-action">导入课程</el-button>
+              </el-upload>
+              <el-button class="ghost-action" @click="handleCourseTemplateDownload">模板</el-button>
               <el-button class="ghost-action" @click="handleCourseExport">导出课程</el-button>
               <el-button class="ghost-action" @click="resetCourseSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openCourseDialog()">新增课程</el-button>
@@ -472,6 +484,9 @@ import {
   deleteCourse,
   deleteStudent,
   deleteTeacher,
+  downloadCourseTemplate,
+  downloadStudentTemplate,
+  downloadTeacherTemplate,
   exportCourseExcel,
   exportStudentExcel,
   exportTeacherExcel,
@@ -486,6 +501,9 @@ import {
   fetchTeachbuildList,
   fetchTeacherDetail,
   fetchTeacherPage,
+  importCourseExcel,
+  importStudentExcel,
+  importTeacherExcel,
   searchCoursePage,
   searchStudentPage,
   searchTeacherPage,
@@ -807,6 +825,25 @@ async function handleTeacherExport() {
   }
 }
 
+async function handleTeacherTemplateDownload() {
+  try {
+    await downloadTeacherTemplate();
+  } catch (error) {
+    ElMessage.error('教师模板下载失败');
+  }
+}
+
+async function handleTeacherImport(file) {
+  try {
+    await importTeacherExcel(file);
+    ElMessage.success('教师数据导入成功');
+    await loadTeachers(true);
+  } catch (error) {
+    return false;
+  }
+  return false;
+}
+
 async function openStudentDialog(row) {
   if (!row) {
     studentForm.value = createStudentForm();
@@ -867,6 +904,25 @@ async function handleStudentExport() {
   }
 }
 
+async function handleStudentTemplateDownload() {
+  try {
+    await downloadStudentTemplate();
+  } catch (error) {
+    ElMessage.error('学生模板下载失败');
+  }
+}
+
+async function handleStudentImport(file) {
+  try {
+    await importStudentExcel(file);
+    ElMessage.success('学生数据导入成功');
+    await loadStudents(true);
+  } catch (error) {
+    return false;
+  }
+  return false;
+}
+
 async function toggleStudent(row) {
   await updateStudent(row.id, {
     ...row,
@@ -920,6 +976,25 @@ async function handleCourseExport() {
   } catch (error) {
     ElMessage.error('课程数据导出失败');
   }
+}
+
+async function handleCourseTemplateDownload() {
+  try {
+    await downloadCourseTemplate();
+  } catch (error) {
+    ElMessage.error('课程模板下载失败');
+  }
+}
+
+async function handleCourseImport(file) {
+  try {
+    await importCourseExcel(file);
+    ElMessage.success('课程数据导入成功');
+    await loadCourses(true);
+  } catch (error) {
+    return false;
+  }
+  return false;
 }
 
 async function toggleCourse(row) {
@@ -1067,6 +1142,10 @@ onMounted(async () => {
 .toolbar-actions {
   display: flex;
   gap: 12px;
+}
+
+.excel-upload {
+  display: inline-flex;
 }
 
 .toolbar-placeholder {

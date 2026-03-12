@@ -2,30 +2,41 @@ package com.lyk.coursearrange.excel.service.impl;
 
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lyk.coursearrange.auth.service.AuthAccountSyncService;
+import com.lyk.coursearrange.auth.service.PasswordService;
+import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.CourseInfo;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.Teacher;
 import com.lyk.coursearrange.excel.model.CourseInfoExcelRow;
+import com.lyk.coursearrange.excel.model.CourseInfoImportExcelRow;
 import com.lyk.coursearrange.excel.model.StudentExcelRow;
+import com.lyk.coursearrange.excel.model.StudentImportExcelRow;
 import com.lyk.coursearrange.excel.model.TeacherExcelRow;
+import com.lyk.coursearrange.excel.model.TeacherImportExcelRow;
 import com.lyk.coursearrange.excel.service.BaseResourceExcelService;
 import com.lyk.coursearrange.service.CourseInfoService;
 import com.lyk.coursearrange.service.StudentService;
 import com.lyk.coursearrange.service.TeacherService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * 基础资源 Excel 服务实现。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
@@ -33,6 +44,59 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     private final TeacherService teacherService;
     private final StudentService studentService;
     private final CourseInfoService courseInfoService;
+    private final PasswordService passwordService;
+    private final AuthAccountSyncService authAccountSyncService;
+
+    @Override
+    public void writeTeacherTemplate(HttpServletResponse response) throws IOException {
+        List<TeacherImportExcelRow> rows = new ArrayList<>();
+        TeacherImportExcelRow sample = new TeacherImportExcelRow();
+        sample.setTeacherNo("T2026001");
+        sample.setUsername("zhangsan");
+        sample.setRealname("张老师");
+        sample.setJobtitle("讲师");
+        sample.setTeach("高等数学");
+        sample.setAge(35);
+        sample.setTelephone("13800000000");
+        sample.setEmail("teacher@school.edu.cn");
+        sample.setAddress("主校区教师公寓 3 栋 302");
+        sample.setStatusText("正常");
+        rows.add(sample);
+        writeExcel(response, "教师导入模板.xlsx", "教师导入模板", TeacherImportExcelRow.class, rows);
+    }
+
+    @Override
+    public void writeStudentTemplate(HttpServletResponse response) throws IOException {
+        List<StudentImportExcelRow> rows = new ArrayList<>();
+        StudentImportExcelRow sample = new StudentImportExcelRow();
+        sample.setStudentNo("2026020001");
+        sample.setUsername("lisi");
+        sample.setRealname("李同学");
+        sample.setGrade("2025");
+        sample.setClassNo("2501");
+        sample.setAge(18);
+        sample.setTelephone("13800000001");
+        sample.setEmail("student@school.edu.cn");
+        sample.setAddress("主校区宿舍 5 栋 402");
+        sample.setStatusText("正常");
+        rows.add(sample);
+        writeExcel(response, "学生导入模板.xlsx", "学生导入模板", StudentImportExcelRow.class, rows);
+    }
+
+    @Override
+    public void writeCourseTemplate(HttpServletResponse response) throws IOException {
+        List<CourseInfoImportExcelRow> rows = new ArrayList<>();
+        CourseInfoImportExcelRow sample = new CourseInfoImportExcelRow();
+        sample.setCourseNo("10001");
+        sample.setCourseName("高等数学");
+        sample.setCourseAttr("必修");
+        sample.setPublisher("高等教育出版社");
+        sample.setPiority(1);
+        sample.setStatusText("正常");
+        sample.setRemark("大一上学期核心课程");
+        rows.add(sample);
+        writeExcel(response, "课程导入模板.xlsx", "课程导入模板", CourseInfoImportExcelRow.class, rows);
+    }
 
     @Override
     public void exportTeachers(String keyword, Integer status, HttpServletResponse response) throws IOException {
@@ -68,6 +132,135 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
                 .map(this::toCourseRow)
                 .collect(Collectors.toList());
         writeExcel(response, "课程数据导出.xlsx", "课程数据", CourseInfoExcelRow.class, rows);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ServerResponse importTeachers(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ServerResponse.ofError("请选择要导入的教师 Excel 文件");
+        }
+        List<TeacherImportExcelRow> rows;
+        try {
+            rows = EasyExcel.read(file.getInputStream()).head(TeacherImportExcelRow.class).sheet().doReadSync();
+        } catch (Exception exception) {
+            log.error("读取教师 Excel 失败", exception);
+            return ServerResponse.ofError("读取教师 Excel 失败，请检查模板格式");
+        }
+        List<String> errors = new ArrayList<>();
+        int imported = 0;
+        for (int index = 0; index < rows.size(); index++) {
+            TeacherImportExcelRow row = rows.get(index);
+            int before = errors.size();
+            validateTeacherRow(row, index + 2, errors);
+            if (errors.size() > before) {
+                continue;
+            }
+            Teacher teacher = teacherService.getOne(new LambdaQueryWrapper<Teacher>().eq(Teacher::getTeacherNo, trim(row.getTeacherNo())));
+            boolean isNew = teacher == null;
+            if (isNew) {
+                teacher = new Teacher();
+                teacher.setTeacherNo(trim(row.getTeacherNo()));
+                teacher.setPassword(passwordService.encode("123456"));
+            }
+            teacher.setUsername(StringUtils.defaultIfBlank(trim(row.getUsername()), teacher.getTeacherNo()));
+            teacher.setRealname(trim(row.getRealname()));
+            teacher.setJobtitle(trim(row.getJobtitle()));
+            teacher.setTeach(trim(row.getTeach()));
+            teacher.setAge(row.getAge());
+            teacher.setTelephone(trim(row.getTelephone()));
+            teacher.setEmail(trim(row.getEmail()));
+            teacher.setAddress(trim(row.getAddress()));
+            teacher.setStatus(parseStatus(trim(row.getStatusText()), 0));
+            teacherService.saveOrUpdate(teacher);
+            authAccountSyncService.syncTeacherAccount(teacher);
+            imported++;
+        }
+        return buildImportResponse(errors, imported, "教师");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ServerResponse importStudents(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ServerResponse.ofError("请选择要导入的学生 Excel 文件");
+        }
+        List<StudentImportExcelRow> rows;
+        try {
+            rows = EasyExcel.read(file.getInputStream()).head(StudentImportExcelRow.class).sheet().doReadSync();
+        } catch (Exception exception) {
+            log.error("读取学生 Excel 失败", exception);
+            return ServerResponse.ofError("读取学生 Excel 失败，请检查模板格式");
+        }
+        List<String> errors = new ArrayList<>();
+        int imported = 0;
+        for (int index = 0; index < rows.size(); index++) {
+            StudentImportExcelRow row = rows.get(index);
+            int before = errors.size();
+            validateStudentRow(row, index + 2, errors);
+            if (errors.size() > before) {
+                continue;
+            }
+            Student student = studentService.getOne(new LambdaQueryWrapper<Student>().eq(Student::getStudentNo, trim(row.getStudentNo())));
+            boolean isNew = student == null;
+            if (isNew) {
+                student = new Student();
+                student.setStudentNo(trim(row.getStudentNo()));
+                student.setPassword(passwordService.encode("123456"));
+            }
+            student.setUsername(StringUtils.defaultIfBlank(trim(row.getUsername()), student.getStudentNo()));
+            student.setRealname(trim(row.getRealname()));
+            student.setGrade(trim(row.getGrade()));
+            student.setClassNo(trim(row.getClassNo()));
+            student.setAge(row.getAge());
+            student.setTelephone(trim(row.getTelephone()));
+            student.setEmail(trim(row.getEmail()));
+            student.setAddress(trim(row.getAddress()));
+            student.setStatus(parseStatus(trim(row.getStatusText()), 0));
+            studentService.saveOrUpdate(student);
+            authAccountSyncService.syncStudentAccount(student);
+            imported++;
+        }
+        return buildImportResponse(errors, imported, "学生");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ServerResponse importCourses(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ServerResponse.ofError("请选择要导入的课程 Excel 文件");
+        }
+        List<CourseInfoImportExcelRow> rows;
+        try {
+            rows = EasyExcel.read(file.getInputStream()).head(CourseInfoImportExcelRow.class).sheet().doReadSync();
+        } catch (Exception exception) {
+            log.error("读取课程 Excel 失败", exception);
+            return ServerResponse.ofError("读取课程 Excel 失败，请检查模板格式");
+        }
+        List<String> errors = new ArrayList<>();
+        int imported = 0;
+        for (int index = 0; index < rows.size(); index++) {
+            CourseInfoImportExcelRow row = rows.get(index);
+            int before = errors.size();
+            validateCourseRow(row, index + 2, errors);
+            if (errors.size() > before) {
+                continue;
+            }
+            CourseInfo courseInfo = courseInfoService.getOne(new LambdaQueryWrapper<CourseInfo>().eq(CourseInfo::getCourseNo, trim(row.getCourseNo())));
+            if (courseInfo == null) {
+                courseInfo = new CourseInfo();
+                courseInfo.setCourseNo(trim(row.getCourseNo()));
+            }
+            courseInfo.setCourseName(trim(row.getCourseName()));
+            courseInfo.setCourseAttr(trim(row.getCourseAttr()));
+            courseInfo.setPublisher(trim(row.getPublisher()));
+            courseInfo.setPiority(row.getPiority() == null ? 0 : row.getPiority());
+            courseInfo.setStatus(parseStatus(trim(row.getStatusText()), 0));
+            courseInfo.setRemark(trim(row.getRemark()));
+            courseInfoService.saveOrUpdate(courseInfo);
+            imported++;
+        }
+        return buildImportResponse(errors, imported, "课程");
     }
 
     private TeacherExcelRow toTeacherRow(Teacher teacher) {
@@ -110,6 +303,58 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         row.setStatusText(course.getStatus() != null && course.getStatus() == 0 ? "正常" : "停用");
         row.setRemark(course.getRemark());
         return row;
+    }
+
+    private void validateTeacherRow(TeacherImportExcelRow row, int rowNum, List<String> errors) {
+        if (StringUtils.isBlank(trim(row.getTeacherNo()))) {
+            errors.add("第 " + rowNum + " 行缺少教师编号");
+        }
+        if (StringUtils.isBlank(trim(row.getRealname()))) {
+            errors.add("第 " + rowNum + " 行缺少教师姓名");
+        }
+    }
+
+    private void validateStudentRow(StudentImportExcelRow row, int rowNum, List<String> errors) {
+        if (StringUtils.isBlank(trim(row.getStudentNo()))) {
+            errors.add("第 " + rowNum + " 行缺少学号");
+        }
+        if (StringUtils.isBlank(trim(row.getRealname()))) {
+            errors.add("第 " + rowNum + " 行缺少学生姓名");
+        }
+    }
+
+    private void validateCourseRow(CourseInfoImportExcelRow row, int rowNum, List<String> errors) {
+        if (StringUtils.isBlank(trim(row.getCourseNo()))) {
+            errors.add("第 " + rowNum + " 行缺少课程编号");
+        }
+        if (StringUtils.isBlank(trim(row.getCourseName()))) {
+            errors.add("第 " + rowNum + " 行缺少课程名称");
+        }
+    }
+
+    private ServerResponse buildImportResponse(List<String> errors, int imported, String resourceName) {
+        if (!errors.isEmpty()) {
+            return ServerResponse.ofError(String.join("；", errors));
+        }
+        return ServerResponse.ofSuccess(String.format("%s导入成功，共 %s 条", resourceName, imported));
+    }
+
+    private Integer parseStatus(String statusText, int defaultValue) {
+        if (StringUtils.isBlank(statusText)) {
+            return defaultValue;
+        }
+        String normalized = statusText.trim();
+        if ("正常".equals(normalized) || "启用".equals(normalized) || "0".equals(normalized)) {
+            return 0;
+        }
+        if ("封禁".equals(normalized) || "停用".equals(normalized) || "1".equals(normalized)) {
+            return 1;
+        }
+        return defaultValue;
+    }
+
+    private String trim(String value) {
+        return value == null ? null : value.trim();
     }
 
     private <T> void writeExcel(HttpServletResponse response, String fileName, String sheetName,

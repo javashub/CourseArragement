@@ -187,3 +187,48 @@ export function exportCourseExcel(params = {}) {
   const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
   return downloadExcel(`${baseURL}/excel/base/courses/export${query.toString() ? `?${query.toString()}` : ''}`, '课程数据导出.xlsx');
 }
+
+export function downloadTeacherTemplate() {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/teachers/template`, '教师导入模板.xlsx');
+}
+
+export function downloadStudentTemplate() {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/students/template`, '学生导入模板.xlsx');
+}
+
+export function downloadCourseTemplate() {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/courses/template`, '课程导入模板.xlsx');
+}
+
+export function importTeacherExcel(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request.post('/excel/base/teachers/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
+export function importStudentExcel(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request.post('/excel/base/students/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
+export function importCourseExcel(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request.post('/excel/base/courses/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
