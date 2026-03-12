@@ -17,15 +17,27 @@ public interface BaseResourceExcelService {
 
     void writeCourseTemplate(HttpServletResponse response) throws IOException;
 
+    void writeTeachbuildTemplate(HttpServletResponse response) throws IOException;
+
+    void writeClassroomTemplate(HttpServletResponse response) throws IOException;
+
     void exportTeachers(String keyword, Integer status, HttpServletResponse response) throws IOException;
 
     void exportStudents(String keyword, Integer status, HttpServletResponse response) throws IOException;
 
     void exportCourses(String keyword, Integer status, HttpServletResponse response) throws IOException;
 
+    void exportTeachbuilds(String keyword, HttpServletResponse response) throws IOException;
+
+    void exportClassrooms(String keyword, String teachbuildNo, HttpServletResponse response) throws IOException;
+
     ServerResponse importTeachers(MultipartFile file);
 
     ServerResponse importStudents(MultipartFile file);
 
     ServerResponse importCourses(MultipartFile file);
+
+    ServerResponse importTeachbuilds(MultipartFile file);
+
+    ServerResponse importClassrooms(MultipartFile file);
 }

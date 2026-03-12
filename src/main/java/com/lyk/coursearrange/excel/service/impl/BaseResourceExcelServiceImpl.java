@@ -6,17 +6,25 @@ import com.lyk.coursearrange.auth.service.AuthAccountSyncService;
 import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.CourseInfo;
+import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.Teacher;
+import com.lyk.coursearrange.entity.TeachbuildInfo;
+import com.lyk.coursearrange.excel.model.ClassroomExcelRow;
+import com.lyk.coursearrange.excel.model.ClassroomImportExcelRow;
 import com.lyk.coursearrange.excel.model.CourseInfoExcelRow;
 import com.lyk.coursearrange.excel.model.CourseInfoImportExcelRow;
 import com.lyk.coursearrange.excel.model.StudentExcelRow;
 import com.lyk.coursearrange.excel.model.StudentImportExcelRow;
+import com.lyk.coursearrange.excel.model.TeachbuildExcelRow;
+import com.lyk.coursearrange.excel.model.TeachbuildImportExcelRow;
 import com.lyk.coursearrange.excel.model.TeacherExcelRow;
 import com.lyk.coursearrange.excel.model.TeacherImportExcelRow;
 import com.lyk.coursearrange.excel.service.BaseResourceExcelService;
+import com.lyk.coursearrange.service.ClassroomService;
 import com.lyk.coursearrange.service.CourseInfoService;
 import com.lyk.coursearrange.service.StudentService;
+import com.lyk.coursearrange.service.TeachbuildInfoService;
 import com.lyk.coursearrange.service.TeacherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +52,8 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     private final TeacherService teacherService;
     private final StudentService studentService;
     private final CourseInfoService courseInfoService;
+    private final TeachbuildInfoService teachbuildInfoService;
+    private final ClassroomService classroomService;
     private final PasswordService passwordService;
     private final AuthAccountSyncService authAccountSyncService;
 
@@ -99,6 +109,31 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     }
 
     @Override
+    public void writeTeachbuildTemplate(HttpServletResponse response) throws IOException {
+        List<TeachbuildImportExcelRow> rows = new ArrayList<>();
+        TeachbuildImportExcelRow sample = new TeachbuildImportExcelRow();
+        sample.setTeachBuildNo("08");
+        sample.setTeachBuildName("实验楼");
+        sample.setTeachBuildLocation("主校区东区");
+        rows.add(sample);
+        writeExcel(response, "教学楼导入模板.xlsx", "教学楼导入模板", TeachbuildImportExcelRow.class, rows);
+    }
+
+    @Override
+    public void writeClassroomTemplate(HttpServletResponse response) throws IOException {
+        List<ClassroomImportExcelRow> rows = new ArrayList<>();
+        ClassroomImportExcelRow sample = new ClassroomImportExcelRow();
+        sample.setClassroomNo("08-302");
+        sample.setClassroomName("实验楼 302");
+        sample.setTeachbuildNo("08");
+        sample.setCapacity(60);
+        sample.setAttr("实验室");
+        sample.setRemark("支持投影和实验台");
+        rows.add(sample);
+        writeExcel(response, "教室导入模板.xlsx", "教室导入模板", ClassroomImportExcelRow.class, rows);
+    }
+
+    @Override
     public void exportTeachers(String keyword, Integer status, HttpServletResponse response) throws IOException {
         List<TeacherExcelRow> rows = teacherService.list(new LambdaQueryWrapper<Teacher>()
                         .like(StringUtils.isNotBlank(keyword), Teacher::getRealname, keyword)
@@ -132,6 +167,34 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
                 .map(this::toCourseRow)
                 .collect(Collectors.toList());
         writeExcel(response, "课程数据导出.xlsx", "课程数据", CourseInfoExcelRow.class, rows);
+    }
+
+    @Override
+    public void exportTeachbuilds(String keyword, HttpServletResponse response) throws IOException {
+        List<TeachbuildExcelRow> rows = teachbuildInfoService.list(new LambdaQueryWrapper<TeachbuildInfo>()
+                        .like(StringUtils.isNotBlank(keyword), TeachbuildInfo::getTeachBuildName, keyword)
+                        .or(StringUtils.isNotBlank(keyword))
+                        .like(StringUtils.isNotBlank(keyword), TeachbuildInfo::getTeachBuildNo, keyword)
+                        .orderByAsc(TeachbuildInfo::getTeachBuildNo))
+                .stream()
+                .map(this::toTeachbuildRow)
+                .collect(Collectors.toList());
+        writeExcel(response, "教学楼数据导出.xlsx", "教学楼数据", TeachbuildExcelRow.class, rows);
+    }
+
+    @Override
+    public void exportClassrooms(String keyword, String teachbuildNo, HttpServletResponse response) throws IOException {
+        List<ClassroomExcelRow> rows = classroomService.list(new LambdaQueryWrapper<Classroom>()
+                        .and(StringUtils.isNotBlank(keyword), wrapper -> wrapper
+                                .like(Classroom::getClassroomNo, keyword)
+                                .or()
+                                .like(Classroom::getClassroomName, keyword))
+                        .eq(StringUtils.isNotBlank(teachbuildNo), Classroom::getTeachbuildNo, teachbuildNo)
+                        .orderByAsc(Classroom::getClassroomNo))
+                .stream()
+                .map(this::toClassroomRow)
+                .collect(Collectors.toList());
+        writeExcel(response, "教室数据导出.xlsx", "教室数据", ClassroomExcelRow.class, rows);
     }
 
     @Override
@@ -263,6 +326,81 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         return buildImportResponse(errors, imported, "课程");
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ServerResponse importTeachbuilds(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ServerResponse.ofError("请选择要导入的教学楼 Excel 文件");
+        }
+        List<TeachbuildImportExcelRow> rows;
+        try {
+            rows = EasyExcel.read(file.getInputStream()).head(TeachbuildImportExcelRow.class).sheet().doReadSync();
+        } catch (Exception exception) {
+            log.error("读取教学楼 Excel 失败", exception);
+            return ServerResponse.ofError("读取教学楼 Excel 失败，请检查模板格式");
+        }
+        List<String> errors = new ArrayList<>();
+        int imported = 0;
+        for (int index = 0; index < rows.size(); index++) {
+            TeachbuildImportExcelRow row = rows.get(index);
+            int before = errors.size();
+            validateTeachbuildRow(row, index + 2, errors);
+            if (errors.size() > before) {
+                continue;
+            }
+            TeachbuildInfo teachbuildInfo = teachbuildInfoService.getOne(new LambdaQueryWrapper<TeachbuildInfo>()
+                    .eq(TeachbuildInfo::getTeachBuildNo, trim(row.getTeachBuildNo())));
+            if (teachbuildInfo == null) {
+                teachbuildInfo = new TeachbuildInfo();
+                teachbuildInfo.setTeachBuildNo(trim(row.getTeachBuildNo()));
+            }
+            teachbuildInfo.setTeachBuildName(trim(row.getTeachBuildName()));
+            teachbuildInfo.setTeachBuildLocation(trim(row.getTeachBuildLocation()));
+            teachbuildInfoService.saveOrUpdate(teachbuildInfo);
+            imported++;
+        }
+        return buildImportResponse(errors, imported, "教学楼");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ServerResponse importClassrooms(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ServerResponse.ofError("请选择要导入的教室 Excel 文件");
+        }
+        List<ClassroomImportExcelRow> rows;
+        try {
+            rows = EasyExcel.read(file.getInputStream()).head(ClassroomImportExcelRow.class).sheet().doReadSync();
+        } catch (Exception exception) {
+            log.error("读取教室 Excel 失败", exception);
+            return ServerResponse.ofError("读取教室 Excel 失败，请检查模板格式");
+        }
+        List<String> errors = new ArrayList<>();
+        int imported = 0;
+        for (int index = 0; index < rows.size(); index++) {
+            ClassroomImportExcelRow row = rows.get(index);
+            int before = errors.size();
+            validateClassroomRow(row, index + 2, errors);
+            if (errors.size() > before) {
+                continue;
+            }
+            Classroom classroom = classroomService.getOne(new LambdaQueryWrapper<Classroom>()
+                    .eq(Classroom::getClassroomNo, trim(row.getClassroomNo())));
+            if (classroom == null) {
+                classroom = new Classroom();
+                classroom.setClassroomNo(trim(row.getClassroomNo()));
+            }
+            classroom.setClassroomName(trim(row.getClassroomName()));
+            classroom.setTeachbuildNo(trim(row.getTeachbuildNo()));
+            classroom.setCapacity(row.getCapacity() == null ? 0 : row.getCapacity());
+            classroom.setAttr(trim(row.getAttr()));
+            classroom.setRemark(trim(row.getRemark()));
+            classroomService.saveOrUpdate(classroom);
+            imported++;
+        }
+        return buildImportResponse(errors, imported, "教室");
+    }
+
     private TeacherExcelRow toTeacherRow(Teacher teacher) {
         TeacherExcelRow row = new TeacherExcelRow();
         row.setTeacherNo(teacher.getTeacherNo());
@@ -305,6 +443,25 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         return row;
     }
 
+    private TeachbuildExcelRow toTeachbuildRow(TeachbuildInfo teachbuildInfo) {
+        TeachbuildExcelRow row = new TeachbuildExcelRow();
+        row.setTeachBuildNo(teachbuildInfo.getTeachBuildNo());
+        row.setTeachBuildName(teachbuildInfo.getTeachBuildName());
+        row.setTeachBuildLocation(teachbuildInfo.getTeachBuildLocation());
+        return row;
+    }
+
+    private ClassroomExcelRow toClassroomRow(Classroom classroom) {
+        ClassroomExcelRow row = new ClassroomExcelRow();
+        row.setClassroomNo(classroom.getClassroomNo());
+        row.setClassroomName(classroom.getClassroomName());
+        row.setTeachbuildNo(classroom.getTeachbuildNo());
+        row.setCapacity(classroom.getCapacity());
+        row.setAttr(classroom.getAttr());
+        row.setRemark(classroom.getRemark());
+        return row;
+    }
+
     private void validateTeacherRow(TeacherImportExcelRow row, int rowNum, List<String> errors) {
         if (StringUtils.isBlank(trim(row.getTeacherNo()))) {
             errors.add("第 " + rowNum + " 行缺少教师编号");
@@ -329,6 +486,27 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         }
         if (StringUtils.isBlank(trim(row.getCourseName()))) {
             errors.add("第 " + rowNum + " 行缺少课程名称");
+        }
+    }
+
+    private void validateTeachbuildRow(TeachbuildImportExcelRow row, int rowNum, List<String> errors) {
+        if (StringUtils.isBlank(trim(row.getTeachBuildNo()))) {
+            errors.add("第 " + rowNum + " 行缺少教学楼编号");
+        }
+        if (StringUtils.isBlank(trim(row.getTeachBuildName()))) {
+            errors.add("第 " + rowNum + " 行缺少教学楼名称");
+        }
+    }
+
+    private void validateClassroomRow(ClassroomImportExcelRow row, int rowNum, List<String> errors) {
+        if (StringUtils.isBlank(trim(row.getClassroomNo()))) {
+            errors.add("第 " + rowNum + " 行缺少教室编号");
+        }
+        if (StringUtils.isBlank(trim(row.getClassroomName()))) {
+            errors.add("第 " + rowNum + " 行缺少教室名称");
+        }
+        if (StringUtils.isBlank(trim(row.getTeachbuildNo()))) {
+            errors.add("第 " + rowNum + " 行缺少教学楼编号");
         }
     }
 

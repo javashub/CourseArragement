@@ -232,3 +232,54 @@ export function importCourseExcel(file) {
     }
   });
 }
+
+export function downloadTeachbuildTemplate() {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/teachbuilds/template`, '教学楼导入模板.xlsx');
+}
+
+export function downloadClassroomTemplate() {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/classrooms/template`, '教室导入模板.xlsx');
+}
+
+export function exportTeachbuildExcel(params = {}) {
+  const query = new URLSearchParams();
+  if (params.keyword) {
+    query.set('keyword', params.keyword);
+  }
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/teachbuilds/export${query.toString() ? `?${query.toString()}` : ''}`, '教学楼数据导出.xlsx');
+}
+
+export function exportClassroomExcel(params = {}) {
+  const query = new URLSearchParams();
+  if (params.keyword) {
+    query.set('keyword', params.keyword);
+  }
+  if (params.teachbuildNo) {
+    query.set('teachbuildNo', params.teachbuildNo);
+  }
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/classrooms/export${query.toString() ? `?${query.toString()}` : ''}`, '教室数据导出.xlsx');
+}
+
+export function importTeachbuildExcel(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request.post('/excel/base/teachbuilds/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
+export function importClassroomExcel(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request.post('/excel/base/classrooms/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}

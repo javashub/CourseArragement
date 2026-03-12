@@ -73,4 +73,37 @@ public class BaseResourceExcelController {
     public Object importCourses(@RequestPart("file") MultipartFile file) {
         return baseResourceExcelService.importCourses(file);
     }
+
+    @GetMapping("/teachbuilds/template")
+    public void downloadTeachbuildTemplate(HttpServletResponse response) throws IOException {
+        baseResourceExcelService.writeTeachbuildTemplate(response);
+    }
+
+    @GetMapping("/teachbuilds/export")
+    public void exportTeachbuilds(@RequestParam(required = false) String keyword,
+                                  HttpServletResponse response) throws IOException {
+        baseResourceExcelService.exportTeachbuilds(keyword, response);
+    }
+
+    @PostMapping("/teachbuilds/import")
+    public Object importTeachbuilds(@RequestPart("file") MultipartFile file) {
+        return baseResourceExcelService.importTeachbuilds(file);
+    }
+
+    @GetMapping("/classrooms/template")
+    public void downloadClassroomTemplate(HttpServletResponse response) throws IOException {
+        baseResourceExcelService.writeClassroomTemplate(response);
+    }
+
+    @GetMapping("/classrooms/export")
+    public void exportClassrooms(@RequestParam(required = false) String keyword,
+                                 @RequestParam(required = false) String teachbuildNo,
+                                 HttpServletResponse response) throws IOException {
+        baseResourceExcelService.exportClassrooms(keyword, teachbuildNo, response);
+    }
+
+    @PostMapping("/classrooms/import")
+    public Object importClassrooms(@RequestPart("file") MultipartFile file) {
+        return baseResourceExcelService.importClassrooms(file);
+    }
 }

@@ -248,6 +248,16 @@
               />
             </el-select>
             <div class="toolbar-actions">
+              <el-upload class="excel-upload" :show-file-list="false" :auto-upload="false" :before-upload="handleClassroomImport" accept=".xls,.xlsx">
+                <el-button class="ghost-action">导入教室</el-button>
+              </el-upload>
+              <el-button class="ghost-action" @click="handleClassroomTemplateDownload">教室模板</el-button>
+              <el-button class="ghost-action" @click="handleClassroomExport">导出教室</el-button>
+              <el-upload class="excel-upload" :show-file-list="false" :auto-upload="false" :before-upload="handleTeachbuildImport" accept=".xls,.xlsx">
+                <el-button class="ghost-action">导入教学楼</el-button>
+              </el-upload>
+              <el-button class="ghost-action" @click="handleTeachbuildTemplateDownload">教学楼模板</el-button>
+              <el-button class="ghost-action" @click="handleTeachbuildExport">导出教学楼</el-button>
               <el-button class="ghost-action" @click="resetClassroomSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openClassroomDialog()">新增教室</el-button>
             </div>
@@ -484,11 +494,15 @@ import {
   deleteCourse,
   deleteStudent,
   deleteTeacher,
+  downloadClassroomTemplate,
   downloadCourseTemplate,
   downloadStudentTemplate,
+  downloadTeachbuildTemplate,
   downloadTeacherTemplate,
+  exportClassroomExcel,
   exportCourseExcel,
   exportStudentExcel,
+  exportTeachbuildExcel,
   exportTeacherExcel,
   fetchClassroomDetail,
   fetchClassroomPage,
@@ -501,8 +515,10 @@ import {
   fetchTeachbuildList,
   fetchTeacherDetail,
   fetchTeacherPage,
+  importClassroomExcel,
   importCourseExcel,
   importStudentExcel,
+  importTeachbuildExcel,
   importTeacherExcel,
   searchCoursePage,
   searchStudentPage,
@@ -1042,6 +1058,67 @@ async function removeClassroom(row) {
   await deleteClassroom(row.id);
   ElMessage.success('教室删除成功');
   await loadClassrooms();
+}
+
+async function handleClassroomTemplateDownload() {
+  try {
+    await downloadClassroomTemplate();
+  } catch (error) {
+    ElMessage.error('教室模板下载失败');
+  }
+}
+
+async function handleClassroomExport() {
+  try {
+    await exportClassroomExcel({
+      keyword: classroomState.keyword,
+      teachbuildNo: classroomState.teachbuildFilter
+    });
+    ElMessage.success('教室数据导出中');
+  } catch (error) {
+    ElMessage.error('教室数据导出失败');
+  }
+}
+
+async function handleClassroomImport(file) {
+  try {
+    await importClassroomExcel(file);
+    ElMessage.success('教室数据导入成功');
+    await loadClassrooms();
+  } catch (error) {
+    return false;
+  }
+  return false;
+}
+
+async function handleTeachbuildTemplateDownload() {
+  try {
+    await downloadTeachbuildTemplate();
+  } catch (error) {
+    ElMessage.error('教学楼模板下载失败');
+  }
+}
+
+async function handleTeachbuildExport() {
+  try {
+    await exportTeachbuildExcel({
+      keyword: classroomState.teachbuildFilter || classroomState.keyword
+    });
+    ElMessage.success('教学楼数据导出中');
+  } catch (error) {
+    ElMessage.error('教学楼数据导出失败');
+  }
+}
+
+async function handleTeachbuildImport(file) {
+  try {
+    await importTeachbuildExcel(file);
+    ElMessage.success('教学楼数据导入成功');
+    await Promise.all([loadTeachbuildOptions(), loadClassrooms()]);
+  } catch (error) {
+    return false;
+  }
+  return false;
 }
 
 async function loadTeachbuildOptions() {
