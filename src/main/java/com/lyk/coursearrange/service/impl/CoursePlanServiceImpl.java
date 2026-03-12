@@ -62,12 +62,53 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         if (coursePlan == null) {
             return ServerResponse.ofError("课表记录不存在");
         }
-        coursePlan.setClassTime(request.getClassTime());
-        if (request.getClassroomNo() != null && !request.getClassroomNo().isBlank()) {
-            coursePlan.setClassroomNo(request.getClassroomNo());
+        if (request.getClassTime() == null || request.getClassTime().isBlank()) {
+            return ServerResponse.ofError("目标时间片不能为空");
         }
+        String targetClassTime = request.getClassTime();
+        String targetClassroomNo = request.getClassroomNo() != null && !request.getClassroomNo().isBlank()
+                ? request.getClassroomNo()
+                : coursePlan.getClassroomNo();
+        String conflictMessage = validateAdjustConflict(coursePlan, targetClassTime, targetClassroomNo);
+        if (conflictMessage != null) {
+            return ServerResponse.ofError(conflictMessage);
+        }
+        coursePlan.setClassTime(targetClassTime);
+        coursePlan.setClassroomNo(targetClassroomNo);
         boolean updated = updateById(coursePlan);
         return updated ? ServerResponse.ofSuccess("调课成功", coursePlan) : ServerResponse.ofError("调课失败");
+    }
+
+    private String validateAdjustConflict(CoursePlan currentPlan, String targetClassTime, String targetClassroomNo) {
+        LambdaQueryWrapper<CoursePlan> classWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
+                .eq(CoursePlan::getClassNo, currentPlan.getClassNo());
+        if (count(classWrapper) > 0) {
+            return "目标时间片已存在同班级课程，不能调课";
+        }
+
+        LambdaQueryWrapper<CoursePlan> teacherWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
+                .eq(CoursePlan::getTeacherNo, currentPlan.getTeacherNo());
+        if (count(teacherWrapper) > 0) {
+            return "目标时间片教师已有其他课程，不能调课";
+        }
+
+        if (targetClassroomNo != null && !targetClassroomNo.isBlank()) {
+            LambdaQueryWrapper<CoursePlan> classroomWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
+                    .eq(CoursePlan::getClassroomNo, targetClassroomNo);
+            if (count(classroomWrapper) > 0) {
+                return "目标时间片教室已被占用，不能调课";
+            }
+        }
+        return null;
+    }
+
+    private LambdaQueryWrapper<CoursePlan> buildAdjustConflictWrapper(CoursePlan currentPlan, String targetClassTime) {
+        LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(CoursePlan::getSemester, currentPlan.getSemester())
+                .eq(CoursePlan::getClassTime, targetClassTime)
+                .ne(CoursePlan::getId, currentPlan.getId())
+                .eq(CoursePlan::getDeleted, 0);
+        return wrapper;
     }
 
     private ServerResponse buildCoursePlanResponse(List<CoursePlan> coursePlanList, String emptyMessage) {
