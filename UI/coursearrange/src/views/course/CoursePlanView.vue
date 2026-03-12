@@ -42,6 +42,16 @@
           </div>
         </div>
         <div class="toolbar-actions">
+          <el-upload
+            class="excel-upload"
+            :show-file-list="false"
+            :auto-upload="false"
+            :before-upload="handleExcelUpload"
+            accept=".xls,.xlsx"
+          >
+            <el-button class="ghost-action">导入任务</el-button>
+          </el-upload>
+          <el-button class="ghost-action" @click="handleTemplateDownload">下载模板</el-button>
           <el-button class="ghost-action" @click="prefillTaskByClass">按班级回填示例</el-button>
           <el-button class="primary-action" type="primary" @click="openTaskDialog()">新增任务</el-button>
         </div>
@@ -349,10 +359,12 @@ import {
   arrangeClassTask,
   createClassTask,
   deleteClassTask,
+  downloadClassTaskTemplate,
   fetchArrangeLogs,
   fetchClassInfoPage,
   fetchClassTaskPage,
-  fetchSemesterList
+  fetchSemesterList,
+  uploadClassTaskExcel
 } from '@/api/modules/course';
 
 const semesters = ref([]);
@@ -547,6 +559,21 @@ async function handleSemesterChange() {
 function openTaskDialog() {
   taskForm.value = createTaskForm();
   taskDialogVisible.value = true;
+}
+
+function handleTemplateDownload() {
+  downloadClassTaskTemplate();
+}
+
+async function handleExcelUpload(file) {
+  try {
+    await uploadClassTaskExcel(file);
+    ElMessage.success('课程任务导入成功');
+    await Promise.all([loadClassTasks(true), loadExecutionLogs()]);
+  } catch (error) {
+    return false;
+  }
+  return false;
 }
 
 function handleCourseChange(courseNo) {
@@ -753,6 +780,10 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.excel-upload {
+  display: inline-flex;
 }
 
 .semester-select {

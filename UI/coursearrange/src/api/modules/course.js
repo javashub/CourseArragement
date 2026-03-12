@@ -1,4 +1,5 @@
 import request from '@/api/request';
+import { TOKEN_KEY } from '@/constants/storage';
 
 const legacyOptions = {
   baseURL: ''
@@ -25,6 +26,24 @@ export function deleteClassTask(id) {
 
 export function arrangeClassTask(semester) {
   return request.post(`/legacy-api/arrange/${encodeURIComponent(semester)}`, null, legacyOptions);
+}
+
+export function uploadClassTaskExcel(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request.post('/legacy-api/upload', formData, {
+    ...legacyOptions,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
+export function downloadClassTaskTemplate() {
+  const token = localStorage.getItem(TOKEN_KEY)?.replaceAll('"', '') || '';
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+  const url = `${baseURL}/legacy-api/download${token ? `?satoken=${encodeURIComponent(token)}` : ''}`;
+  window.open(url, '_blank');
 }
 
 export function fetchArrangeLogs(params = {}) {
