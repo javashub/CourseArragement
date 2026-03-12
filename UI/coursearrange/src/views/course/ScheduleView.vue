@@ -74,6 +74,10 @@
         <div class="summary-label">涉及教室</div>
         <div class="summary-value">{{ classroomCount }}</div>
       </el-card>
+      <el-card shadow="never" class="summary-card accent-card">
+        <div class="summary-label">最近调课</div>
+        <div class="summary-value summary-value--small">{{ latestAdjustSummary }}</div>
+      </el-card>
     </div>
 
     <el-card shadow="never" class="table-card" v-loading="loading">
@@ -108,7 +112,11 @@
             v-for="day in weekLabels"
             :key="`${day.key}-${period.key}`"
             class="grid-cell"
-            :class="{ 'drag-target': canDragAdjust }"
+            :class="{
+              'drag-target': canDragAdjust,
+              'recent-drop-cell': isRecentDropCell(day.index, period.index),
+              'focused-cell': focusedCellKey === `${day.index}-${period.index}`
+            }"
             @dragover="handleDragOver"
             @drop="handleDrop(day.index, period.index)"
           >
@@ -117,7 +125,11 @@
                 v-for="item in getPlanCell(day.index, period.index)"
                 :key="item.id"
                 class="course-card"
-                :class="{ 'dragging-card': dragPlanId === item.id }"
+                :class="{
+                  'dragging-card': dragPlanId === item.id,
+                  'recent-adjust-card': isRecentAdjustedPlan(item),
+                  'focused-card': focusedPlanId === item.id
+                }"
                 :draggable="canDragAdjust"
                 @dragstart="handleDragStart(item)"
                 @dragend="handleDragEnd"
@@ -166,12 +178,20 @@
           </div>
           <div class="header-tags">
             <el-tag type="info" effect="plain">学期 {{ selectedSemester || '全部' }}</el-tag>
+            <el-input
+              v-model="adjustLogKeyword"
+              clearable
+              class="log-search"
+              placeholder="筛选操作人 / 班级 / 教师编号"
+              @clear="handleAdjustLogFilter"
+              @input="handleAdjustLogFilter"
+            />
             <el-button class="ghost-action" size="small" @click="loadAdjustLogs">刷新调课记录</el-button>
           </div>
         </div>
       </template>
 
-      <el-table :data="adjustLogs" size="small" stripe max-height="280">
+      <el-table :data="filteredAdjustLogs" size="small" stripe max-height="280" @row-click="focusAdjustLog">
         <el-table-column prop="operatorName" label="操作人" min-width="120" />
         <el-table-column prop="classNo" label="班级" min-width="110" />
         <el-table-column prop="teacherNo" label="教师编号" min-width="120" />
@@ -179,6 +199,11 @@
         <el-table-column prop="afterClassTime" label="调整后" width="100" />
         <el-table-column prop="remark" label="备注" min-width="120" />
         <el-table-column prop="createTime" label="时间" min-width="170" />
+        <el-table-column label="定位" width="90" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click.stop="focusAdjustLog(row)">定位</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
   </section>
@@ -212,8 +237,14 @@ const classOptions = ref([]);
 const teacherOptions = ref([]);
 const planList = ref([]);
 const adjustLogs = ref([]);
+const filteredAdjustLogs = ref([]);
 const dragPlanId = ref(null);
 const adjusting = ref(false);
+const lastAdjustedPlanId = ref(null);
+const lastAdjustedClassTime = ref('');
+const focusedPlanId = ref(null);
+const focusedCellKey = ref('');
+const adjustLogKeyword = ref('');
 
 const viewModeOptions = [
   { label: '班级视角', value: 'class' },
@@ -226,6 +257,13 @@ const canDragAdjust = computed(
 const teacherCount = computed(() => new Set(planList.value.map((item) => item.teacherNo).filter(Boolean)).size);
 const classroomCount = computed(() => new Set(planList.value.map((item) => item.classroomNo).filter(Boolean)).size);
 const currentTarget = computed(() => (viewMode.value === 'class' ? selectedClassNo.value : selectedTeacherNo.value));
+const latestAdjustSummary = computed(() => {
+  if (!filteredAdjustLogs.value.length) {
+    return '暂无记录';
+  }
+  const latest = filteredAdjustLogs.value[0];
+  return `${latest.beforeClassTime || '--'} → ${latest.afterClassTime || '--'}`;
+});
 
 const weekLabels = [
   { label: '周一', key: 'mon', index: 1 },
@@ -261,6 +299,18 @@ function getPlanCell(dayIndex, periodIndex) {
     const parsed = parseClassTime(item.classTime);
     return parsed && parsed.dayIndex === dayIndex && parsed.periodIndex === periodIndex;
   });
+}
+
+function isRecentAdjustedPlan(item) {
+  return item.id === lastAdjustedPlanId.value;
+}
+
+function isRecentDropCell(dayIndex, periodIndex) {
+  if (!lastAdjustedClassTime.value) {
+    return false;
+  }
+  const parsed = parseClassTime(lastAdjustedClassTime.value);
+  return parsed && parsed.dayIndex === dayIndex && parsed.periodIndex === periodIndex;
 }
 
 function toClassTime(dayIndex, periodIndex) {
@@ -302,6 +352,10 @@ async function handleDrop(dayIndex, periodIndex) {
       classTime: targetClassTime,
       classroomNo: targetPlan.classroomNo
     });
+    lastAdjustedPlanId.value = targetPlan.id;
+    lastAdjustedClassTime.value = targetClassTime;
+    focusedPlanId.value = targetPlan.id;
+    focusedCellKey.value = `${dayIndex}-${periodIndex}`;
     ElMessage.success('调课成功');
     await loadCoursePlan();
   } finally {
@@ -329,6 +383,7 @@ async function loadCoursePlan() {
   if (!currentTarget.value) {
     planList.value = [];
     adjustLogs.value = [];
+    filteredAdjustLogs.value = [];
     return;
   }
   loading.value = true;
@@ -355,6 +410,8 @@ async function loadAdjustLogs() {
     limit: 10
   });
   adjustLogs.value = response.data || [];
+  applyAdjustLogFilter();
+  syncRecentAdjustState();
 }
 
 async function handleTargetChange() {
@@ -365,6 +422,8 @@ async function handleTargetChange() {
 async function handleViewModeChange() {
   planList.value = [];
   dragPlanId.value = null;
+  focusedPlanId.value = null;
+  focusedCellKey.value = '';
   if (viewMode.value === 'class') {
     selectedTeacherNo.value = '';
   } else {
@@ -402,8 +461,50 @@ function clearPlan() {
   selectedTeacherNo.value = '';
   planList.value = [];
   adjustLogs.value = [];
+  filteredAdjustLogs.value = [];
   dragPlanId.value = null;
+  lastAdjustedPlanId.value = null;
+  lastAdjustedClassTime.value = '';
+  focusedPlanId.value = null;
+  focusedCellKey.value = '';
   syncRouteQuery();
+}
+
+function handleAdjustLogFilter() {
+  applyAdjustLogFilter();
+}
+
+function applyAdjustLogFilter() {
+  const keyword = adjustLogKeyword.value.trim().toLowerCase();
+  if (!keyword) {
+    filteredAdjustLogs.value = [...adjustLogs.value];
+    return;
+  }
+  filteredAdjustLogs.value = adjustLogs.value.filter((item) => {
+    const target = [item.operatorName, item.classNo, item.teacherNo, item.remark]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return target.includes(keyword);
+  });
+}
+
+function syncRecentAdjustState() {
+  const latest = adjustLogs.value[0];
+  if (!latest) {
+    return;
+  }
+  lastAdjustedPlanId.value = latest.coursePlanId || lastAdjustedPlanId.value;
+  lastAdjustedClassTime.value = latest.afterClassTime || lastAdjustedClassTime.value;
+}
+
+function focusAdjustLog(row) {
+  const parsed = parseClassTime(row.afterClassTime);
+  focusedPlanId.value = row.coursePlanId || null;
+  focusedCellKey.value = parsed ? `${parsed.dayIndex}-${parsed.periodIndex}` : '';
+  lastAdjustedPlanId.value = row.coursePlanId || lastAdjustedPlanId.value;
+  lastAdjustedClassTime.value = row.afterClassTime || lastAdjustedClassTime.value;
+  ElMessage.success(`已定位到 ${row.afterClassTime || '--'} 时间片`);
 }
 
 function syncRouteQuery() {
@@ -516,6 +617,11 @@ onMounted(async () => {
   box-shadow: 0 12px 30px rgb(15 23 42 / 4%);
 }
 
+.accent-card {
+  border-color: #cfe3ff;
+  background: linear-gradient(135deg, rgb(232 243 255 / 88%) 0%, rgb(239 251 248 / 88%) 100%);
+}
+
 .summary-label {
   font-size: 12px;
   color: #7c8ca2;
@@ -526,6 +632,10 @@ onMounted(async () => {
   font-size: 26px;
   font-weight: 700;
   color: #17263d;
+}
+
+.summary-value--small {
+  font-size: 20px;
 }
 
 .card-head {
@@ -539,6 +649,11 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
+}
+
+.log-search {
+  width: 240px;
 }
 
 .card-title {
@@ -615,6 +730,18 @@ onMounted(async () => {
   background: linear-gradient(180deg, #fff 0%, #f5faff 100%);
 }
 
+.recent-drop-cell {
+  border-color: #79a9ff;
+  background: linear-gradient(180deg, #fff 0%, #eef5ff 100%);
+  box-shadow: inset 0 0 0 1px rgb(121 169 255 / 28%);
+}
+
+.focused-cell {
+  border-color: #0ea5a4;
+  background: linear-gradient(180deg, #fff 0%, #eefcf9 100%);
+  box-shadow: inset 0 0 0 1px rgb(14 165 164 / 24%);
+}
+
 .empty-slot {
   display: flex;
   align-items: center;
@@ -638,6 +765,18 @@ onMounted(async () => {
   border-radius: 16px;
   background: linear-gradient(180deg, #fff 0%, #f7fbff 100%);
   cursor: grab;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.recent-adjust-card {
+  border-color: #79a9ff;
+  box-shadow: 0 12px 22px rgb(22 93 255 / 10%);
+}
+
+.focused-card {
+  border-color: #0ea5a4;
+  box-shadow: 0 12px 24px rgb(14 165 164 / 14%);
+  transform: translateY(-1px);
 }
 
 .course-main {
@@ -678,6 +817,10 @@ onMounted(async () => {
 
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .log-search {
+    width: 100%;
   }
 
   .timetable-grid {
