@@ -1,4 +1,6 @@
+import axios from 'axios';
 import request from '@/api/request';
+import { TOKEN_KEY } from '@/constants/storage';
 
 const legacyOptions = {
   baseURL: ''
@@ -131,4 +133,57 @@ export function deleteClassroom(id) {
 
 export function fetchTeachbuildList() {
   return request.get('/legacy-api/teachbuildinfo/list', legacyOptions);
+}
+
+async function downloadExcel(url, fileName) {
+  const token = localStorage.getItem(TOKEN_KEY)?.replaceAll('"', '') || '';
+  const response = await axios.get(url, {
+    responseType: 'blob',
+    headers: token ? { satoken: token } : {}
+  });
+  const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/octet-stream' });
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
+export function exportTeacherExcel(params = {}) {
+  const query = new URLSearchParams();
+  if (params.keyword) {
+    query.set('keyword', params.keyword);
+  }
+  if (params.status !== '' && params.status !== null && params.status !== undefined) {
+    query.set('status', params.status);
+  }
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/teachers/export${query.toString() ? `?${query.toString()}` : ''}`, '教师数据导出.xlsx');
+}
+
+export function exportStudentExcel(params = {}) {
+  const query = new URLSearchParams();
+  if (params.keyword) {
+    query.set('keyword', params.keyword);
+  }
+  if (params.status !== '' && params.status !== null && params.status !== undefined) {
+    query.set('status', params.status);
+  }
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/students/export${query.toString() ? `?${query.toString()}` : ''}`, '学生数据导出.xlsx');
+}
+
+export function exportCourseExcel(params = {}) {
+  const query = new URLSearchParams();
+  if (params.keyword) {
+    query.set('keyword', params.keyword);
+  }
+  if (params.status !== '' && params.status !== null && params.status !== undefined) {
+    query.set('status', params.status);
+  }
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  return downloadExcel(`${baseURL}/excel/base/courses/export${query.toString() ? `?${query.toString()}` : ''}`, '课程数据导出.xlsx');
 }

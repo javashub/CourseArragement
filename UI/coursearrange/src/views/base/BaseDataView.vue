@@ -43,6 +43,7 @@
               <el-option label="封禁" :value="1" />
             </el-select>
             <div class="toolbar-actions">
+              <el-button class="ghost-action" @click="handleTeacherExport">导出教师</el-button>
               <el-button class="ghost-action" @click="resetTeacherSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openTeacherDialog()">新增教师</el-button>
             </div>
@@ -105,6 +106,7 @@
               <el-option label="封禁" :value="1" />
             </el-select>
             <div class="toolbar-actions">
+              <el-button class="ghost-action" @click="handleStudentExport">导出学生</el-button>
               <el-button class="ghost-action" @click="resetStudentSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openStudentDialog()">新增学生</el-button>
             </div>
@@ -167,6 +169,7 @@
               <el-option label="停用" :value="1" />
             </el-select>
             <div class="toolbar-actions">
+              <el-button class="ghost-action" @click="handleCourseExport">导出课程</el-button>
               <el-button class="ghost-action" @click="resetCourseSearch">重置</el-button>
               <el-button class="primary-action" type="primary" @click="openCourseDialog()">新增课程</el-button>
             </div>
@@ -469,6 +472,9 @@ import {
   deleteCourse,
   deleteStudent,
   deleteTeacher,
+  exportCourseExcel,
+  exportStudentExcel,
+  exportTeacherExcel,
   fetchClassroomDetail,
   fetchClassroomPage,
   fetchCoursePage,
@@ -789,6 +795,18 @@ async function removeTeacher(row) {
   await loadTeachers();
 }
 
+async function handleTeacherExport() {
+  try {
+    await exportTeacherExcel({
+      keyword: teacherState.keyword,
+      status: teacherState.statusFilter
+    });
+    ElMessage.success('教师数据导出中');
+  } catch (error) {
+    ElMessage.error('教师数据导出失败');
+  }
+}
+
 async function openStudentDialog(row) {
   if (!row) {
     studentForm.value = createStudentForm();
@@ -837,6 +855,18 @@ async function removeStudent(row) {
   await loadStudents();
 }
 
+async function handleStudentExport() {
+  try {
+    await exportStudentExcel({
+      keyword: studentState.keyword,
+      status: studentState.statusFilter
+    });
+    ElMessage.success('学生数据导出中');
+  } catch (error) {
+    ElMessage.error('学生数据导出失败');
+  }
+}
+
 async function toggleStudent(row) {
   await updateStudent(row.id, {
     ...row,
@@ -878,6 +908,18 @@ async function removeCourse(row) {
   await deleteCourse(row.id);
   ElMessage.success('课程删除成功');
   await loadCourses();
+}
+
+async function handleCourseExport() {
+  try {
+    await exportCourseExcel({
+      keyword: courseState.keyword,
+      status: courseState.statusFilter
+    });
+    ElMessage.success('课程数据导出中');
+  } catch (error) {
+    ElMessage.error('课程数据导出失败');
+  }
 }
 
 async function toggleCourse(row) {
