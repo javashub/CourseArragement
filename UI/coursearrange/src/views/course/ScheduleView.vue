@@ -9,7 +9,9 @@
         </p>
       </div>
       <div class="hero-actions">
+        <el-segmented v-model="viewMode" :options="viewModeOptions" class="view-switch" />
         <el-select
+          v-if="viewMode === 'class'"
           v-model="selectedClassNo"
           filterable
           clearable
@@ -20,6 +22,23 @@
         >
           <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
         </el-select>
+        <el-select
+          v-else
+          v-model="selectedTeacherNo"
+          filterable
+          clearable
+          placeholder="选择教师，例如 T2026001"
+          class="class-select"
+          @change="loadCoursePlan"
+          @clear="clearPlan"
+        >
+          <el-option
+            v-for="item in teacherOptions"
+            :key="item.teacherNo"
+            :label="`${item.teacherNo} ${item.realname || ''}`"
+            :value="item.teacherNo"
+          />
+        </el-select>
         <el-button class="ghost-action" @click="loadClassOptions">刷新班级</el-button>
         <el-button class="primary-action" type="primary" @click="loadCoursePlan">查询课表</el-button>
       </div>
@@ -27,8 +46,8 @@
 
     <div class="summary-grid">
       <el-card shadow="never" class="summary-card">
-        <div class="summary-label">当前班级</div>
-        <div class="summary-value">{{ selectedClassNo || '--' }}</div>
+        <div class="summary-label">{{ viewMode === 'class' ? '当前班级' : '当前教师' }}</div>
+        <div class="summary-value">{{ currentTarget || '--' }}</div>
       </el-card>
       <el-card shadow="never" class="summary-card">
         <div class="summary-label">课表条数</div>
@@ -48,35 +67,48 @@
       <template #header>
         <div class="card-head">
           <div>
-            <div class="card-title">班级课表</div>
-            <div class="card-caption">旧接口返回的是编码型时间片，这里先按时间编号分行展示，便于验证排课结果是否写入成功。</div>
+            <div class="card-title">{{ viewMode === 'class' ? '班级课表' : '教师课表' }}</div>
+            <div class="card-caption">当前先按旧排课算法的 01-25 时间片规则，映射成周一到周五、每天五节课的课表视图。</div>
           </div>
-          <el-tag type="info" effect="plain">拖拽调课下一阶段接入</el-tag>
+          <el-tag type="info" effect="plain">{{ viewMode === 'class' ? '班级视角' : '教师视角' }}</el-tag>
         </div>
       </template>
 
-      <el-empty v-if="!selectedClassNo && !loading" description="请先选择班级，再查看课表" />
-      <el-empty v-else-if="selectedClassNo && !planList.length && !loading" description="当前班级还没有生成课表" />
+      <el-empty v-if="!currentTarget && !loading" :description="viewMode === 'class' ? '请先选择班级，再查看课表' : '请先选择教师，再查看课表'" />
+      <el-empty v-else-if="currentTarget && !planList.length && !loading" :description="viewMode === 'class' ? '当前班级还没有生成课表' : '当前教师还没有生成课表'" />
 
-      <el-table v-else :data="planRows" stripe>
-        <el-table-column prop="timeLabel" label="时间片" min-width="120" />
-        <el-table-column label="课程安排" min-width="520">
-          <template #default="{ row }">
-            <div class="course-stack">
-              <div v-for="item in row.items" :key="item.id" class="course-card">
+      <div v-else class="timetable-grid">
+        <div class="grid-head time-head">节次</div>
+        <div v-for="day in weekLabels" :key="day.key" class="grid-head">
+          {{ day.label }}
+        </div>
+
+        <template v-for="period in periodLabels" :key="period.key">
+          <div class="time-cell">
+            <strong>{{ period.label }}</strong>
+            <span>{{ period.key }}</span>
+          </div>
+          <div v-for="day in weekLabels" :key="`${day.key}-${period.key}`" class="grid-cell">
+            <template v-if="getPlanCell(day.index, period.index).length">
+              <div
+                v-for="item in getPlanCell(day.index, period.index)"
+                :key="item.id"
+                class="course-card"
+              >
                 <div class="course-main">
                   <strong>{{ item.courseName || item.courseNo }}</strong>
                   <span>{{ item.realname || item.teacherNo }}</span>
                 </div>
                 <div class="course-meta">
                   <span>教室 {{ item.classroomNo || '--' }}</span>
-                  <span>学期 {{ item.semester || '--' }}</span>
+                  <span>{{ item.classTime }}</span>
                 </div>
               </div>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+            </template>
+            <div v-else class="empty-slot">空闲</div>
+          </div>
+        </template>
+      </div>
     </el-card>
 
     <el-card shadow="never" class="raw-card" v-if="planList.length">
@@ -103,41 +135,60 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { fetchClassInfoPage, fetchCoursePlanByClassNo } from '@/api/modules/course';
+import { fetchTeacherPage } from '@/api/modules/base';
+import { fetchClassInfoPage, fetchCoursePlanByClassNo, fetchCoursePlanByTeacherNo } from '@/api/modules/course';
 
 const loading = ref(false);
+const viewMode = ref('class');
 const selectedClassNo = ref('');
+const selectedTeacherNo = ref('');
 const classOptions = ref([]);
+const teacherOptions = ref([]);
 const planList = ref([]);
+
+const viewModeOptions = [
+  { label: '班级视角', value: 'class' },
+  { label: '教师视角', value: 'teacher' }
+];
 
 const teacherCount = computed(() => new Set(planList.value.map((item) => item.teacherNo).filter(Boolean)).size);
 const classroomCount = computed(() => new Set(planList.value.map((item) => item.classroomNo).filter(Boolean)).size);
+const currentTarget = computed(() => (viewMode.value === 'class' ? selectedClassNo.value : selectedTeacherNo.value));
 
-const planRows = computed(() => {
-  const groups = new Map();
-  for (const item of planList.value) {
-    const key = item.classTime || '未标记时间';
-    if (!groups.has(key)) {
-      groups.set(key, []);
-    }
-    groups.get(key).push(item);
-  }
-  return [...groups.entries()]
-    .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
-    .map(([timeLabel, items]) => ({
-      timeLabel: formatTimeLabel(timeLabel),
-      items
-    }));
-});
+const weekLabels = [
+  { label: '周一', key: 'mon', index: 1 },
+  { label: '周二', key: 'tue', index: 2 },
+  { label: '周三', key: 'wed', index: 3 },
+  { label: '周四', key: 'thu', index: 4 },
+  { label: '周五', key: 'fri', index: 5 }
+];
 
-function formatTimeLabel(value) {
-  if (!value) {
-    return '未标记时间';
+const periodLabels = [
+  { label: '第1节', key: '01', index: 1 },
+  { label: '第2节', key: '02', index: 2 },
+  { label: '第3节', key: '03', index: 3 },
+  { label: '第4节', key: '04', index: 4 },
+  { label: '第5节', key: '05', index: 5 }
+];
+
+function parseClassTime(classTime) {
+  const value = Number(classTime);
+  if (!value || value < 1) {
+    return null;
   }
-  if (/^\d+$/.test(String(value))) {
-    return `时间片 ${value}`;
-  }
-  return value;
+  const dayIndex = Math.ceil(value / 5);
+  const periodIndex = ((value - 1) % 5) + 1;
+  return {
+    dayIndex,
+    periodIndex
+  };
+}
+
+function getPlanCell(dayIndex, periodIndex) {
+  return planList.value.filter((item) => {
+    const parsed = parseClassTime(item.classTime);
+    return parsed && parsed.dayIndex === dayIndex && parsed.periodIndex === periodIndex;
+  });
 }
 
 async function loadClassOptions() {
@@ -145,18 +196,25 @@ async function loadClassOptions() {
   classOptions.value = response.data?.records || [];
 }
 
+async function loadTeacherOptions() {
+  const response = await fetchTeacherPage(1, 200);
+  teacherOptions.value = response.data?.records || [];
+}
+
 async function loadCoursePlan() {
-  if (!selectedClassNo.value) {
+  if (!currentTarget.value) {
     planList.value = [];
     return;
   }
   loading.value = true;
   try {
-    const response = await fetchCoursePlanByClassNo(selectedClassNo.value);
+    const response = viewMode.value === 'class'
+      ? await fetchCoursePlanByClassNo(selectedClassNo.value)
+      : await fetchCoursePlanByTeacherNo(selectedTeacherNo.value);
     planList.value = response.data || [];
   } catch (error) {
     planList.value = [];
-    ElMessage.warning('当前班级还没有生成课表');
+    ElMessage.warning(viewMode.value === 'class' ? '当前班级还没有生成课表' : '当前教师还没有生成课表');
   } finally {
     loading.value = false;
   }
@@ -164,11 +222,12 @@ async function loadCoursePlan() {
 
 function clearPlan() {
   selectedClassNo.value = '';
+  selectedTeacherNo.value = '';
   planList.value = [];
 }
 
 onMounted(async () => {
-  await loadClassOptions();
+  await Promise.all([loadClassOptions(), loadTeacherOptions()]);
 });
 </script>
 
@@ -221,6 +280,10 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.view-switch {
+  min-width: 188px;
+}
+
 .class-select {
   min-width: 220px;
 }
@@ -271,10 +334,68 @@ onMounted(async () => {
   color: #6c7d93;
 }
 
-.course-stack {
+.timetable-grid {
+  display: grid;
+  grid-template-columns: 110px repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.grid-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  padding: 10px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f5f9ff 0%, #edf5ff 100%);
+  font-size: 13px;
+  font-weight: 700;
+  color: #35547b;
+}
+
+.time-head {
+  background: linear-gradient(180deg, #fff8ea 0%, #fff1d2 100%);
+  color: #7a5a18;
+}
+
+.time-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 132px;
+  padding: 14px 12px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff 0%, #f9fbfe 100%);
+  border: 1px solid #e4edf7;
+  color: #51657e;
+}
+
+.time-cell strong {
+  color: #17263d;
+}
+
+.grid-cell {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 132px;
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+  border: 1px solid #e4edf7;
+}
+
+.empty-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 100px;
+  border: 1px dashed #dbe6f2;
+  border-radius: 14px;
+  font-size: 13px;
+  color: #95a3b8;
 }
 
 .course-card {
@@ -321,6 +442,10 @@ onMounted(async () => {
   }
 
   .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timetable-grid {
     grid-template-columns: 1fr;
   }
 }

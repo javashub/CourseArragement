@@ -16,4 +16,9 @@ public interface CoursePlanService extends IService<CoursePlan> {
      */
     ServerResponse queryCoursePlanByClassNo(@PathVariable("classno") String classNo);
 
+    /**
+     * 根据教师编号查询课程安排
+     */
+    ServerResponse queryCoursePlanByTeacherNo(@PathVariable("teacherno") String teacherNo);
+
 }

@@ -44,8 +44,21 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<CoursePlan>().eq(CoursePlan::getClassNo, classNo).orderByAsc(CoursePlan::getClassTime);
         List<CoursePlan> coursePlanList = coursePlanDao.selectList(wrapper);
 
+        return buildCoursePlanResponse(coursePlanList, "该班级没有课表");
+    }
+
+    @Override
+    public ServerResponse queryCoursePlanByTeacherNo(String teacherNo) {
+        LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<CoursePlan>().eq(CoursePlan::getTeacherNo, teacherNo).orderByAsc(CoursePlan::getClassTime);
+        List<CoursePlan> coursePlanList = coursePlanDao.selectList(wrapper);
+
+        return buildCoursePlanResponse(coursePlanList, "该教师没有课表");
+    }
+
+    private ServerResponse buildCoursePlanResponse(List<CoursePlan> coursePlanList, String emptyMessage) {
+
         if (null == coursePlanList || coursePlanList.isEmpty()) {
-            return ServerResponse.ofError("该班级没有课表");
+            return ServerResponse.ofError(emptyMessage);
         }
 
         // 过滤出教师编号

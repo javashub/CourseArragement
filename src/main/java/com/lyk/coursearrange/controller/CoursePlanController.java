@@ -28,6 +28,13 @@ public class CoursePlanController {
         return coursePlanService.queryCoursePlanByClassNo(classNo);
     }
 
+    /**
+     * 根据教师查询课程表
+     */
+    @GetMapping("/courseplan/teacher/{teacherno}")
+    public ServerResponse queryCoursePlanByTeacherNo(@PathVariable("teacherno") String teacherNo) {
+        return coursePlanService.queryCoursePlanByTeacherNo(teacherNo);
+    }
+
 
 }
-

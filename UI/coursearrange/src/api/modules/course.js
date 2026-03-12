@@ -37,3 +37,7 @@ export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
 export function fetchCoursePlanByClassNo(classNo) {
   return request.get(`/legacy-api/courseplan/${encodeURIComponent(classNo)}`, legacyOptions);
 }
+
+export function fetchCoursePlanByTeacherNo(teacherNo) {
+  return request.get(`/legacy-api/courseplan/teacher/${encodeURIComponent(teacherNo)}`, legacyOptions);
+}
