@@ -199,20 +199,48 @@
             </el-select>
           </el-form-item>
           <el-form-item label="课程名称">
-            <el-input v-model="taskForm.courseName" placeholder="例如 高等数学" />
+            <el-select
+              v-model="taskForm.courseNo"
+              clearable
+              filterable
+              placeholder="选择课程，例如 10001 高等数学"
+              @change="handleCourseChange"
+              @clear="clearCourseSelection"
+            >
+              <el-option
+                v-for="item in courseOptions"
+                :key="item.id"
+                :label="`${item.courseNo} ${item.courseName}`"
+                :value="item.courseNo"
+              />
+            </el-select>
           </el-form-item>
         </div>
         <div class="form-grid">
           <el-form-item label="课程编号">
-            <el-input v-model="taskForm.courseNo" placeholder="例如 10001，建议与课程库一致" />
+            <el-input v-model="taskForm.courseNo" placeholder="例如 10001，建议优先从上方课程下拉选择" />
           </el-form-item>
           <el-form-item label="教师姓名">
-            <el-input v-model="taskForm.realname" placeholder="例如 张老师" />
+            <el-select
+              v-model="taskForm.teacherNo"
+              clearable
+              filterable
+              placeholder="选择教师，例如 T2026001 张老师"
+              @change="handleTeacherChange"
+              @clear="clearTeacherSelection"
+            >
+              <el-option
+                v-for="item in teacherOptions"
+                :key="item.id"
+                :label="`${item.teacherNo} ${item.realname || ''}`"
+                :value="item.teacherNo"
+              />
+            </el-select>
           </el-form-item>
         </div>
         <div class="form-grid">
           <el-form-item label="教师编号">
-            <el-input v-model="taskForm.teacherNo" placeholder="例如 T2026001，建议与教师库一致" />
+            <el-input v-model="taskForm.teacherNo" placeholder="例如 T2026001，建议优先从上方教师下拉选择" />
           </el-form-item>
           <el-form-item label="课程属性">
             <el-input v-model="taskForm.courseAttr" placeholder="例如 必修、实验课" />
@@ -261,6 +289,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { fetchCoursePage, fetchTeacherPage } from '@/api/modules/base';
 import {
   arrangeClassTask,
   createClassTask,
@@ -278,6 +307,8 @@ const arranging = ref(false);
 const taskDialogVisible = ref(false);
 const taskSubmitting = ref(false);
 const classOptions = ref([]);
+const courseOptions = ref([]);
+const teacherOptions = ref([]);
 const executionLogs = ref([]);
 const executionLogsLoading = ref(false);
 const executionLogLimit = 8;
@@ -366,6 +397,16 @@ async function loadClassOptions() {
   classOptions.value = response.data?.records || [];
 }
 
+async function loadCourseOptions() {
+  const response = await fetchCoursePage(1, 200);
+  courseOptions.value = (response.data?.records || []).filter((item) => item.status === 0);
+}
+
+async function loadTeacherOptions() {
+  const response = await fetchTeacherPage(1, 200);
+  teacherOptions.value = (response.data?.records || []).filter((item) => item.status === 0);
+}
+
 async function loadClassTasks(resetPage = false) {
   if (!selectedSemester.value) {
     return;
@@ -420,6 +461,34 @@ function openTaskDialog() {
   taskDialogVisible.value = true;
 }
 
+function handleCourseChange(courseNo) {
+  const currentCourse = courseOptions.value.find((item) => item.courseNo === courseNo);
+  if (!currentCourse) {
+    return;
+  }
+  taskForm.value.courseNo = currentCourse.courseNo || '';
+  taskForm.value.courseName = currentCourse.courseName || '';
+  taskForm.value.courseAttr = currentCourse.courseAttr || taskForm.value.courseAttr;
+}
+
+function clearCourseSelection() {
+  taskForm.value.courseName = '';
+  taskForm.value.courseAttr = '';
+}
+
+function handleTeacherChange(teacherNo) {
+  const currentTeacher = teacherOptions.value.find((item) => item.teacherNo === teacherNo);
+  if (!currentTeacher) {
+    return;
+  }
+  taskForm.value.teacherNo = currentTeacher.teacherNo || '';
+  taskForm.value.realname = currentTeacher.realname || '';
+}
+
+function clearTeacherSelection() {
+  taskForm.value.realname = '';
+}
+
 function goToSchedule(classNo = '', semester = selectedSemester.value) {
   const query = {
     view: 'class',
@@ -436,11 +505,18 @@ function goToSchedule(classNo = '', semester = selectedSemester.value) {
 
 function prefillTaskByClass() {
   const firstClass = classOptions.value[0];
+  const firstCourse = courseOptions.value[0];
+  const firstTeacher = teacherOptions.value[0];
   taskForm.value = {
     ...createTaskForm(),
     gradeNo: firstClass?.remark || '',
     classNo: firstClass?.classNo || '',
-    studentNum: firstClass?.num || 40
+    studentNum: firstClass?.num || 40,
+    courseNo: firstCourse?.courseNo || '',
+    courseName: firstCourse?.courseName || '',
+    courseAttr: firstCourse?.courseAttr || '',
+    teacherNo: firstTeacher?.teacherNo || '',
+    realname: firstTeacher?.realname || ''
   };
   taskDialogVisible.value = true;
 }
@@ -536,7 +612,7 @@ async function handleArrange() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadSemesters(), loadClassOptions()]);
+  await Promise.all([loadSemesters(), loadClassOptions(), loadCourseOptions(), loadTeacherOptions()]);
   await handleSemesterChange();
 });
 </script>
