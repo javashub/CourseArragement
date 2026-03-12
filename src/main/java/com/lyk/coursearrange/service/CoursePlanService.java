@@ -2,6 +2,7 @@ package com.lyk.coursearrange.service;
 
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.CoursePlan;
+import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -20,5 +21,10 @@ public interface CoursePlanService extends IService<CoursePlan> {
      * 根据教师编号查询课程安排
      */
     ServerResponse queryCoursePlanByTeacherNo(@PathVariable("teacherno") String teacherNo);
+
+    /**
+     * 调整课表时间片。
+     */
+    ServerResponse adjustCoursePlan(CoursePlanAdjustRequest request);
 
 }

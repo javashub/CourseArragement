@@ -6,6 +6,7 @@ import com.lyk.coursearrange.entity.CourseInfo;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.dao.CoursePlanDao;
 import com.lyk.coursearrange.entity.Teacher;
+import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.lyk.coursearrange.entity.response.CoursePlanVo;
 import com.lyk.coursearrange.service.CourseInfoService;
 import com.lyk.coursearrange.service.CoursePlanService;
@@ -53,6 +54,20 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         List<CoursePlan> coursePlanList = coursePlanDao.selectList(wrapper);
 
         return buildCoursePlanResponse(coursePlanList, "该教师没有课表");
+    }
+
+    @Override
+    public ServerResponse adjustCoursePlan(CoursePlanAdjustRequest request) {
+        CoursePlan coursePlan = getById(request.getId());
+        if (coursePlan == null) {
+            return ServerResponse.ofError("课表记录不存在");
+        }
+        coursePlan.setClassTime(request.getClassTime());
+        if (request.getClassroomNo() != null && !request.getClassroomNo().isBlank()) {
+            coursePlan.setClassroomNo(request.getClassroomNo());
+        }
+        boolean updated = updateById(coursePlan);
+        return updated ? ServerResponse.ofSuccess("调课成功", coursePlan) : ServerResponse.ofError("调课失败");
     }
 
     private ServerResponse buildCoursePlanResponse(List<CoursePlan> coursePlanList, String emptyMessage) {

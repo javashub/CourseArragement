@@ -70,7 +70,10 @@
             <div class="card-title">{{ viewMode === 'class' ? '班级课表' : '教师课表' }}</div>
             <div class="card-caption">当前先按旧排课算法的 01-25 时间片规则，映射成周一到周五、每天五节课的课表视图。</div>
           </div>
-          <el-tag type="info" effect="plain">{{ viewMode === 'class' ? '班级视角' : '教师视角' }}</el-tag>
+          <div class="header-tags">
+            <el-tag v-if="canDragAdjust" type="warning" effect="plain">管理员可拖拽调课</el-tag>
+            <el-tag type="info" effect="plain">{{ viewMode === 'class' ? '班级视角' : '教师视角' }}</el-tag>
+          </div>
         </div>
       </template>
 
@@ -88,12 +91,23 @@
             <strong>{{ period.label }}</strong>
             <span>{{ period.key }}</span>
           </div>
-          <div v-for="day in weekLabels" :key="`${day.key}-${period.key}`" class="grid-cell">
+          <div
+            v-for="day in weekLabels"
+            :key="`${day.key}-${period.key}`"
+            class="grid-cell"
+            :class="{ 'drag-target': canDragAdjust }"
+            @dragover="handleDragOver"
+            @drop="handleDrop(day.index, period.index)"
+          >
             <template v-if="getPlanCell(day.index, period.index).length">
               <div
                 v-for="item in getPlanCell(day.index, period.index)"
                 :key="item.id"
                 class="course-card"
+                :class="{ 'dragging-card': dragPlanId === item.id }"
+                :draggable="canDragAdjust"
+                @dragstart="handleDragStart(item)"
+                @dragend="handleDragEnd"
               >
                 <div class="course-main">
                   <strong>{{ item.courseName || item.courseNo }}</strong>
@@ -105,7 +119,7 @@
                 </div>
               </div>
             </template>
-            <div v-else class="empty-slot">空闲</div>
+            <div v-else class="empty-slot">{{ canDragAdjust ? '拖到这里调课' : '空闲' }}</div>
           </div>
         </template>
       </div>
@@ -135,9 +149,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
+import { useAuthStore } from '@/stores/auth';
 import { fetchTeacherPage } from '@/api/modules/base';
-import { fetchClassInfoPage, fetchCoursePlanByClassNo, fetchCoursePlanByTeacherNo } from '@/api/modules/course';
+import { adjustCoursePlan, fetchClassInfoPage, fetchCoursePlanByClassNo, fetchCoursePlanByTeacherNo } from '@/api/modules/course';
 
+const authStore = useAuthStore();
 const loading = ref(false);
 const viewMode = ref('class');
 const selectedClassNo = ref('');
@@ -145,12 +161,17 @@ const selectedTeacherNo = ref('');
 const classOptions = ref([]);
 const teacherOptions = ref([]);
 const planList = ref([]);
+const dragPlanId = ref(null);
+const adjusting = ref(false);
 
 const viewModeOptions = [
   { label: '班级视角', value: 'class' },
   { label: '教师视角', value: 'teacher' }
 ];
 
+const canDragAdjust = computed(
+  () => viewMode.value === 'class' && authStore.hasPermission('btn:timetable:drag-adjust')
+);
 const teacherCount = computed(() => new Set(planList.value.map((item) => item.teacherNo).filter(Boolean)).size);
 const classroomCount = computed(() => new Set(planList.value.map((item) => item.classroomNo).filter(Boolean)).size);
 const currentTarget = computed(() => (viewMode.value === 'class' ? selectedClassNo.value : selectedTeacherNo.value));
@@ -191,6 +212,53 @@ function getPlanCell(dayIndex, periodIndex) {
   });
 }
 
+function toClassTime(dayIndex, periodIndex) {
+  return String((dayIndex - 1) * 5 + periodIndex).padStart(2, '0');
+}
+
+function handleDragStart(item) {
+  if (!canDragAdjust.value) {
+    return;
+  }
+  dragPlanId.value = item.id;
+}
+
+function handleDragEnd() {
+  dragPlanId.value = null;
+}
+
+function handleDragOver(event) {
+  if (!canDragAdjust.value) {
+    return;
+  }
+  event.preventDefault();
+}
+
+async function handleDrop(dayIndex, periodIndex) {
+  if (!canDragAdjust.value || !dragPlanId.value || adjusting.value) {
+    return;
+  }
+  const targetClassTime = toClassTime(dayIndex, periodIndex);
+  const targetPlan = planList.value.find((item) => item.id === dragPlanId.value);
+  if (!targetPlan || targetPlan.classTime === targetClassTime) {
+    dragPlanId.value = null;
+    return;
+  }
+  adjusting.value = true;
+  try {
+    await adjustCoursePlan({
+      id: targetPlan.id,
+      classTime: targetClassTime,
+      classroomNo: targetPlan.classroomNo
+    });
+    ElMessage.success('调课成功');
+    await loadCoursePlan();
+  } finally {
+    adjusting.value = false;
+    dragPlanId.value = null;
+  }
+}
+
 async function loadClassOptions() {
   const response = await fetchClassInfoPage(1, 200);
   classOptions.value = response.data?.records || [];
@@ -224,6 +292,7 @@ function clearPlan() {
   selectedClassNo.value = '';
   selectedTeacherNo.value = '';
   planList.value = [];
+  dragPlanId.value = null;
 }
 
 onMounted(async () => {
@@ -321,6 +390,12 @@ onMounted(async () => {
   gap: 16px;
 }
 
+.header-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .card-title {
   font-size: 16px;
   font-weight: 700;
@@ -386,6 +461,15 @@ onMounted(async () => {
   border: 1px solid #e4edf7;
 }
 
+.drag-target {
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.drag-target:hover {
+  border-color: #9fc2ff;
+  background: linear-gradient(180deg, #fff 0%, #f5faff 100%);
+}
+
 .empty-slot {
   display: flex;
   align-items: center;
@@ -398,11 +482,17 @@ onMounted(async () => {
   color: #95a3b8;
 }
 
+.dragging-card {
+  opacity: 0.64;
+  cursor: grabbing;
+}
+
 .course-card {
   padding: 12px 14px;
   border: 1px solid #dfeaf5;
   border-radius: 16px;
   background: linear-gradient(180deg, #fff 0%, #f7fbff 100%);
+  cursor: grab;
 }
 
 .course-main {

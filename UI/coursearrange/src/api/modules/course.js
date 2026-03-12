@@ -41,3 +41,7 @@ export function fetchCoursePlanByClassNo(classNo) {
 export function fetchCoursePlanByTeacherNo(teacherNo) {
   return request.get(`/legacy-api/courseplan/teacher/${encodeURIComponent(teacherNo)}`, legacyOptions);
 }
+
+export function adjustCoursePlan(payload) {
+  return request.post('/legacy-api/courseplan/adjust', payload, legacyOptions);
+}
