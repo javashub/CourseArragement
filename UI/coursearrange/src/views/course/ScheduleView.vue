@@ -143,6 +143,27 @@
         <el-table-column prop="teacherNo" label="教师编号" min-width="120" />
       </el-table>
     </el-card>
+
+    <el-card shadow="never" class="raw-card" v-if="adjustLogs.length">
+      <template #header>
+        <div class="card-head">
+          <div>
+            <div class="card-title">最近调课记录</div>
+            <div class="card-caption">用于追踪谁把哪门课从哪个时间片调到了哪个时间片，后续会继续扩展成完整审计页。</div>
+          </div>
+        </div>
+      </template>
+
+      <el-table :data="adjustLogs" size="small" stripe max-height="280">
+        <el-table-column prop="operatorName" label="操作人" min-width="120" />
+        <el-table-column prop="classNo" label="班级" min-width="110" />
+        <el-table-column prop="teacherNo" label="教师编号" min-width="120" />
+        <el-table-column prop="beforeClassTime" label="调整前" width="100" />
+        <el-table-column prop="afterClassTime" label="调整后" width="100" />
+        <el-table-column prop="remark" label="备注" min-width="120" />
+        <el-table-column prop="createTime" label="时间" min-width="170" />
+      </el-table>
+    </el-card>
   </section>
 </template>
 
@@ -151,7 +172,13 @@ import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { fetchTeacherPage } from '@/api/modules/base';
-import { adjustCoursePlan, fetchClassInfoPage, fetchCoursePlanByClassNo, fetchCoursePlanByTeacherNo } from '@/api/modules/course';
+import {
+  adjustCoursePlan,
+  fetchClassInfoPage,
+  fetchCoursePlanAdjustLogs,
+  fetchCoursePlanByClassNo,
+  fetchCoursePlanByTeacherNo
+} from '@/api/modules/course';
 
 const authStore = useAuthStore();
 const loading = ref(false);
@@ -161,6 +188,7 @@ const selectedTeacherNo = ref('');
 const classOptions = ref([]);
 const teacherOptions = ref([]);
 const planList = ref([]);
+const adjustLogs = ref([]);
 const dragPlanId = ref(null);
 const adjusting = ref(false);
 
@@ -272,6 +300,7 @@ async function loadTeacherOptions() {
 async function loadCoursePlan() {
   if (!currentTarget.value) {
     planList.value = [];
+    adjustLogs.value = [];
     return;
   }
   loading.value = true;
@@ -280,18 +309,30 @@ async function loadCoursePlan() {
       ? await fetchCoursePlanByClassNo(selectedClassNo.value)
       : await fetchCoursePlanByTeacherNo(selectedTeacherNo.value);
     planList.value = response.data || [];
+    await loadAdjustLogs();
   } catch (error) {
     planList.value = [];
+    adjustLogs.value = [];
     ElMessage.warning(viewMode.value === 'class' ? '当前班级还没有生成课表' : '当前教师还没有生成课表');
   } finally {
     loading.value = false;
   }
 }
 
+async function loadAdjustLogs() {
+  const response = await fetchCoursePlanAdjustLogs({
+    classNo: viewMode.value === 'class' ? selectedClassNo.value : undefined,
+    teacherNo: viewMode.value === 'teacher' ? selectedTeacherNo.value : undefined,
+    limit: 10
+  });
+  adjustLogs.value = response.data || [];
+}
+
 function clearPlan() {
   selectedClassNo.value = '';
   selectedTeacherNo.value = '';
   planList.value = [];
+  adjustLogs.value = [];
   dragPlanId.value = null;
 }
 

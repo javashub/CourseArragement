@@ -45,3 +45,10 @@ export function fetchCoursePlanByTeacherNo(teacherNo) {
 export function adjustCoursePlan(payload) {
   return request.post('/legacy-api/courseplan/adjust', payload, legacyOptions);
 }
+
+export function fetchCoursePlanAdjustLogs(params = {}) {
+  return request.get('/legacy-api/courseplan/adjust/logs', {
+    ...legacyOptions,
+    params
+  });
+}

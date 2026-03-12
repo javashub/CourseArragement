@@ -1,17 +1,22 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.CourseInfo;
+import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.dao.CoursePlanDao;
 import com.lyk.coursearrange.entity.Teacher;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.lyk.coursearrange.entity.response.CoursePlanVo;
+import com.lyk.coursearrange.service.CoursePlanAdjustLogService;
 import com.lyk.coursearrange.service.CourseInfoService;
 import com.lyk.coursearrange.service.CoursePlanService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.service.TeacherService;
+import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +31,7 @@ import java.util.stream.Collectors;
  * @author lequal
  * @since 2020-04-15
  */
+@Slf4j
 @Service
 public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan> implements CoursePlanService {
 
@@ -35,6 +41,10 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
     private TeacherService teacherService;
     @Resource
     private CoursePlanDao coursePlanDao;
+    @Resource
+    private CoursePlanAdjustLogService coursePlanAdjustLogService;
+    @Resource
+    private AuthFacadeService authFacadeService;
 
     /**
      * 根据班级编号查询课表
@@ -69,6 +79,8 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         String targetClassroomNo = request.getClassroomNo() != null && !request.getClassroomNo().isBlank()
                 ? request.getClassroomNo()
                 : coursePlan.getClassroomNo();
+        String beforeClassTime = coursePlan.getClassTime();
+        String beforeClassroomNo = coursePlan.getClassroomNo();
         String conflictMessage = validateAdjustConflict(coursePlan, targetClassTime, targetClassroomNo);
         if (conflictMessage != null) {
             return ServerResponse.ofError(conflictMessage);
@@ -76,7 +88,11 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         coursePlan.setClassTime(targetClassTime);
         coursePlan.setClassroomNo(targetClassroomNo);
         boolean updated = updateById(coursePlan);
-        return updated ? ServerResponse.ofSuccess("调课成功", coursePlan) : ServerResponse.ofError("调课失败");
+        if (updated) {
+            saveAdjustLog(coursePlan, beforeClassTime, beforeClassroomNo, targetClassTime, targetClassroomNo);
+            return ServerResponse.ofSuccess("调课成功", coursePlan);
+        }
+        return ServerResponse.ofError("调课失败");
     }
 
     private String validateAdjustConflict(CoursePlan currentPlan, String targetClassTime, String targetClassroomNo) {
@@ -102,6 +118,18 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         return null;
     }
 
+    @Override
+    public List<CoursePlanAdjustLog> listRecentAdjustLogs(String semester, String classNo, String teacherNo, Integer limit) {
+        LambdaQueryWrapper<CoursePlanAdjustLog> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(CoursePlanAdjustLog::getDeleted, 0)
+                .eq(semester != null && !semester.isBlank(), CoursePlanAdjustLog::getSemester, semester)
+                .eq(classNo != null && !classNo.isBlank(), CoursePlanAdjustLog::getClassNo, classNo)
+                .eq(teacherNo != null && !teacherNo.isBlank(), CoursePlanAdjustLog::getTeacherNo, teacherNo)
+                .orderByDesc(CoursePlanAdjustLog::getCreateTime)
+                .last("limit " + (limit == null || limit <= 0 ? 10 : limit));
+        return coursePlanAdjustLogService.list(wrapper);
+    }
+
     private LambdaQueryWrapper<CoursePlan> buildAdjustConflictWrapper(CoursePlan currentPlan, String targetClassTime) {
         LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(CoursePlan::getSemester, currentPlan.getSemester())
@@ -109,6 +137,36 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
                 .ne(CoursePlan::getId, currentPlan.getId())
                 .eq(CoursePlan::getDeleted, 0);
         return wrapper;
+    }
+
+    private void saveAdjustLog(CoursePlan coursePlan,
+                               String beforeClassTime,
+                               String beforeClassroomNo,
+                               String targetClassTime,
+                               String targetClassroomNo) {
+        CoursePlanAdjustLog logEntity = new CoursePlanAdjustLog();
+        logEntity.setCoursePlanId(coursePlan.getId());
+        logEntity.setSemester(coursePlan.getSemester());
+        logEntity.setGradeNo(coursePlan.getGradeNo());
+        logEntity.setClassNo(coursePlan.getClassNo());
+        logEntity.setCourseNo(coursePlan.getCourseNo());
+        logEntity.setTeacherNo(coursePlan.getTeacherNo());
+        logEntity.setBeforeClassTime(beforeClassTime);
+        logEntity.setAfterClassTime(targetClassTime);
+        logEntity.setBeforeClassroomNo(beforeClassroomNo);
+        logEntity.setAfterClassroomNo(targetClassroomNo);
+        logEntity.setRemark("拖拽调课");
+        try {
+            CurrentUserVO currentUser = authFacadeService.getCurrentUserView();
+            if (currentUser != null) {
+                logEntity.setOperatorUserId(currentUser.getUserId());
+                logEntity.setOperatorName(currentUser.getDisplayName());
+                logEntity.setOperatorType(currentUser.getUserType());
+            }
+        } catch (Exception exception) {
+            log.warn("记录调课日志时获取当前用户失败，planId={}", coursePlan.getId(), exception);
+        }
+        coursePlanAdjustLogService.save(logEntity);
     }
 
     private ServerResponse buildCoursePlanResponse(List<CoursePlan> coursePlanList, String emptyMessage) {

@@ -1,10 +1,13 @@
 package com.lyk.coursearrange.service;
 
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.List;
 
 /**
  * @author lequal
@@ -26,5 +29,10 @@ public interface CoursePlanService extends IService<CoursePlan> {
      * 调整课表时间片。
      */
     ServerResponse adjustCoursePlan(CoursePlanAdjustRequest request);
+
+    /**
+     * 查询最近调课日志。
+     */
+    List<CoursePlanAdjustLog> listRecentAdjustLogs(String semester, String classNo, String teacherNo, Integer limit);
 
 }
