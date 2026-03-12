@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.OnlineCourse;
 import com.lyk.coursearrange.entity.request.OnlineCourseAddVO;
 import com.lyk.coursearrange.service.OnlineCourseService;
@@ -53,10 +55,7 @@ public class OnlineCourseController {
         wrapper.eq("online_category_id", id);
         Page<OnlineCourse> pages = new Page<>(page, limit);
         IPage<OnlineCourse> iPage = ocs.page(pages, wrapper);
-        if (page != null) {
-            return ServerResponse.ofSuccess(iPage);
-        }
-        return ServerResponse.ofError("查询不到数据");
+        return ServerResponse.ofSuccess(iPage);
     }
 
     /**
@@ -71,10 +70,7 @@ public class OnlineCourseController {
         wrapper.orderByDesc("update_time");
         Page<OnlineCourse> pages = new Page<>(page, limit);
         IPage<OnlineCourse> iPage = ocs.page(pages, wrapper);
-        if (page != null) {
-            return ServerResponse.ofSuccess(iPage);
-        }
-        return ServerResponse.ofError("查询不到数据");
+        return ServerResponse.ofSuccess(iPage);
     }
 
 
@@ -103,7 +99,7 @@ public class OnlineCourseController {
         if (b) {
             return ServerResponse.ofSuccess("添加网课成功");
         }
-        return ServerResponse.ofError("添加网课失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加网课失败");
     }
 
     /**
@@ -113,11 +109,12 @@ public class OnlineCourseController {
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse delete(@PathVariable("id") Integer id) {
+        requireOnlineCourseExists(id);
         boolean b = ocs.removeById(id);
         if (b) {
             return ServerResponse.ofSuccess("删除网课成功");
         }
-        return ServerResponse.ofError("删除网课失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除网课失败");
     }
 
 
@@ -130,9 +127,17 @@ public class OnlineCourseController {
         wrapper.select("online_no");
         wrapper.orderByDesc("online_no");
         List<OnlineCourse> list = ocs.list(wrapper);
+        if (list.isEmpty()) {
+            return "10001";
+        }
         String no = String.valueOf(Integer.parseInt(list.get(0).getOnlineNo()) + 1);
         return no;
     }
 
-}
+    private void requireOnlineCourseExists(Integer id) {
+        if (id == null || ocs.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "网课不存在");
+        }
+    }
 
+}

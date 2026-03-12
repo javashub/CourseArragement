@@ -3,6 +3,8 @@ package com.lyk.coursearrange.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.OnlineCategory;
 import com.lyk.coursearrange.service.OnlineCategoryService;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +43,7 @@ public class OnlineCategoryController {
         if (b) {
             return ServerResponse.ofSuccess("添加成功");
         }
-        return ServerResponse.ofError("添加失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加失败");
     }
 
 
@@ -52,12 +54,12 @@ public class OnlineCategoryController {
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteCategory(@PathVariable("id") Integer id) {
-
+        requireCategoryExists(id);
         boolean b = ocs.removeById(id);
         if (b) {
             return ServerResponse.ofSuccess("删除类别成功");
         }
-        return ServerResponse.ofError("删除类别失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除类别失败");
     }
 
     /**
@@ -96,10 +98,19 @@ public class OnlineCategoryController {
     public ServerResponse getNo() {
         QueryWrapper<OnlineCategory> wrapper = new QueryWrapper<OnlineCategory>().select("category_no").orderByDesc("category_no");
         List<OnlineCategory> list = ocs.list(wrapper);
+        if (list.isEmpty()) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "暂无在线分类数据，无法生成编号");
+        }
         String no = String.valueOf(Integer.parseInt(list.get(0).getCategoryNo()) + 1);
         log.info("生成在线分类编号成功，categoryNo={}", no);
         // 返回自动生成的编号，从res.data.message中获取
         return ServerResponse.ofSuccess(no);
+    }
+
+    private void requireCategoryExists(Integer id) {
+        if (id == null || ocs.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "在线分类不存在");
+        }
     }
 
 }

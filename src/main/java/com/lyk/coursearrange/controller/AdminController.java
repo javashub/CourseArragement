@@ -8,6 +8,8 @@ import com.lyk.coursearrange.auth.service.AuthLoginService;
 import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.constants.SystemConstants;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.Admin;
 import com.lyk.coursearrange.entity.request.PasswordVO;
 import com.lyk.coursearrange.entity.request.UserLoginRequest;
@@ -54,7 +56,7 @@ public class AdminController {
             map.put("token", token);
             return ServerResponse.ofSuccess(map);
         }
-        return ServerResponse.ofError("用户名或密码错误!");
+        throw new BusinessException(ResultCode.BUSINESS_ERROR, "用户名或密码错误!");
     }
 
     /**
@@ -63,8 +65,9 @@ public class AdminController {
      */
     @PostMapping("/modify")
     public ServerResponse modifyAdmin(@RequestBody Admin admin) {
-
-        return adminService.updateById(admin) ? ServerResponse.ofSuccess("更新成功！") : ServerResponse.ofError("更新失败！");
+        requireAdminExists(admin.getId());
+        return adminService.updateById(admin) ? ServerResponse.ofSuccess("更新成功！")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "更新失败！");
     }
 
     /**
@@ -74,7 +77,11 @@ public class AdminController {
      */
     @GetMapping("/{id}")
     public ServerResponse queryAdmin(@PathVariable("id") Integer id) {
-        return ServerResponse.ofSuccess(adminService.getById(id));
+        Admin admin = adminService.getById(id);
+        if (admin == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "管理员不存在");
+        }
+        return ServerResponse.ofSuccess(admin);
     }
 
 
@@ -87,14 +94,14 @@ public class AdminController {
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
         Admin admin = adminService.getById(passwordVO.getId());
         if (admin == null) {
-            return ServerResponse.ofError("管理员不存在");
+            throw new BusinessException(ResultCode.NOT_FOUND, "管理员不存在");
         }
         // 步骤1：校验旧密码，同时兼容明文历史密码与 BCrypt 新密码。
         boolean passwordMatched = passwordService.isEncoded(admin.getPassword())
                 ? passwordService.matches(passwordVO.getOldPass(), admin.getPassword())
                 : passwordVO.getOldPass().equals(admin.getPassword());
         if (!passwordMatched) {
-            return ServerResponse.ofError("旧密码错误");
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "旧密码错误");
         }
         // 步骤2：新密码统一使用 BCrypt 加密保存。
         admin.setPassword(passwordService.encode(passwordVO.getNewPass()));
@@ -103,8 +110,17 @@ public class AdminController {
             authAccountSyncService.updatePasswordBySource(SystemConstants.SourceType.ADMIN, admin.getId().longValue(), admin.getPassword());
             return ServerResponse.ofSuccess("密码修改成功");
         }
-        return ServerResponse.ofError("密码更新失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "密码更新失败");
     }
 
+    private void requireAdminExists(Integer id) {
+        if (id == null || adminService.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "管理员不存在");
+        }
+    }
+
+    private ServerResponse throwBusiness(ResultCode resultCode, String message) {
+        throw new BusinessException(resultCode, message);
+    }
 
 }
