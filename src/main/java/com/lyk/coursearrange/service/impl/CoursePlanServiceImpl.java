@@ -3,6 +3,8 @@ package com.lyk.coursearrange.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.CourseInfo;
 import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.CoursePlan;
@@ -70,10 +72,10 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
     public ServerResponse adjustCoursePlan(CoursePlanAdjustRequest request) {
         CoursePlan coursePlan = getById(request.getId());
         if (coursePlan == null) {
-            return ServerResponse.ofError("课表记录不存在");
+            throw new BusinessException(ResultCode.NOT_FOUND, "课表记录不存在");
         }
         if (request.getClassTime() == null || request.getClassTime().isBlank()) {
-            return ServerResponse.ofError("目标时间片不能为空");
+            throw new BusinessException(ResultCode.BAD_REQUEST, "目标时间片不能为空");
         }
         String targetClassTime = request.getClassTime();
         String targetClassroomNo = request.getClassroomNo() != null && !request.getClassroomNo().isBlank()
@@ -83,7 +85,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         String beforeClassroomNo = coursePlan.getClassroomNo();
         String conflictMessage = validateAdjustConflict(coursePlan, targetClassTime, targetClassroomNo);
         if (conflictMessage != null) {
-            return ServerResponse.ofError(conflictMessage);
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, conflictMessage);
         }
         coursePlan.setClassTime(targetClassTime);
         coursePlan.setClassroomNo(targetClassroomNo);
@@ -92,7 +94,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
             saveAdjustLog(coursePlan, beforeClassTime, beforeClassroomNo, targetClassTime, targetClassroomNo);
             return ServerResponse.ofSuccess("调课成功", coursePlan);
         }
-        return ServerResponse.ofError("调课失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "调课失败，请稍后重试");
     }
 
     private String validateAdjustConflict(CoursePlan currentPlan, String targetClassTime, String targetClassroomNo) {

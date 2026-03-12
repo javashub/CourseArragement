@@ -2,6 +2,8 @@ package com.lyk.coursearrange.common;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.service.AdminService;
 import com.lyk.coursearrange.service.StudentService;
 import com.lyk.coursearrange.service.TeacherService;
@@ -56,14 +58,14 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
             if (userLoginToken.required()) {
                 // 执行认证
                 if (token == null) {
-                    throw new RuntimeException("无token，请重新登录");
+                    throw new BusinessException(ResultCode.UNAUTHORIZED, "无token，请重新登录");
                 }
                 // 获取 token 中的 user id
                 String userId;
                 try {
                     userId = JWT.decode(token).getAudience().get(0);
                 } catch (JWTDecodeException j) {
-                    throw new RuntimeException("401");
+                    throw new BusinessException(ResultCode.UNAUTHORIZED, "登录凭证无效，请重新登录");
                 }
 //                User user = userService.findUserById(userId);
 //                if (user == null) {

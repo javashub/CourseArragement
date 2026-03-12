@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.exceptions.CourseArrangeException;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.dao.*;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.Classroom;
@@ -62,9 +64,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             // 1、获得开课任务 tb_class_task 表
             List<ClassTask> classTaskList = classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
             if (null == classTaskList || classTaskList.isEmpty()) {
-                saveExecuteLog(semester, taskCount, 0, 0, System.currentTimeMillis() - start,
-                        "排课失败，查询不到排课任务！请导入排课任务再进行排课~");
-                return ServerResponse.ofError("排课失败，查询不到排课任务！请导入排课任务再进行排课~");
+                throw buildSchedulingException(start, semester, taskCount,
+                        "排课失败，查询不到排课任务！请导入排课任务再进行排课~", ResultCode.BUSINESS_ERROR);
             }
             taskCount = classTaskList.size();
 
@@ -98,11 +99,11 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
                     String.format("排课成功，生成 %s 条课表记录", coursePlanList.size()));
             return ServerResponse.ofSuccess(String.format("排课成功，耗时：%sms", duration));
+        } catch (BusinessException exception) {
+            throw exception;
         } catch (Exception e) {
-            long duration = System.currentTimeMillis() - start;
             log.error("排课失败： {}", e.getMessage(), e);
-            saveExecuteLog(semester, taskCount, 0, 0, duration, buildExecuteErrorMessage(e));
-            return ServerResponse.ofError("排课失败，出现异常!");
+            throw buildSchedulingException(start, semester, taskCount, buildExecuteErrorMessage(e), ResultCode.BUSINESS_ERROR);
         }
     }
 
@@ -153,6 +154,16 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             return "排课失败，系统未返回明确错误信息";
         }
         return exception.getMessage();
+    }
+
+    private BusinessException buildSchedulingException(long start,
+                                                       String semester,
+                                                       int taskCount,
+                                                       String message,
+                                                       ResultCode resultCode) {
+        long duration = System.currentTimeMillis() - start;
+        saveExecuteLog(semester, taskCount, 0, 0, duration, message);
+        return new BusinessException(resultCode, message);
     }
 
     private void checkWeeksNumber(List<ClassTask> classTaskList) {
