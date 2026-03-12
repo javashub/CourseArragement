@@ -152,8 +152,38 @@
       </div>
     </el-card>
 
+    <el-card shadow="never" class="tips-card">
+      <template #header>
+        <div class="card-title">录入约束建议</div>
+      </template>
+      <div class="constraint-grid">
+        <div class="constraint-item">
+          <strong>周学时建议</strong>
+          <span>优先录入偶数节，例如 2、4、6。旧算法对单双周和连排支持有限，先按常规课处理。</span>
+        </div>
+        <div class="constraint-item">
+          <strong>固定时间编码</strong>
+          <span>固定排课请填写两位时间编码，如 `01`、`13`。当前课表视图按周一到周五、每天五节映射。</span>
+        </div>
+        <div class="constraint-item">
+          <strong>人数与教室容量</strong>
+          <span>学生人数应尽量贴近真实班级人数，过大的人数会降低教室匹配成功率。</span>
+        </div>
+        <div class="constraint-item">
+          <strong>教师与班级</strong>
+          <span>同一教师、同一班级在同一学期内不要重复录入明显冲突的固定时段任务。</span>
+        </div>
+      </div>
+    </el-card>
+
     <el-dialog v-model="taskDialogVisible" title="新增排课任务" width="760px">
       <el-form :model="taskForm" label-position="top">
+        <div class="dialog-alert">
+          <div class="alert-title">录入前检查</div>
+          <div class="alert-text">
+            请先确认学期、班级、课程、教师四项都已对应真实数据；固定时间仅在必须占位时填写。
+          </div>
+        </div>
         <div class="form-grid">
           <el-form-item label="学期">
             <el-input v-model="taskForm.semester" placeholder="例如 2025-2026-1" />
@@ -174,7 +204,7 @@
         </div>
         <div class="form-grid">
           <el-form-item label="课程编号">
-            <el-input v-model="taskForm.courseNo" placeholder="例如 10001" />
+            <el-input v-model="taskForm.courseNo" placeholder="例如 10001，建议与课程库一致" />
           </el-form-item>
           <el-form-item label="教师姓名">
             <el-input v-model="taskForm.realname" placeholder="例如 张老师" />
@@ -182,7 +212,7 @@
         </div>
         <div class="form-grid">
           <el-form-item label="教师编号">
-            <el-input v-model="taskForm.teacherNo" placeholder="例如 T2026001" />
+            <el-input v-model="taskForm.teacherNo" placeholder="例如 T2026001，建议与教师库一致" />
           </el-form-item>
           <el-form-item label="课程属性">
             <el-input v-model="taskForm.courseAttr" placeholder="例如 必修、实验课" />
@@ -207,8 +237,16 @@
             </el-radio-group>
           </el-form-item>
           <el-form-item label="固定时间">
-            <el-input v-model="taskForm.classTime" placeholder="例如 0102、0304，未固定可留空" />
+            <el-input v-model="taskForm.classTime" placeholder="例如 01、13；未固定可留空，不建议一次填多个编码" />
           </el-form-item>
+        </div>
+        <div class="validation-preview">
+          <el-tag :type="formValidation.isValid ? 'success' : 'warning'" effect="plain">
+            {{ formValidation.isValid ? '当前表单可提交' : '当前表单存在待处理项' }}
+          </el-tag>
+          <div class="validation-list">
+            <span v-for="item in formValidation.messages" :key="item">{{ item }}</span>
+          </div>
         </div>
       </el-form>
       <template #footer>
@@ -260,6 +298,41 @@ const latestExecutionSummary = computed(() => {
   }
   const latest = executionLogs.value[0];
   return latest.status === 1 ? '最近一次成功' : '最近一次失败';
+});
+
+const formValidation = computed(() => {
+  const messages = [];
+  if (!taskForm.value.semester?.trim()) {
+    messages.push('请填写学期');
+  }
+  if (!taskForm.value.classNo?.trim()) {
+    messages.push('请关联班级');
+  }
+  if (!taskForm.value.courseNo?.trim() || !taskForm.value.courseName?.trim()) {
+    messages.push('课程编号和课程名称需要同时填写');
+  }
+  if (!taskForm.value.teacherNo?.trim() || !taskForm.value.realname?.trim()) {
+    messages.push('教师编号和教师姓名需要同时填写');
+  }
+  if (!taskForm.value.weeksNumber || taskForm.value.weeksNumber < 1) {
+    messages.push('周学时必须大于 0');
+  } else if (taskForm.value.weeksNumber % 2 !== 0) {
+    messages.push('当前建议优先使用偶数周学时');
+  }
+  if (taskForm.value.isFix === '1') {
+    if (!taskForm.value.classTime?.trim()) {
+      messages.push('固定排课时必须填写固定时间');
+    } else if (!/^\d{2}$/.test(taskForm.value.classTime.trim())) {
+      messages.push('固定时间当前只支持两位编码，例如 01、13');
+    }
+  }
+  if (taskForm.value.studentNum > 120) {
+    messages.push('学生人数较大，请确认是否需要大教室');
+  }
+  return {
+    isValid: messages.length === 0,
+    messages: messages.length ? messages : ['基础信息完整，可继续保存']
+  };
 });
 
 function createTaskForm() {
@@ -373,9 +446,60 @@ function prefillTaskByClass() {
 }
 
 async function submitTask() {
+  const semester = taskForm.value.semester?.trim();
+  const courseNo = taskForm.value.courseNo?.trim();
+  const courseName = taskForm.value.courseName?.trim();
+  const teacherNo = taskForm.value.teacherNo?.trim();
+  const realname = taskForm.value.realname?.trim();
+  const fixedTime = taskForm.value.classTime?.trim();
+  if (!semester) {
+    ElMessage.warning('请先填写学期');
+    return;
+  }
+  if (!taskForm.value.classNo) {
+    ElMessage.warning('请先选择班级');
+    return;
+  }
+  if (!courseNo || !courseName) {
+    ElMessage.warning('请完整填写课程编号和课程名称');
+    return;
+  }
+  if (!teacherNo || !realname) {
+    ElMessage.warning('请完整填写教师编号和教师姓名');
+    return;
+  }
+  if (!taskForm.value.weeksNumber || taskForm.value.weeksNumber < 1) {
+    ElMessage.warning('周学时必须大于 0');
+    return;
+  }
+  if (!taskForm.value.weeksSum || taskForm.value.weeksSum < 1) {
+    ElMessage.warning('周数必须大于 0');
+    return;
+  }
+  if (taskForm.value.isFix === '1') {
+    if (!fixedTime) {
+      ElMessage.warning('固定排课时必须填写固定时间');
+      return;
+    }
+    if (!/^\d{2}$/.test(fixedTime)) {
+      ElMessage.warning('固定时间当前只支持两位编码，例如 01、13');
+      return;
+    }
+  } else {
+    taskForm.value.classTime = '';
+  }
+
   taskSubmitting.value = true;
   try {
-    await createClassTask(taskForm.value);
+    await createClassTask({
+      ...taskForm.value,
+      semester,
+      courseNo,
+      courseName,
+      teacherNo,
+      realname,
+      classTime: fixedTime || ''
+    });
     ElMessage.success('排课任务创建成功');
     taskDialogVisible.value = false;
     if (!semesters.value.includes(taskForm.value.semester)) {
@@ -542,6 +666,12 @@ onMounted(async () => {
   gap: 14px;
 }
 
+.constraint-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .tip-item {
   display: flex;
   flex-direction: column;
@@ -555,6 +685,40 @@ onMounted(async () => {
   line-height: 1.6;
 }
 
+.constraint-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid #e4edf7;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff 0%, #fbfcff 100%);
+  color: #586b83;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.dialog-alert {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid #dce8f8;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgb(249 252 255 / 96%) 0%, rgb(240 248 255 / 96%) 100%);
+}
+
+.alert-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d3557;
+}
+
+.alert-text {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #60748d;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -563,6 +727,21 @@ onMounted(async () => {
 
 .compact-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.validation-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.validation-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+  color: #6e8197;
 }
 
 :deep(.primary-action.el-button) {
@@ -587,6 +766,7 @@ onMounted(async () => {
   }
 
   .tips-grid,
+  .constraint-grid,
   .form-grid,
   .compact-grid {
     grid-template-columns: 1fr;
