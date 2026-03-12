@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.service.ClassTaskService;
@@ -38,7 +40,7 @@ public class ClassTaskController {
 
         LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester);
         IPage<ClassTask> ipage = classTaskService.page(new Page<>(page, limit), wrapper);
-        return ipage != null ? ServerResponse.ofSuccess(ipage) : ServerResponse.ofError("查询开课任务失败！");
+        return ServerResponse.ofSuccess(ipage);
     }
 
     /**
@@ -53,7 +55,8 @@ public class ClassTaskController {
         BeanUtils.copyProperties(c, classTask);
         log.info("新增课程任务，semester={}, courseNo={}, classNo={}",
                 classTask.getSemester(), classTask.getCourseNo(), classTask.getClassNo());
-        return classTaskService.save(classTask) ? ServerResponse.ofSuccess("添加课程任务成功") : ServerResponse.ofError("添加课程任务失败");
+        return classTaskService.save(classTask) ? ServerResponse.ofSuccess("添加课程任务成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
     }
 
 
@@ -63,7 +66,9 @@ public class ClassTaskController {
      */
     @DeleteMapping("/deleteclasstask/{id}")
     public ServerResponse deleteClassTask(@PathVariable("id") Integer id) {
-        return classTaskService.removeById(id) ? ServerResponse.ofSuccess("删除成功") : ServerResponse.ofError("删除失败");
+        requireClassTaskExists(id);
+        return classTaskService.removeById(id) ? ServerResponse.ofSuccess("删除成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "删除失败");
     }
 
     /**
@@ -96,5 +101,15 @@ public class ClassTaskController {
                                            @RequestParam(defaultValue = "10") Integer limit) {
         List<?> logs = classTaskService.listRecentExecuteLogs(semester, limit);
         return ServerResponse.ofSuccess(logs);
+    }
+
+    private void requireClassTaskExists(Integer id) {
+        if (id == null || classTaskService.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "开课任务不存在");
+        }
+    }
+
+    private ServerResponse throwBusiness(ResultCode resultCode, String message) {
+        throw new BusinessException(resultCode, message);
     }
 }

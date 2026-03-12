@@ -5,22 +5,19 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
-import com.lyk.coursearrange.dao.ClassInfoDao;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.request.ClassAddVO;
-import com.lyk.coursearrange.entity.response.ClassInfoVO;
 import com.lyk.coursearrange.service.ClassInfoService;
 import com.lyk.coursearrange.service.StudentService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 班级信息
@@ -82,8 +79,12 @@ public class ClassInfoController {
         BeanUtils.copyProperties(classAddVO, c);
         c.setRemark(classAddVO.getGradeNo());
 
-        return classInfoService.save(c) ? ServerResponse.ofSuccess("添加班级成功") : ServerResponse.ofError("添加班级失败");
+        return classInfoService.save(c) ? ServerResponse.ofSuccess("添加班级成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "添加班级失败");
+    }
+
+    private ServerResponse throwBusiness(ResultCode resultCode, String message) {
+        throw new BusinessException(resultCode, message);
     }
 
 }
-

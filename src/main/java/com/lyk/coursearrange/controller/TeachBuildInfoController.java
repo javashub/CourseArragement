@@ -6,10 +6,11 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.TeachbuildInfo;
 import com.lyk.coursearrange.entity.request.TeachbuildAddRequest;
 import com.lyk.coursearrange.service.TeachbuildInfoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -35,7 +36,7 @@ public class TeachBuildInfoController {
         Page<TeachbuildInfo> pages = new Page<>(page, limit);
         LambdaQueryWrapper<TeachbuildInfo> wrapper = new LambdaQueryWrapper<TeachbuildInfo>().orderByDesc(TeachbuildInfo::getUpdateTime);
         IPage<TeachbuildInfo> ipage = teachBuildInfoService.page(pages, wrapper);
-        return null != ipage ? ServerResponse.ofSuccess(ipage) : ServerResponse.ofError("查询失败");
+        return ServerResponse.ofSuccess(ipage);
     }
 
     /**
@@ -52,7 +53,9 @@ public class TeachBuildInfoController {
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteTeachbuilding(@PathVariable("id") Integer id) {
-        return teachBuildInfoService.removeById(id) ? ServerResponse.ofSuccess("删除成功") : ServerResponse.ofError("删除失败");
+        requireTeachbuildExists(id);
+        return teachBuildInfoService.removeById(id) ? ServerResponse.ofSuccess("删除成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "删除失败");
     }
 
     /**
@@ -64,7 +67,8 @@ public class TeachBuildInfoController {
         t1.setTeachBuildNo(t.getTeachBuildNo());
         t1.setTeachBuildName(t.getTeachBuildName());
         t1.setTeachBuildLocation(t.getTeachBuildLocation());
-        return teachBuildInfoService.save(t1) ? ServerResponse.ofSuccess("添加成功") : ServerResponse.ofError("添加失败");
+        return teachBuildInfoService.save(t1) ? ServerResponse.ofSuccess("添加成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "添加失败");
     }
 
     /**
@@ -72,7 +76,11 @@ public class TeachBuildInfoController {
      */
     @GetMapping("/select/{id}")
     public ServerResponse queryTeachBuildingById(@PathVariable("id") Integer id) {
-        return ServerResponse.ofSuccess(teachBuildInfoService.getById(id));
+        TeachbuildInfo teachbuildInfo = teachBuildInfoService.getById(id);
+        if (teachbuildInfo == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "教学楼不存在");
+        }
+        return ServerResponse.ofSuccess(teachbuildInfo);
     }
 
 
@@ -81,9 +89,19 @@ public class TeachBuildInfoController {
      */
     @PostMapping("/modify/{id}")
     public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody TeachbuildInfo t) {
-        return teachBuildInfoService.updateById(t) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");
+        requireTeachbuildExists(id);
+        return teachBuildInfoService.updateById(t) ? ServerResponse.ofSuccess("更新成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "更新失败");
     }
 
+    private void requireTeachbuildExists(Integer id) {
+        if (id == null || teachBuildInfoService.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "教学楼不存在");
+        }
+    }
+
+    private ServerResponse throwBusiness(ResultCode resultCode, String message) {
+        throw new BusinessException(resultCode, message);
+    }
 
 }
-

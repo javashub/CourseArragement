@@ -1,15 +1,14 @@
 package com.lyk.coursearrange.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.dao.LocationInfoDao;
 import com.lyk.coursearrange.entity.LocationInfo;
-import com.lyk.coursearrange.entity.TeachbuildInfo;
 import com.lyk.coursearrange.entity.request.LocationSetVO;
 import com.lyk.coursearrange.entity.response.LocationVO;
 import com.lyk.coursearrange.service.LocationInfoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -39,12 +38,13 @@ public class LocationInfoController {
                         .eq(LocationInfo::getGradeNo, l.getGradeNo());
 
         if (lis.getOne(wrapper) != null) {
-            return ServerResponse.ofError("该教学区域已经设置过了！");
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "该教学区域已经设置过了！");
         }
         LocationInfo locationInfo = new LocationInfo();
         locationInfo.setTeachbuildNo(l.getTeachBuildNo());
         locationInfo.setGradeNo(l.getGradeNo());
-        return  lis.save(locationInfo) ? ServerResponse.ofSuccess("设置教学区域成功") : ServerResponse.ofError("设置教学区域失败");
+        return lis.save(locationInfo) ? ServerResponse.ofSuccess("设置教学区域成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "设置教学区域失败");
     }
 
     /**
@@ -66,7 +66,18 @@ public class LocationInfoController {
      */
     @DeleteMapping("/location/delete/{id}")
     public ServerResponse delete(@PathVariable("id") Integer id) {
-        return  lis.removeById(id) ? ServerResponse.ofSuccess("删除成功") : ServerResponse.ofError("删除失败");
+        requireLocationExists(id);
+        return lis.removeById(id) ? ServerResponse.ofSuccess("删除成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "删除失败");
+    }
+
+    private void requireLocationExists(Integer id) {
+        if (id == null || lis.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "教学区域不存在");
+        }
+    }
+
+    private ServerResponse throwBusiness(ResultCode resultCode, String message) {
+        throw new BusinessException(resultCode, message);
     }
 }
-
