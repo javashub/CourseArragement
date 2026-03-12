@@ -69,7 +69,10 @@
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button link type="danger" @click="removeTask(row)">删除</el-button>
+            <el-space>
+              <el-button link type="primary" @click="goToSchedule(row.classNo)">课表</el-button>
+              <el-button link type="danger" @click="removeTask(row)">删除</el-button>
+            </el-space>
           </template>
         </el-table-column>
       </el-table>
@@ -121,6 +124,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="message" label="执行结果" min-width="260" show-overflow-tooltip />
+        <el-table-column label="操作" width="100" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="goToSchedule('', row.semester)">查看课表</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
 
@@ -213,6 +221,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   arrangeClassTask,
@@ -226,6 +235,7 @@ import {
 
 const semesters = ref([]);
 const selectedSemester = ref('');
+const router = useRouter();
 const arranging = ref(false);
 const taskDialogVisible = ref(false);
 const taskSubmitting = ref(false);
@@ -335,6 +345,20 @@ async function handleSemesterChange() {
 function openTaskDialog() {
   taskForm.value = createTaskForm();
   taskDialogVisible.value = true;
+}
+
+function goToSchedule(classNo = '', semester = selectedSemester.value) {
+  const query = {
+    view: 'class',
+    semester: semester || selectedSemester.value || ''
+  };
+  if (classNo) {
+    query.classNo = classNo;
+  }
+  router.push({
+    path: '/schedule',
+    query
+  });
 }
 
 function prefillTaskByClass() {

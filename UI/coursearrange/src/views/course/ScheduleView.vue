@@ -9,7 +9,20 @@
         </p>
       </div>
       <div class="hero-actions">
-        <el-segmented v-model="viewMode" :options="viewModeOptions" class="view-switch" />
+        <el-segmented v-model="viewMode" :options="viewModeOptions" class="view-switch" @change="handleViewModeChange" />
+        <el-select
+          v-model="selectedSemester"
+          filterable
+          clearable
+          allow-create
+          default-first-option
+          placeholder="选择学期，例如 2025-2026-1"
+          class="class-select"
+          @change="handleSemesterChange"
+          @clear="handleSemesterClear"
+        >
+          <el-option v-for="item in semesterOptions" :key="item" :label="item" :value="item" />
+        </el-select>
         <el-select
           v-if="viewMode === 'class'"
           v-model="selectedClassNo"
@@ -17,7 +30,7 @@
           clearable
           placeholder="选择班级，例如 2401"
           class="class-select"
-          @change="loadCoursePlan"
+          @change="handleTargetChange"
           @clear="clearPlan"
         >
           <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
@@ -29,7 +42,7 @@
           clearable
           placeholder="选择教师，例如 T2026001"
           class="class-select"
-          @change="loadCoursePlan"
+          @change="handleTargetChange"
           @clear="clearPlan"
         >
           <el-option
@@ -151,6 +164,10 @@
             <div class="card-title">最近调课记录</div>
             <div class="card-caption">用于追踪谁把哪门课从哪个时间片调到了哪个时间片，后续会继续扩展成完整审计页。</div>
           </div>
+          <div class="header-tags">
+            <el-tag type="info" effect="plain">学期 {{ selectedSemester || '全部' }}</el-tag>
+            <el-button class="ghost-action" size="small" @click="loadAdjustLogs">刷新调课记录</el-button>
+          </div>
         </div>
       </template>
 
@@ -169,11 +186,13 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { fetchTeacherPage } from '@/api/modules/base';
 import {
   adjustCoursePlan,
+  fetchSemesterList,
   fetchClassInfoPage,
   fetchCoursePlanAdjustLogs,
   fetchCoursePlanByClassNo,
@@ -181,10 +200,14 @@ import {
 } from '@/api/modules/course';
 
 const authStore = useAuthStore();
+const route = useRoute();
+const router = useRouter();
 const loading = ref(false);
 const viewMode = ref('class');
+const selectedSemester = ref('');
 const selectedClassNo = ref('');
 const selectedTeacherNo = ref('');
+const semesterOptions = ref([]);
 const classOptions = ref([]);
 const teacherOptions = ref([]);
 const planList = ref([]);
@@ -292,6 +315,11 @@ async function loadClassOptions() {
   classOptions.value = response.data?.records || [];
 }
 
+async function loadSemesterOptions() {
+  const response = await fetchSemesterList();
+  semesterOptions.value = [...(response.data || [])].sort().reverse();
+}
+
 async function loadTeacherOptions() {
   const response = await fetchTeacherPage(1, 200);
   teacherOptions.value = response.data?.records || [];
@@ -321,11 +349,52 @@ async function loadCoursePlan() {
 
 async function loadAdjustLogs() {
   const response = await fetchCoursePlanAdjustLogs({
+    semester: selectedSemester.value || undefined,
     classNo: viewMode.value === 'class' ? selectedClassNo.value : undefined,
     teacherNo: viewMode.value === 'teacher' ? selectedTeacherNo.value : undefined,
     limit: 10
   });
   adjustLogs.value = response.data || [];
+}
+
+async function handleTargetChange() {
+  syncRouteQuery();
+  await loadCoursePlan();
+}
+
+async function handleViewModeChange() {
+  planList.value = [];
+  dragPlanId.value = null;
+  if (viewMode.value === 'class') {
+    selectedTeacherNo.value = '';
+  } else {
+    selectedClassNo.value = '';
+  }
+  syncRouteQuery();
+  if (currentTarget.value) {
+    await loadCoursePlan();
+    return;
+  }
+  await loadAdjustLogs();
+}
+
+async function handleSemesterChange() {
+  syncRouteQuery();
+  if (currentTarget.value) {
+    await loadAdjustLogs();
+    return;
+  }
+  await loadAdjustLogs();
+}
+
+function handleSemesterClear() {
+  selectedSemester.value = '';
+  syncRouteQuery();
+  if (currentTarget.value) {
+    loadAdjustLogs();
+    return;
+  }
+  loadAdjustLogs();
 }
 
 function clearPlan() {
@@ -334,10 +403,45 @@ function clearPlan() {
   planList.value = [];
   adjustLogs.value = [];
   dragPlanId.value = null;
+  syncRouteQuery();
+}
+
+function syncRouteQuery() {
+  const query = {};
+  if (viewMode.value) {
+    query.view = viewMode.value;
+  }
+  if (selectedSemester.value) {
+    query.semester = selectedSemester.value;
+  }
+  if (viewMode.value === 'class' && selectedClassNo.value) {
+    query.classNo = selectedClassNo.value;
+  }
+  if (viewMode.value === 'teacher' && selectedTeacherNo.value) {
+    query.teacherNo = selectedTeacherNo.value;
+  }
+  router.replace({
+    path: '/schedule',
+    query
+  });
+}
+
+async function applyRouteQuery() {
+  const nextView = route.query.view === 'teacher' ? 'teacher' : 'class';
+  viewMode.value = nextView;
+  selectedSemester.value = typeof route.query.semester === 'string' ? route.query.semester : '';
+  selectedClassNo.value = nextView === 'class' && typeof route.query.classNo === 'string' ? route.query.classNo : '';
+  selectedTeacherNo.value = nextView === 'teacher' && typeof route.query.teacherNo === 'string' ? route.query.teacherNo : '';
+  if (currentTarget.value) {
+    await loadCoursePlan();
+  } else if (selectedSemester.value) {
+    await loadAdjustLogs();
+  }
 }
 
 onMounted(async () => {
-  await Promise.all([loadClassOptions(), loadTeacherOptions()]);
+  await Promise.all([loadClassOptions(), loadTeacherOptions(), loadSemesterOptions()]);
+  await applyRouteQuery();
 });
 </script>
 
