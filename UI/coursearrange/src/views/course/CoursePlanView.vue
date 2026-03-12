@@ -16,7 +16,7 @@
           default-first-option
           placeholder="选择或输入学期，例如 2025-2026-1"
           class="semester-select"
-          @change="loadClassTasks(true)"
+          @change="handleSemesterChange"
         >
           <el-option v-for="item in semesters" :key="item" :label="item" :value="item" />
         </el-select>
@@ -27,13 +27,19 @@
 
     <el-card shadow="never" class="plan-card">
       <div class="toolbar-row">
-        <div class="summary-chip">
-          <span class="summary-label">当前学期</span>
-          <strong>{{ selectedSemester || '--' }}</strong>
-        </div>
-        <div class="summary-chip">
-          <span class="summary-label">任务数量</span>
-          <strong>{{ taskState.total }}</strong>
+        <div class="summary-group">
+          <div class="summary-chip">
+            <span class="summary-label">当前学期</span>
+            <strong>{{ selectedSemester || '--' }}</strong>
+          </div>
+          <div class="summary-chip">
+            <span class="summary-label">任务数量</span>
+            <strong>{{ taskState.total }}</strong>
+          </div>
+          <div class="summary-chip accent-chip">
+            <span class="summary-label">最近执行</span>
+            <strong>{{ latestExecutionSummary }}</strong>
+          </div>
         </div>
         <div class="toolbar-actions">
           <el-button class="ghost-action" @click="prefillTaskByClass">按班级回填示例</el-button>
@@ -78,6 +84,44 @@
           @current-change="handleTaskPageChange"
         />
       </div>
+    </el-card>
+
+    <el-card shadow="never" class="plan-card">
+      <template #header>
+        <div class="log-header">
+          <div>
+            <div class="card-title">最近排课执行记录</div>
+            <div class="card-subtitle">保留当前学期最近 {{ executionLogLimit }} 次执行结果，方便核对成功、失败和耗时。</div>
+          </div>
+          <el-button class="ghost-action" :loading="executionLogsLoading" @click="loadExecutionLogs">
+            刷新记录
+          </el-button>
+        </div>
+      </template>
+      <el-table :data="executionLogs" stripe v-loading="executionLogsLoading" empty-text="暂无排课执行记录">
+        <el-table-column prop="createTime" label="执行时间" min-width="170" />
+        <el-table-column prop="semester" label="学期" min-width="120" />
+        <el-table-column label="执行状态" width="110">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" effect="plain">
+              {{ row.status === 1 ? '成功' : '失败' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="taskCount" label="任务数" width="90" />
+        <el-table-column prop="generatedPlanCount" label="生成课表" width="110" />
+        <el-table-column label="耗时" width="120">
+          <template #default="{ row }">
+            {{ formatDuration(row.durationMs) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="operatorName" label="执行人" width="120">
+          <template #default="{ row }">
+            {{ row.operatorName || '--' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="message" label="执行结果" min-width="260" show-overflow-tooltip />
+      </el-table>
     </el-card>
 
     <el-card shadow="never" class="tips-card">
@@ -168,12 +212,13 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   arrangeClassTask,
   createClassTask,
   deleteClassTask,
+  fetchArrangeLogs,
   fetchClassInfoPage,
   fetchClassTaskPage,
   fetchSemesterList
@@ -185,6 +230,9 @@ const arranging = ref(false);
 const taskDialogVisible = ref(false);
 const taskSubmitting = ref(false);
 const classOptions = ref([]);
+const executionLogs = ref([]);
+const executionLogsLoading = ref(false);
+const executionLogLimit = 8;
 
 const taskState = reactive({
   loading: false,
@@ -195,6 +243,14 @@ const taskState = reactive({
 });
 
 const taskForm = ref(createTaskForm());
+
+const latestExecutionSummary = computed(() => {
+  if (!executionLogs.value.length) {
+    return '暂无记录';
+  }
+  const latest = executionLogs.value[0];
+  return latest.status === 1 ? '最近一次成功' : '最近一次失败';
+});
 
 function createTaskForm() {
   return {
@@ -248,9 +304,32 @@ async function loadClassTasks(resetPage = false) {
   }
 }
 
+async function loadExecutionLogs() {
+  if (!selectedSemester.value) {
+    executionLogs.value = [];
+    return;
+  }
+  executionLogsLoading.value = true;
+  try {
+    const response = await fetchArrangeLogs({
+      semester: selectedSemester.value,
+      limit: executionLogLimit
+    });
+    executionLogs.value = response.data || [];
+  } catch (error) {
+    executionLogs.value = [];
+  } finally {
+    executionLogsLoading.value = false;
+  }
+}
+
 function handleTaskPageChange(page) {
   taskState.pageNum = page;
   loadClassTasks();
+}
+
+async function handleSemesterChange() {
+  await Promise.all([loadClassTasks(true), loadExecutionLogs()]);
 }
 
 function openTaskDialog() {
@@ -280,6 +359,7 @@ async function submitTask() {
     }
     selectedSemester.value = taskForm.value.semester;
     await loadClassTasks(true);
+    await loadExecutionLogs();
   } finally {
     taskSubmitting.value = false;
   }
@@ -301,6 +381,7 @@ async function handleArrange() {
   try {
     const response = await arrangeClassTask(selectedSemester.value);
     ElMessage.success(response.message || '排课执行完成');
+    await Promise.all([loadClassTasks(true), loadExecutionLogs()]);
   } finally {
     arranging.value = false;
   }
@@ -308,7 +389,7 @@ async function handleArrange() {
 
 onMounted(async () => {
   await Promise.all([loadSemesters(), loadClassOptions()]);
-  await loadClassTasks(true);
+  await handleSemesterChange();
 });
 </script>
 
@@ -381,12 +462,23 @@ onMounted(async () => {
   margin-bottom: 16px;
 }
 
+.summary-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
 .summary-chip {
   min-width: 160px;
   padding: 14px 16px;
   border: 1px solid #e5edf6;
   border-radius: 18px;
   background: rgb(255 255 255 / 78%);
+}
+
+.accent-chip {
+  border-color: #cfe3ff;
+  background: linear-gradient(135deg, rgb(229 240 255 / 92%) 0%, rgb(236 251 248 / 92%) 100%);
 }
 
 .summary-label {
@@ -405,6 +497,19 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 700;
   color: #17263d;
+}
+
+.card-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #70839b;
+}
+
+.log-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .tips-grid {
@@ -451,7 +556,8 @@ onMounted(async () => {
 
 @media (max-width: 960px) {
   .hero-panel,
-  .toolbar-row {
+  .toolbar-row,
+  .log-header {
     flex-direction: column;
     align-items: flex-start;
   }

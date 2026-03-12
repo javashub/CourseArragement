@@ -1,16 +1,19 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.exceptions.CourseArrangeException;
 import com.lyk.coursearrange.dao.*;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.CoursePlan;
+import com.lyk.coursearrange.entity.ScheduleExecuteLog;
 import com.lyk.coursearrange.common.ConstantInfo;
 import com.lyk.coursearrange.service.ClassTaskService;
+import com.lyk.coursearrange.service.ScheduleExecuteLogService;
+import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
 import com.lyk.coursearrange.util.ClassUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +44,10 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private ClassInfoDao classInfoDao;
     @Resource
     private CoursePlanDao coursePlanDao;
+    @Resource
+    private ScheduleExecuteLogService scheduleExecuteLogService;
+    @Resource
+    private AuthFacadeService authFacadeService;
 
     /**
      * 排课算法入口
@@ -48,14 +55,18 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ServerResponse classScheduling(String semester) {
+        long start = System.currentTimeMillis();
+        int taskCount = 0;
         try {
-            log.info("开始排课,时间：" + System.currentTimeMillis());
-            long start = System.currentTimeMillis();
+            log.info("开始排课,时间：{}", start);
             // 1、获得开课任务 tb_class_task 表
             List<ClassTask> classTaskList = classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
             if (null == classTaskList || classTaskList.isEmpty()) {
+                saveExecuteLog(semester, taskCount, 0, 0, System.currentTimeMillis() - start,
+                        "排课失败，查询不到排课任务！请导入排课任务再进行排课~");
                 return ServerResponse.ofError("排课失败，查询不到排课任务！请导入排课任务再进行排课~");
             }
+            taskCount = classTaskList.size();
 
             // 校验学时是否超过课表的容纳值
             checkWeeksNumber(classTaskList);
@@ -82,12 +93,66 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                 coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
                         coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
             }
-            log.info("完成排课,耗时：" + (System.currentTimeMillis() - start));
-            return ServerResponse.ofSuccess(String.format("排课成功，耗时：%sms", System.currentTimeMillis() - start));
+            long duration = System.currentTimeMillis() - start;
+            log.info("完成排课,耗时：{}", duration);
+            saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
+                    String.format("排课成功，生成 %s 条课表记录", coursePlanList.size()));
+            return ServerResponse.ofSuccess(String.format("排课成功，耗时：%sms", duration));
         } catch (Exception e) {
-            log.error("排课失败： {}", e.getMessage());
+            long duration = System.currentTimeMillis() - start;
+            log.error("排课失败： {}", e.getMessage(), e);
+            saveExecuteLog(semester, taskCount, 0, 0, duration, buildExecuteErrorMessage(e));
             return ServerResponse.ofError("排课失败，出现异常!");
         }
+    }
+
+    @Override
+    public List<ScheduleExecuteLog> listRecentExecuteLogs(String semester, Integer limit) {
+        int safeLimit = limit == null || limit < 1 ? 10 : Math.min(limit, 50);
+        LambdaQueryWrapper<ScheduleExecuteLog> wrapper = new LambdaQueryWrapper<ScheduleExecuteLog>()
+                .eq(semester != null && !semester.isBlank(), ScheduleExecuteLog::getSemester, semester)
+                .orderByDesc(ScheduleExecuteLog::getCreateTime)
+                .last("limit " + safeLimit);
+        return scheduleExecuteLogService.list(wrapper);
+    }
+
+    private void saveExecuteLog(String semester, int taskCount, int generatedPlanCount, int status,
+                                long duration, String message) {
+        ScheduleExecuteLog executeLog = new ScheduleExecuteLog();
+        executeLog.setSemester(semester);
+        executeLog.setTaskCount(taskCount);
+        executeLog.setGeneratedPlanCount(generatedPlanCount);
+        executeLog.setStatus(status);
+        executeLog.setDurationMs(duration);
+        executeLog.setMessage(message);
+        try {
+            CurrentUserVO currentUser = authFacadeService.getCurrentUserView();
+            if (currentUser != null) {
+                executeLog.setOperatorUserId(currentUser.getUserId());
+                executeLog.setOperatorName(resolveOperatorName(currentUser));
+                executeLog.setOperatorType(currentUser.getUserType());
+            }
+        } catch (Exception exception) {
+            log.warn("获取当前操作人失败，排课日志将以匿名方式记录", exception);
+        }
+        scheduleExecuteLogService.save(executeLog);
+    }
+
+    private String resolveOperatorName(CurrentUserVO currentUser) {
+        if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().isBlank()) {
+            return currentUser.getDisplayName();
+        }
+        if (currentUser.getRealName() != null && !currentUser.getRealName().isBlank()) {
+            return currentUser.getRealName();
+        }
+        return currentUser.getUsername();
+    }
+
+    private String buildExecuteErrorMessage(Exception exception) {
+        if (exception.getMessage() == null || exception.getMessage().isBlank()) {
+            return "排课失败，系统未返回明确错误信息";
+        }
+        return exception.getMessage();
     }
 
     private void checkWeeksNumber(List<ClassTask> classTaskList) {

@@ -2,7 +2,6 @@ package com.lyk.coursearrange.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
@@ -14,7 +13,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -86,5 +86,15 @@ public class ClassTaskController {
     public ServerResponse arrange(@PathVariable("semester") String semester) {
         log.info("开始执行排课，semester={}", semester);
         return classTaskService.classScheduling(semester);
+    }
+
+    /**
+     * 查询最近排课执行日志
+     */
+    @GetMapping("/arrange/logs")
+    public ServerResponse queryArrangeLogs(@RequestParam(required = false) String semester,
+                                           @RequestParam(defaultValue = "10") Integer limit) {
+        List<?> logs = classTaskService.listRecentExecuteLogs(semester, limit);
+        return ServerResponse.ofSuccess(logs);
     }
 }

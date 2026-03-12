@@ -27,6 +27,13 @@ export function arrangeClassTask(semester) {
   return request.post(`/legacy-api/arrange/${encodeURIComponent(semester)}`, null, legacyOptions);
 }
 
+export function fetchArrangeLogs(params = {}) {
+  return request.get('/legacy-api/arrange/logs', {
+    ...legacyOptions,
+    params
+  });
+}
+
 export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
   return request.get(`/legacy-api/queryclassinfo/${page}`, {
     ...legacyOptions,
