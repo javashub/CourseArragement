@@ -11,6 +11,8 @@ import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.constants.SystemConstants;
 import com.lyk.coursearrange.common.UserLoginToken;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.request.PasswordVO;
 import com.lyk.coursearrange.entity.request.StudentLoginRequest;
@@ -58,12 +60,15 @@ public class StudentController {
     public ServerResponse joinClass(@PathVariable("id") Integer id, @PathVariable("classNo") String classNo) {
         // TODO 学生加入年级，学生查看本班的文档(文档控制器中),查看自己所在的班级课表
         Student student = studentService.getById(id);
+        if (student == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "学生不存在");
+        }
         student.setClassNo(classNo);
         boolean b = studentService.saveOrUpdate(student);
         if (b) {
             return ServerResponse.ofSuccess("加入班级成功");
         }
-        return ServerResponse.ofError("加入班级失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "加入班级失败");
     }
 
 
@@ -81,11 +86,11 @@ public class StudentController {
         Student student2 = studentService.getOne(wrapper);
 
         if (student2 == null) {
-            return ServerResponse.ofError("学生账号不存在!");
+            throw new BusinessException(ResultCode.NOT_FOUND, "学生账号不存在!");
 
         }else if (student2.getStatus() != 0) {
             // 否则进行下一步验证账号的的状态
-            return ServerResponse.ofError("该学生账号异常，请联系管理员");
+            throw new BusinessException(ResultCode.FORBIDDEN, "该学生账号异常，请联系管理员");
         }
         SysUser sysUser = authLoginService.loginStudent(studentLoginRequest.getUsername(), studentLoginRequest.getPassword());
         if (sysUser != null) {
@@ -96,7 +101,7 @@ public class StudentController {
             map.put("token", token);
             return ServerResponse.ofSuccess(map);
         }
-        return ServerResponse.ofError("密码错误！");
+        throw new BusinessException(ResultCode.BUSINESS_ERROR, "密码错误！");
     }
 
     /**
@@ -122,7 +127,7 @@ public class StudentController {
             authAccountSyncService.syncStudentAccount(student);
             return ServerResponse.ofSuccess("注册成功", student);
         }
-        return ServerResponse.ofError("注册失败!");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "注册失败!");
     }
 
     /**
@@ -134,7 +139,9 @@ public class StudentController {
     @UserLoginToken
     public ServerResponse modifyStudent(@RequestBody Student student) {
         // 修改操作
-        return studentService.updateById(student) ? ServerResponse.ofSuccess("修改成功") : ServerResponse.ofError("修改失败");
+        requireStudentExists(student.getId());
+        return studentService.updateById(student) ? ServerResponse.ofSuccess("修改成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "修改失败");
     }
 
 
@@ -147,7 +154,11 @@ public class StudentController {
     @UserLoginToken
     public ServerResponse queryStudent(@PathVariable("id")Integer id){
         // 查询出来需要修改的学生实体
-        return ServerResponse.ofSuccess(studentService.getById(id));
+        Student student = studentService.getById(id);
+        if (student == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "学生不存在");
+        }
+        return ServerResponse.ofSuccess(student);
     }
 
     /**
@@ -157,6 +168,7 @@ public class StudentController {
      */
     @PostMapping("/modify/{id}")
     public ServerResponse modifyTeacher(@PathVariable("id") Integer id, @RequestBody Student student) {
+        requireStudentExists(id);
 
         QueryWrapper<Student> wrapper = new QueryWrapper<Student>().eq("id", id);
         boolean b = studentService.update(student, wrapper);
@@ -164,7 +176,7 @@ public class StudentController {
         if (b) {
             return ServerResponse.ofSuccess("更新成功");
         }
-        return ServerResponse.ofError("更新失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "更新失败");
     }
 
     /**
@@ -235,10 +247,7 @@ public class StudentController {
         wrapper.like(!StringUtils.isEmpty(keyword), "realname", keyword);
         Page<Student> pages = new Page<>(page, limit);
         IPage<Student> iPage = studentService.page(pages, wrapper);
-        if (page != null) {
-            return ServerResponse.ofSuccess(iPage);
-        }
-        return ServerResponse.ofError("查询不到数据!");
+        return ServerResponse.ofSuccess(iPage);
     }
 
     /**
@@ -247,11 +256,12 @@ public class StudentController {
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteTeacher(@PathVariable Integer id) {
+        requireStudentExists(id);
         boolean b = studentService.removeById(id);
         if(b) {
             return ServerResponse.ofSuccess("删除成功！");
         }
-        return ServerResponse.ofError("删除失败！");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除失败！");
     }
 
     /**
@@ -263,13 +273,13 @@ public class StudentController {
     public ServerResponse updatePass(@RequestBody PasswordVO passwordVO) {
         Student student = studentService.getById(passwordVO.getId());
         if (student == null) {
-            return ServerResponse.ofError("学生不存在");
+            throw new BusinessException(ResultCode.NOT_FOUND, "学生不存在");
         }
         boolean passwordMatched = passwordService.isEncoded(student.getPassword())
                 ? passwordService.matches(passwordVO.getOldPass(), student.getPassword())
                 : passwordVO.getOldPass().equals(student.getPassword());
         if (!passwordMatched) {
-            return ServerResponse.ofError("旧密码错误");
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "旧密码错误");
         }
         // 新密码统一使用 BCrypt 存储。
         student.setPassword(passwordService.encode(passwordVO.getNewPass()));
@@ -278,8 +288,17 @@ public class StudentController {
             authAccountSyncService.updatePasswordBySource(SystemConstants.SourceType.STUDENT, student.getId().longValue(), student.getPassword());
             return ServerResponse.ofSuccess("密码修改成功");
         }
-        return ServerResponse.ofError("密码更新失败");
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "密码更新失败");
     }
 
+    private void requireStudentExists(Integer id) {
+        if (id == null || studentService.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "学生不存在");
+        }
+    }
+
+    private ServerResponse throwBusiness(ResultCode resultCode, String message) {
+        throw new BusinessException(resultCode, message);
+    }
 
 }

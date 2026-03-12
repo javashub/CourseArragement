@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.TeachbuildInfo;
@@ -13,10 +15,7 @@ import com.lyk.coursearrange.entity.request.ClassroomAddRequest;
 import com.lyk.coursearrange.service.ClassroomService;
 import com.lyk.coursearrange.service.CoursePlanService;
 import com.lyk.coursearrange.service.TeachbuildInfoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import org.springframework.stereotype.Controller;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -107,14 +106,15 @@ public class ClassroomController {
         LambdaQueryWrapper<TeachbuildInfo> wrapper = new LambdaQueryWrapper<TeachbuildInfo>().eq(TeachbuildInfo::getTeachBuildNo, car.getTeachbuildNo());
         TeachbuildInfo teachbuildInfo = t.getOne(wrapper);
         if (teachbuildInfo == null) {
-            return ServerResponse.ofError("教学楼编号不存在，请重新选择");
+            throw new BusinessException(ResultCode.NOT_FOUND, "教学楼编号不存在，请重新选择");
         }
         c.setCapacity(car.getCapacity());
         c.setClassroomNo(car.getClassroomNo());
         c.setTeachbuildNo(car.getTeachbuildNo());
         c.setClassroomName(car.getClassroomName());
         c.setRemark(car.getRemark());
-        return classroomService.save(c) ? ServerResponse.ofSuccess("添加成功") : ServerResponse.ofError("添加失败");
+        return classroomService.save(c) ? ServerResponse.ofSuccess("添加成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "添加失败");
     }
 
     /**
@@ -122,7 +122,9 @@ public class ClassroomController {
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteClassroomById(@PathVariable("id") Integer id) {
-        return classroomService.removeById(id) ? ServerResponse.ofSuccess("删除成功") : ServerResponse.ofError("删除失败");
+        requireClassroomExists(id);
+        return classroomService.removeById(id) ? ServerResponse.ofSuccess("删除成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "删除失败");
     }
 
     /**
@@ -130,7 +132,11 @@ public class ClassroomController {
      */
     @GetMapping("/query/{id}")
     public ServerResponse queryClassroomByID(@PathVariable("id") Integer id) {
-        return ServerResponse.ofSuccess(classroomService.getById(id));
+        Classroom classroom = classroomService.getById(id);
+        if (classroom == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "教室不存在");
+        }
+        return ServerResponse.ofSuccess(classroom);
     }
 
     /**
@@ -138,8 +144,19 @@ public class ClassroomController {
      */
     @PostMapping("/modify")
     public ServerResponse modifyClassroom(@RequestBody Classroom classroom) {
-        return classroomService.updateById(classroom) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");
+        requireClassroomExists(classroom.getId());
+        return classroomService.updateById(classroom) ? ServerResponse.ofSuccess("更新成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "更新失败");
+    }
+
+    private void requireClassroomExists(Integer id) {
+        if (id == null || classroomService.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "教室不存在");
+        }
+    }
+
+    private ServerResponse throwBusiness(ResultCode resultCode, String message) {
+        throw new BusinessException(resultCode, message);
     }
 
 }
-

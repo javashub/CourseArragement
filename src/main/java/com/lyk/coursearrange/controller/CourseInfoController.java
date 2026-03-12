@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.CourseInfo;
 import com.lyk.coursearrange.service.CourseInfoService;
 import org.apache.commons.lang3.StringUtils;
@@ -44,7 +46,8 @@ public class CourseInfoController {
      */
     @PostMapping("/add")
     public ServerResponse addCourseInfo(@RequestBody CourseInfo cinfo) {
-        return  cis.saveOrUpdate(cinfo) ? ServerResponse.ofSuccess("添加成功") : ServerResponse.ofError("添加失败");
+        return cis.saveOrUpdate(cinfo) ? ServerResponse.ofSuccess("添加成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "添加失败");
     }
 
     /**
@@ -52,7 +55,9 @@ public class CourseInfoController {
      */
     @DeleteMapping("/delete/{id}")
     public ServerResponse deleteCourseInfoById(@PathVariable("id") Integer id) {
-        return cis.removeById(id) ? ServerResponse.ofSuccess("删除成功") : ServerResponse.ofError("删除失败");
+        requireCourseInfoExists(id);
+        return cis.removeById(id) ? ServerResponse.ofSuccess("删除成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "删除失败");
     }
 
 
@@ -61,8 +66,10 @@ public class CourseInfoController {
      */
     @PostMapping("/modify/{id}")
     public ServerResponse modifyCourseInfo(@PathVariable("id") Integer id, @RequestBody CourseInfo courseInfo) {
+        requireCourseInfoExists(id);
         QueryWrapper<CourseInfo> wrapper = new QueryWrapper<CourseInfo>().eq("id", id);
-        return cis.update(courseInfo, wrapper) ? ServerResponse.ofSuccess("更新成功") : ServerResponse.ofError("更新失败");
+        return cis.update(courseInfo, wrapper) ? ServerResponse.ofSuccess("更新成功")
+                : throwBusiness(ResultCode.SYSTEM_ERROR, "更新失败");
     }
 
     /**
@@ -85,8 +92,20 @@ public class CourseInfoController {
     public ServerResponse getNo() {
         LambdaQueryWrapper<CourseInfo> wrapper = new LambdaQueryWrapper<CourseInfo>().select(CourseInfo::getCourseNo).orderByDesc(CourseInfo::getCourseNo);
         List<CourseInfo> list = cis.list(wrapper);
+        if (list.isEmpty()) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "暂无课程数据，无法生成课程编号");
+        }
         String no = String.valueOf(Integer.parseInt(list.get(0).getCourseNo()) + 1);
         return ServerResponse.ofSuccess(no);
     }
-}
 
+    private void requireCourseInfoExists(Integer id) {
+        if (id == null || cis.getById(id) == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "课程不存在");
+        }
+    }
+
+    private ServerResponse throwBusiness(ResultCode resultCode, String message) {
+        throw new BusinessException(resultCode, message);
+    }
+}
