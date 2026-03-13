@@ -57,6 +57,16 @@
         </div>
       </div>
 
+      <el-alert
+        v-if="taskStatus"
+        class="status-alert"
+        :type="taskStatus.type"
+        :title="taskStatus.title"
+        :description="taskStatus.description"
+        :closable="false"
+        show-icon
+      />
+
       <div class="filter-row">
         <el-input
           v-model="taskState.keyword"
@@ -166,6 +176,15 @@
           </el-button>
         </div>
       </template>
+      <el-alert
+        v-if="executionLogStatus"
+        class="status-alert"
+        :type="executionLogStatus.type"
+        :title="executionLogStatus.title"
+        :description="executionLogStatus.description"
+        :closable="false"
+        show-icon
+      />
       <el-table :data="executionLogs" stripe v-loading="executionLogsLoading" empty-text="暂无排课执行记录">
         <el-table-column prop="createTime" label="执行时间" min-width="170" />
         <el-table-column prop="semester" label="学期" min-width="120" />
@@ -355,6 +374,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { fetchCoursePage, fetchTeacherPage } from '@/api/modules/base';
+import { getErrorMessage } from '@/utils/http';
 import {
   arrangeClassTask,
   createClassTask,
@@ -378,6 +398,8 @@ const courseOptions = ref([]);
 const teacherOptions = ref([]);
 const executionLogs = ref([]);
 const executionLogsLoading = ref(false);
+const taskLoadError = ref('');
+const executionLogError = ref('');
 const executionLogLimit = 8;
 
 const taskState = reactive({
@@ -437,6 +459,35 @@ const formValidation = computed(() => {
     isValid: messages.length === 0,
     messages: messages.length ? messages : ['基础信息完整，可继续保存']
   };
+});
+
+const taskStatus = computed(() => {
+  if (taskLoadError.value) {
+    return {
+      type: 'warning',
+      title: '任务加载失败',
+      description: taskLoadError.value
+    };
+  }
+  if (!taskState.loading && selectedSemester.value && !taskState.records.length) {
+    return {
+      type: 'info',
+      title: '当前学期暂无排课任务',
+      description: '可以先导入任务，或者手动新增一条排课任务。'
+    };
+  }
+  return null;
+});
+
+const executionLogStatus = computed(() => {
+  if (executionLogError.value) {
+    return {
+      type: 'warning',
+      title: '执行记录加载失败',
+      description: executionLogError.value
+    };
+  }
+  return null;
 });
 
 function getImportResult(payload) {
@@ -518,6 +569,7 @@ async function loadClassTasks(resetPage = false) {
     taskState.pageNum = 1;
   }
   taskState.loading = true;
+  taskLoadError.value = '';
   try {
     const response = await fetchClassTaskPage(taskState.pageNum, selectedSemester.value, taskState.pageSize);
     const pageData = response.data || {};
@@ -529,6 +581,7 @@ async function loadClassTasks(resetPage = false) {
     taskState.displayRecords = [];
     taskState.total = 0;
     taskState.filteredCount = 0;
+    taskLoadError.value = getErrorMessage(error, '排课任务加载失败，请稍后重试');
   } finally {
     taskState.loading = false;
   }
@@ -561,9 +614,11 @@ function resetTaskFilters() {
 async function loadExecutionLogs() {
   if (!selectedSemester.value) {
     executionLogs.value = [];
+    executionLogError.value = '';
     return;
   }
   executionLogsLoading.value = true;
+  executionLogError.value = '';
   try {
     const response = await fetchArrangeLogs({
       semester: selectedSemester.value,
@@ -572,6 +627,7 @@ async function loadExecutionLogs() {
     executionLogs.value = response.data || [];
   } catch (error) {
     executionLogs.value = [];
+    executionLogError.value = getErrorMessage(error, '排课执行记录加载失败，请稍后重试');
   } finally {
     executionLogsLoading.value = false;
   }
@@ -900,6 +956,11 @@ onMounted(async () => {
   margin-top: 4px;
   font-size: 13px;
   color: #70839b;
+}
+
+.status-alert {
+  margin-bottom: 16px;
+  border-radius: 18px;
 }
 
 .log-header {

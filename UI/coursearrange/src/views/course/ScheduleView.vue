@@ -94,6 +94,16 @@
         </div>
       </template>
 
+      <el-alert
+        v-if="planStatus"
+        class="status-alert"
+        :type="planStatus.type"
+        :title="planStatus.title"
+        :description="planStatus.description"
+        :closable="false"
+        show-icon
+      />
+
       <el-empty v-if="!currentTarget && !loading" :description="viewMode === 'class' ? '请先选择班级，再查看课表' : '请先选择教师，再查看课表'" />
       <el-empty v-else-if="currentTarget && !planList.length && !loading" :description="viewMode === 'class' ? '当前班级还没有生成课表' : '当前教师还没有生成课表'" />
 
@@ -215,6 +225,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { fetchTeacherPage } from '@/api/modules/base';
+import { getErrorMessage } from '@/utils/http';
 import {
   adjustCoursePlan,
   fetchSemesterList,
@@ -228,6 +239,7 @@ const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const loading = ref(false);
+const planLoadError = ref('');
 const viewMode = ref('class');
 const selectedSemester = ref('');
 const selectedClassNo = ref('');
@@ -263,6 +275,24 @@ const latestAdjustSummary = computed(() => {
   }
   const latest = filteredAdjustLogs.value[0];
   return `${latest.beforeClassTime || '--'} → ${latest.afterClassTime || '--'}`;
+});
+
+const planStatus = computed(() => {
+  if (planLoadError.value) {
+    return {
+      type: 'warning',
+      title: '课表加载失败',
+      description: planLoadError.value
+    };
+  }
+  if (!loading.value && currentTarget.value && !planList.value.length) {
+    return {
+      type: 'info',
+      title: '暂无课表数据',
+      description: viewMode.value === 'class' ? '当前班级还没有生成课表。' : '当前教师还没有生成课表。'
+    };
+  }
+  return null;
 });
 
 const weekLabels = [
@@ -384,9 +414,11 @@ async function loadCoursePlan() {
     planList.value = [];
     adjustLogs.value = [];
     filteredAdjustLogs.value = [];
+    planLoadError.value = '';
     return;
   }
   loading.value = true;
+  planLoadError.value = '';
   try {
     const response = viewMode.value === 'class'
       ? await fetchCoursePlanByClassNo(selectedClassNo.value, { meta: { silentError: true } })
@@ -396,7 +428,11 @@ async function loadCoursePlan() {
   } catch (error) {
     planList.value = [];
     adjustLogs.value = [];
-    ElMessage.warning(viewMode.value === 'class' ? '当前班级还没有生成课表' : '当前教师还没有生成课表');
+    filteredAdjustLogs.value = [];
+    const message = getErrorMessage(error, '课表加载失败，请稍后重试');
+    if (!message.includes('没有课表')) {
+      planLoadError.value = message;
+    }
   } finally {
     loading.value = false;
   }
@@ -462,6 +498,7 @@ function clearPlan() {
   planList.value = [];
   adjustLogs.value = [];
   filteredAdjustLogs.value = [];
+  planLoadError.value = '';
   dragPlanId.value = null;
   lastAdjustedPlanId.value = null;
   lastAdjustedClassTime.value = '';
@@ -667,6 +704,11 @@ onMounted(async () => {
   font-size: 13px;
   line-height: 1.6;
   color: #6c7d93;
+}
+
+.status-alert {
+  margin-bottom: 16px;
+  border-radius: 18px;
 }
 
 .timetable-grid {

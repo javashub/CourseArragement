@@ -53,6 +53,16 @@
             </div>
           </div>
 
+          <el-alert
+            v-if="teacherState.errorMessage || (!teacherState.loading && !teacherState.displayRecords.length)"
+            class="status-alert"
+            :type="teacherState.errorMessage ? 'warning' : 'info'"
+            :title="teacherState.errorMessage ? '教师数据加载失败' : '当前没有教师数据'"
+            :description="teacherState.errorMessage || '可以先新增教师，或者通过 Excel 导入教师数据。'"
+            :closable="false"
+            show-icon
+          />
+
           <el-table :data="teacherState.displayRecords" stripe v-loading="teacherState.loading">
             <el-table-column prop="teacherNo" label="教师编号" min-width="130" />
             <el-table-column prop="realname" label="姓名" min-width="110" />
@@ -120,6 +130,16 @@
             </div>
           </div>
 
+          <el-alert
+            v-if="studentState.errorMessage || (!studentState.loading && !studentState.displayRecords.length)"
+            class="status-alert"
+            :type="studentState.errorMessage ? 'warning' : 'info'"
+            :title="studentState.errorMessage ? '学生数据加载失败' : '当前没有学生数据'"
+            :description="studentState.errorMessage || '可以先新增学生，或者通过 Excel 导入学生数据。'"
+            :closable="false"
+            show-icon
+          />
+
           <el-table :data="studentState.displayRecords" stripe v-loading="studentState.loading">
             <el-table-column prop="studentNo" label="学号" min-width="130" />
             <el-table-column prop="realname" label="姓名" min-width="110" />
@@ -186,6 +206,16 @@
               <el-button class="primary-action" type="primary" @click="openCourseDialog()">新增课程</el-button>
             </div>
           </div>
+
+          <el-alert
+            v-if="courseState.errorMessage || (!courseState.loading && !courseState.displayRecords.length)"
+            class="status-alert"
+            :type="courseState.errorMessage ? 'warning' : 'info'"
+            :title="courseState.errorMessage ? '课程数据加载失败' : '当前没有课程数据'"
+            :description="courseState.errorMessage || '可以先新增课程，或者通过 Excel 导入课程数据。'"
+            :closable="false"
+            show-icon
+          />
 
           <el-table :data="courseState.displayRecords" stripe v-loading="courseState.loading">
             <el-table-column prop="courseNo" label="课程编号" min-width="130" />
@@ -262,6 +292,16 @@
               <el-button class="primary-action" type="primary" @click="openClassroomDialog()">新增教室</el-button>
             </div>
           </div>
+
+          <el-alert
+            v-if="classroomState.errorMessage || (!classroomState.loading && !classroomState.displayRecords.length)"
+            class="status-alert"
+            :type="classroomState.errorMessage ? 'warning' : 'info'"
+            :title="classroomState.errorMessage ? '教室数据加载失败' : '当前没有教室数据'"
+            :description="classroomState.errorMessage || '可以先新增教室或教学楼，或者通过 Excel 导入教室数据。'"
+            :closable="false"
+            show-icon
+          />
 
           <el-table :data="classroomState.displayRecords" stripe v-loading="classroomState.loading">
             <el-table-column prop="classroomNo" label="教室编号" min-width="130" />
@@ -485,6 +525,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { getErrorMessage } from '@/utils/http';
 import {
   createClassroom,
   createCourse,
@@ -556,6 +597,7 @@ const classroomForm = ref(createClassroomForm());
 function createPageState() {
   return {
     loading: false,
+    errorMessage: '',
     records: [],
     displayRecords: [],
     total: 0,
@@ -711,12 +753,16 @@ async function loadTeachers(resetPage = false) {
     teacherState.pageNum = 1;
   }
   teacherState.loading = true;
+  teacherState.errorMessage = '';
   try {
     const response = teacherState.keyword
       ? await searchTeacherPage(teacherState.keyword, teacherState.pageNum, teacherState.pageSize)
       : await fetchTeacherPage(teacherState.pageNum, teacherState.pageSize);
     applyPageData(teacherState, response.data);
     applyTeacherFilter();
+  } catch (error) {
+    applyPageData(teacherState, null);
+    teacherState.errorMessage = getErrorMessage(error, '教师数据加载失败，请稍后重试');
   } finally {
     teacherState.loading = false;
   }
@@ -727,12 +773,16 @@ async function loadStudents(resetPage = false) {
     studentState.pageNum = 1;
   }
   studentState.loading = true;
+  studentState.errorMessage = '';
   try {
     const response = studentState.keyword
       ? await searchStudentPage(studentState.keyword, studentState.pageNum, studentState.pageSize)
       : await fetchStudentPage(studentState.pageNum, studentState.pageSize);
     applyPageData(studentState, response.data);
     applyStudentFilter();
+  } catch (error) {
+    applyPageData(studentState, null);
+    studentState.errorMessage = getErrorMessage(error, '学生数据加载失败，请稍后重试');
   } finally {
     studentState.loading = false;
   }
@@ -743,12 +793,16 @@ async function loadCourses(resetPage = false) {
     courseState.pageNum = 1;
   }
   courseState.loading = true;
+  courseState.errorMessage = '';
   try {
     const response = courseState.keyword
       ? await searchCoursePage(courseState.keyword, courseState.pageNum, courseState.pageSize)
       : await fetchCoursePage(courseState.pageNum, courseState.pageSize);
     applyPageData(courseState, response.data);
     applyCourseFilter();
+  } catch (error) {
+    applyPageData(courseState, null);
+    courseState.errorMessage = getErrorMessage(error, '课程数据加载失败，请稍后重试');
   } finally {
     courseState.loading = false;
   }
@@ -756,10 +810,14 @@ async function loadCourses(resetPage = false) {
 
 async function loadClassrooms() {
   classroomState.loading = true;
+  classroomState.errorMessage = '';
   try {
     const response = await fetchClassroomPage(classroomState.pageNum, classroomState.pageSize);
     applyPageData(classroomState, response.data);
     applyClassroomFilter();
+  } catch (error) {
+    applyPageData(classroomState, null);
+    classroomState.errorMessage = getErrorMessage(error, '教室数据加载失败，请稍后重试');
   } finally {
     classroomState.loading = false;
   }
@@ -1269,6 +1327,11 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.status-alert {
+  margin-bottom: 16px;
+  border-radius: 18px;
 }
 
 .form-grid {
