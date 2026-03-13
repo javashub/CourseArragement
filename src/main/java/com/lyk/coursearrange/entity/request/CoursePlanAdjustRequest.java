@@ -21,6 +21,11 @@ public class CoursePlanAdjustRequest implements Serializable {
     private Integer id;
 
     /**
+     * 标准课表结果主键。
+     */
+    private Long standardResultId;
+
+    /**
      * 新时间片编码。
      */
     private String classTime;

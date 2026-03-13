@@ -379,6 +379,7 @@ async function handleDrop(dayIndex, periodIndex) {
   try {
     await adjustCoursePlan({
       id: targetPlan.id,
+      standardResultId: targetPlan.standardResultId,
       classTime: targetClassTime,
       classroomNo: targetPlan.classroomNo
     });

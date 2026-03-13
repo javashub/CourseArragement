@@ -22,6 +22,7 @@ import com.lyk.coursearrange.service.CoursePlanService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.service.TeacherService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
+import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -93,7 +94,17 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
 
     @Override
     public ServerResponse adjustCoursePlan(CoursePlanAdjustRequest request) {
+        if (request.getStandardResultId() != null) {
+            return adjustStandardCoursePlan(request);
+        }
         CoursePlan coursePlan = getById(request.getId());
+        if (coursePlan == null && request.getId() != null) {
+            SchScheduleResult standardResult = schScheduleResultService.getById(request.getId().longValue());
+            if (standardResult != null) {
+                request.setStandardResultId(standardResult.getId());
+                return adjustStandardCoursePlan(request);
+            }
+        }
         if (coursePlan == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "课表记录不存在");
         }
@@ -119,6 +130,54 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
             return ServerResponse.ofSuccess("调课成功", coursePlan);
         }
         throw new BusinessException(ResultCode.SYSTEM_ERROR, "调课失败，请稍后重试");
+    }
+
+    private ServerResponse adjustStandardCoursePlan(CoursePlanAdjustRequest request) {
+        SchScheduleResult result = schScheduleResultService.getById(request.getStandardResultId());
+        if (result == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "标准课表记录不存在");
+        }
+        if (request.getClassTime() == null || request.getClassTime().isBlank()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "目标时间片不能为空");
+        }
+
+        SchTask task = schTaskService.getById(result.getTaskId());
+        if (task == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "课表对应的排课任务不存在");
+        }
+        Map<String, String> taskMeta = ScheduleTaskMetaUtils.parseTaskRemark(task.getRemark());
+        String semester = result.getRemark();
+        String targetClassTime = request.getClassTime();
+        Integer afterWeekdayNo = parseWeekdayNo(targetClassTime);
+        Integer afterPeriodNo = parsePeriodNo(targetClassTime);
+        if (afterWeekdayNo == null || afterPeriodNo == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "目标时间片格式不正确");
+        }
+        String conflictMessage = validateStandardAdjustConflict(result, taskMeta, semester, afterWeekdayNo, afterPeriodNo);
+        if (conflictMessage != null) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, conflictMessage);
+        }
+
+        Integer beforeWeekdayNo = result.getWeekdayNo();
+        Integer beforePeriodNo = result.getPeriodNo();
+        result.setWeekdayNo(afterWeekdayNo);
+        result.setPeriodNo(afterPeriodNo);
+        result.setSourceType("DRAG");
+        boolean updated = schScheduleResultService.updateById(result);
+        if (!updated) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR, "调课失败，请稍后重试");
+        }
+
+        CoursePlan legacyPlan = findLegacyPlanByStandard(result, taskMeta, semester, beforeWeekdayNo, beforePeriodNo);
+        if (legacyPlan != null) {
+            legacyPlan.setClassTime(targetClassTime);
+            if (request.getClassroomNo() != null && !request.getClassroomNo().isBlank()) {
+                legacyPlan.setClassroomNo(request.getClassroomNo());
+            }
+            updateById(legacyPlan);
+        }
+        saveAdjustLog(result, taskMeta, beforeWeekdayNo, beforePeriodNo, afterWeekdayNo, afterPeriodNo, legacyPlan);
+        return ServerResponse.ofSuccess("调课成功");
     }
 
     private String validateAdjustConflict(CoursePlan currentPlan, String targetClassTime, String targetClassroomNo) {
@@ -196,6 +255,94 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         scheduleLogMirrorService.mirrorAdjustLog(logEntity);
     }
 
+    private void saveAdjustLog(SchScheduleResult result,
+                               Map<String, String> taskMeta,
+                               Integer beforeWeekdayNo,
+                               Integer beforePeriodNo,
+                               Integer afterWeekdayNo,
+                               Integer afterPeriodNo,
+                               CoursePlan legacyPlan) {
+        CoursePlanAdjustLog logEntity = new CoursePlanAdjustLog();
+        logEntity.setCoursePlanId(legacyPlan == null ? null : legacyPlan.getId());
+        logEntity.setSemester(result.getRemark());
+        logEntity.setGradeNo(taskMeta.getOrDefault("gradeNo", ""));
+        logEntity.setClassNo(taskMeta.getOrDefault("classNo", ""));
+        logEntity.setCourseNo(taskMeta.getOrDefault("courseNo", ""));
+        logEntity.setTeacherNo(taskMeta.getOrDefault("teacherNo", ""));
+        logEntity.setBeforeClassTime(toLegacyClassTime(beforeWeekdayNo, beforePeriodNo));
+        logEntity.setAfterClassTime(toLegacyClassTime(afterWeekdayNo, afterPeriodNo));
+        logEntity.setBeforeClassroomNo(legacyPlan == null ? null : legacyPlan.getClassroomNo());
+        logEntity.setAfterClassroomNo(legacyPlan == null ? null : legacyPlan.getClassroomNo());
+        logEntity.setRemark("拖拽调课");
+        fillAdjustOperator(logEntity, legacyPlan == null ? result.getId().intValue() : legacyPlan.getId());
+        coursePlanAdjustLogService.save(logEntity);
+        scheduleLogMirrorService.mirrorAdjustLog(logEntity);
+    }
+
+    private void fillAdjustOperator(CoursePlanAdjustLog logEntity, Integer planId) {
+        try {
+            CurrentUserVO currentUser = authFacadeService.getCurrentUserView();
+            if (currentUser != null) {
+                logEntity.setOperatorUserId(currentUser.getUserId());
+                logEntity.setOperatorName(currentUser.getDisplayName());
+                logEntity.setOperatorType(currentUser.getUserType());
+            }
+        } catch (Exception exception) {
+            log.warn("记录调课日志时获取当前用户失败，planId={}", planId, exception);
+        }
+    }
+
+    private String validateStandardAdjustConflict(SchScheduleResult currentResult,
+                                                  Map<String, String> currentMeta,
+                                                  String semester,
+                                                  Integer targetWeekdayNo,
+                                                  Integer targetPeriodNo) {
+        LambdaQueryWrapper<SchScheduleResult> wrapper = new LambdaQueryWrapper<SchScheduleResult>()
+                .eq(SchScheduleResult::getDeleted, 0)
+                .eq(SchScheduleResult::getRemark, semester)
+                .eq(SchScheduleResult::getWeekdayNo, targetWeekdayNo)
+                .eq(SchScheduleResult::getPeriodNo, targetPeriodNo)
+                .ne(SchScheduleResult::getId, currentResult.getId());
+        List<SchScheduleResult> conflicts = schScheduleResultService.list(wrapper);
+        if (conflicts.isEmpty()) {
+            return null;
+        }
+        List<Long> taskIds = conflicts.stream()
+                .map(SchScheduleResult::getTaskId)
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+        Map<Long, SchTask> taskMap = schTaskService.listByIds(taskIds).stream()
+                .collect(Collectors.toMap(SchTask::getId, item -> item));
+        for (SchScheduleResult conflict : conflicts) {
+            Map<String, String> meta = ScheduleTaskMetaUtils.parseTaskRemark(
+                    taskMap.get(conflict.getTaskId()) == null ? "" : taskMap.get(conflict.getTaskId()).getRemark()
+            );
+            if (currentMeta.getOrDefault("classNo", "").equals(meta.getOrDefault("classNo", ""))) {
+                return "目标时间片已存在同班级课程，不能调课";
+            }
+            if (currentMeta.getOrDefault("teacherNo", "").equals(meta.getOrDefault("teacherNo", ""))) {
+                return "目标时间片教师已有其他课程，不能调课";
+            }
+        }
+        return null;
+    }
+
+    private CoursePlan findLegacyPlanByStandard(SchScheduleResult result,
+                                                Map<String, String> taskMeta,
+                                                String semester,
+                                                Integer beforeWeekdayNo,
+                                                Integer beforePeriodNo) {
+        LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<CoursePlan>()
+                .eq(CoursePlan::getSemester, semester)
+                .eq(CoursePlan::getClassNo, taskMeta.getOrDefault("classNo", ""))
+                .eq(CoursePlan::getCourseNo, taskMeta.getOrDefault("courseNo", ""))
+                .eq(CoursePlan::getTeacherNo, taskMeta.getOrDefault("teacherNo", ""))
+                .eq(beforeWeekdayNo != null && beforePeriodNo != null, CoursePlan::getClassTime, toLegacyClassTime(beforeWeekdayNo, beforePeriodNo))
+                .last("limit 1");
+        return getOne(wrapper, false);
+    }
+
     private ServerResponse buildCoursePlanResponse(List<CoursePlan> coursePlanList, String emptyMessage) {
 
         if (null == coursePlanList || coursePlanList.isEmpty()) {
@@ -270,6 +417,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         String teacherName = taskMeta.getOrDefault("teacherName", teacherNo);
         CoursePlanVo vo = new CoursePlanVo();
         vo.setId(result.getId() == null ? null : result.getId().intValue());
+        vo.setStandardResultId(result.getId());
         vo.setSemester(result.getRemark());
         vo.setClassNo(classNo);
         vo.setCourseNo(courseNo);
@@ -283,18 +431,15 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
     }
 
     private Map<String, String> parseTaskRemark(String remark) {
-        Map<String, String> result = new HashMap<>();
-        if (remark == null || remark.isBlank()) {
-            return result;
-        }
-        String[] parts = remark.split(",");
-        for (String part : parts) {
-            String[] keyValue = part.split("=", 2);
-            if (keyValue.length == 2) {
-                result.put(keyValue[0], keyValue[1]);
-            }
-        }
-        return result;
+        return ScheduleTaskMetaUtils.parseTaskRemark(remark);
+    }
+
+    private Integer parseWeekdayNo(String classTime) {
+        return ScheduleTaskMetaUtils.resolveWeekdayNo(classTime);
+    }
+
+    private Integer parsePeriodNo(String classTime) {
+        return ScheduleTaskMetaUtils.resolvePeriodNo(classTime);
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {

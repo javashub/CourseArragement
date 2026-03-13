@@ -38,6 +38,11 @@ public class CoursePlanVo implements Serializable {
     private Integer id;
 
     /**
+     * 标准课表结果 id。
+     */
+    private Long standardResultId;
+
+    /**
      * 年级编号
      */
     private String gradeNo;
