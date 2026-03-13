@@ -227,7 +227,7 @@
         </div>
         <div class="tip-item">
           <strong>执行排课</strong>
-          <span>当前直接调用旧排课算法接口，执行完成后结果写入 `tb_course_plan`。</span>
+          <span>当前统一通过标准排课接口触发排课，内部仍复用现有算法实现，后续会继续替换旧表逻辑。</span>
         </div>
         <div class="tip-item">
           <strong>查看课表</strong>

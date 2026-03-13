@@ -7,26 +7,31 @@ const legacyOptions = {
 };
 
 export function fetchSemesterList() {
-  return request.get('/legacy-api/semester', legacyOptions);
+  return request.get('/schedule/tasks/semesters');
 }
 
 export function fetchClassTaskPage(page = 1, semester, limit = 10) {
-  return request.get(`/legacy-api/classtask/${page}/${encodeURIComponent(semester)}`, {
-    ...legacyOptions,
-    params: { limit }
+  return request.get('/schedule/tasks/page', {
+    params: {
+      semester,
+      pageNum: page,
+      pageSize: limit
+    }
   });
 }
 
 export function createClassTask(payload) {
-  return request.post('/legacy-api/addclasstask', payload, legacyOptions);
+  return request.post('/schedule/tasks', payload);
 }
 
 export function deleteClassTask(id) {
-  return request.delete(`/legacy-api/deleteclasstask/${id}`, legacyOptions);
+  return request.delete(`/schedule/tasks/${id}`);
 }
 
 export function arrangeClassTask(semester) {
-  return request.post(`/legacy-api/arrange/${encodeURIComponent(semester)}`, null, legacyOptions);
+  return request.post('/schedule/tasks/arrange', null, {
+    params: { semester }
+  });
 }
 
 export function uploadClassTaskExcel(file) {
@@ -60,40 +65,37 @@ export async function downloadClassTaskTemplate() {
 }
 
 export function fetchArrangeLogs(params = {}) {
-  return request.get('/legacy-api/arrange/logs', {
-    ...legacyOptions,
-    params
-  });
+  return request.get('/schedule/tasks/logs', { params });
 }
 
 export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
-  return request.get(`/legacy-api/queryclassinfo/${page}`, {
-    ...legacyOptions,
-    params: { limit, gradeNo }
+  return request.get('/resources/admin-classes/page', {
+    params: {
+      pageNum: page,
+      pageSize: limit,
+      gradeNo
+    }
   });
 }
 
 export function fetchCoursePlanByClassNo(classNo, options = {}) {
-  return request.get(`/legacy-api/courseplan/${encodeURIComponent(classNo)}`, {
-    ...legacyOptions,
+  return request.get('/schedule/plans/by-class', {
+    params: { classNo },
     ...options
   });
 }
 
 export function fetchCoursePlanByTeacherNo(teacherNo, options = {}) {
-  return request.get(`/legacy-api/courseplan/teacher/${encodeURIComponent(teacherNo)}`, {
-    ...legacyOptions,
+  return request.get('/schedule/plans/by-teacher', {
+    params: { teacherNo },
     ...options
   });
 }
 
 export function adjustCoursePlan(payload) {
-  return request.post('/legacy-api/courseplan/adjust', payload, legacyOptions);
+  return request.post('/schedule/plans/adjust', payload);
 }
 
 export function fetchCoursePlanAdjustLogs(params = {}) {
-  return request.get('/legacy-api/courseplan/adjust/logs', {
-    ...legacyOptions,
-    params
-  });
+  return request.get('/schedule/plans/adjust-logs', { params });
 }
