@@ -17,6 +17,8 @@ public interface ClassTaskService extends IService<ClassTask> {
 
     ServerResponse classScheduling(@Param("semester") String semester);
 
+    void ensureLegacyTasksForSemester(String semester);
+
     List<ScheduleExecuteLog> listRecentExecuteLogs(String semester, Integer limit);
 
 }

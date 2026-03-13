@@ -13,6 +13,9 @@ import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.ScheduleExecuteLog;
 import com.lyk.coursearrange.common.ConstantInfo;
+import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.SchTaskService;
+import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.service.ScheduleExecuteLogService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
@@ -53,6 +56,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private AuthFacadeService authFacadeService;
     @Resource
     private ScheduleLogMirrorService scheduleLogMirrorService;
+    @Resource
+    private SchTaskService schTaskService;
 
     /**
      * 排课算法入口
@@ -64,6 +69,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         int taskCount = 0;
         try {
             log.info("开始排课,时间：{}", start);
+            ensureLegacyTasksForSemester(semester);
             // 1、获得开课任务 tb_class_task 表
             List<ClassTask> classTaskList = classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
             if (null == classTaskList || classTaskList.isEmpty()) {
@@ -109,6 +115,41 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             log.error("排课失败： {}", e.getMessage(), e);
             throw buildSchedulingException(start, semester, taskCount, buildExecuteErrorMessage(e), ResultCode.BUSINESS_ERROR);
         }
+    }
+
+    /**
+     * 步骤说明：
+     * 1. 当某学期已经迁移到 sch_task，但旧 tb_class_task 还没有数据时，
+     *    在执行旧排课算法前自动回填 legacy 任务。
+     * 2. 这样标准任务可以先成为主数据，旧算法仍然可复用。
+     * 3. 仅在 legacy 任务为空时执行，避免覆盖用户现有数据。
+     */
+    @Override
+    public void ensureLegacyTasksForSemester(String semester) {
+        if (semester == null || semester.isBlank()) {
+            return;
+        }
+        long legacyCount = count(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
+        if (legacyCount > 0) {
+            return;
+        }
+        List<SchTask> standardTasks = schTaskService.list(new LambdaQueryWrapper<SchTask>()
+                .eq(SchTask::getDeleted, 0)
+                .like(SchTask::getRemark, "semester=" + semester)
+                .orderByAsc(SchTask::getId));
+        if (standardTasks.isEmpty()) {
+            return;
+        }
+
+        List<ClassTask> legacyTasks = standardTasks.stream()
+                .map(this::convertStandardTaskToLegacy)
+                .filter(Objects::nonNull)
+                .toList();
+        if (legacyTasks.isEmpty()) {
+            return;
+        }
+        saveBatch(legacyTasks);
+        log.info("标准排课任务已回填到旧任务表，semester={}, count={}", semester, legacyTasks.size());
     }
 
     @Override
@@ -169,6 +210,50 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         long duration = System.currentTimeMillis() - start;
         saveExecuteLog(semester, taskCount, 0, 0, duration, message);
         return new BusinessException(resultCode, message);
+    }
+
+    private ClassTask convertStandardTaskToLegacy(SchTask standardTask) {
+        Map<String, String> meta = ScheduleTaskMetaUtils.parseTaskRemark(standardTask.getRemark());
+        String semester = meta.get("semester");
+        String classNo = meta.get("classNo");
+        String courseNo = meta.get("courseNo");
+        String teacherNo = meta.get("teacherNo");
+        if (semester == null || semester.isBlank()
+                || classNo == null || classNo.isBlank()
+                || courseNo == null || courseNo.isBlank()
+                || teacherNo == null || teacherNo.isBlank()) {
+            return null;
+        }
+
+        ClassTask task = new ClassTask();
+        task.setSemester(semester);
+        task.setGradeNo(meta.getOrDefault("gradeNo", ""));
+        task.setClassNo(classNo);
+        task.setCourseNo(courseNo);
+        task.setCourseName(meta.getOrDefault("courseName", ""));
+        task.setTeacherNo(teacherNo);
+        task.setRealname(meta.getOrDefault("teacherName", ""));
+        task.setCourseAttr(meta.getOrDefault("courseAttr", ""));
+        task.setStudentNum(standardTask.getStudentCount() == null ? 0 : standardTask.getStudentCount());
+        task.setWeeksNumber(standardTask.getWeekHours() == null ? 0 : standardTask.getWeekHours());
+        task.setWeeksSum(resolveWeeksSum(standardTask));
+        task.setIsFix(standardTask.getNeedFixedTime() != null && standardTask.getNeedFixedTime() == 1 ? "1" : "0");
+        task.setClassTime(toLegacyClassTime(standardTask.getFixedWeekdayNo(), standardTask.getFixedPeriodNo()));
+        return task;
+    }
+
+    private Integer resolveWeeksSum(SchTask standardTask) {
+        if (standardTask.getTotalHours() == null || standardTask.getWeekHours() == null || standardTask.getWeekHours() <= 0) {
+            return 0;
+        }
+        return standardTask.getTotalHours() / standardTask.getWeekHours();
+    }
+
+    private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {
+        if (weekdayNo == null || periodNo == null || weekdayNo <= 0 || periodNo <= 0) {
+            return "";
+        }
+        return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
     }
 
     private void checkWeeksNumber(List<ClassTask> classTaskList) {
