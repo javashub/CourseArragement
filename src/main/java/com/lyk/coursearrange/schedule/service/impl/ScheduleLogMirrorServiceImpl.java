@@ -14,6 +14,7 @@ import com.lyk.coursearrange.schedule.service.SchScheduleAdjustLogService;
 import com.lyk.coursearrange.schedule.service.SchScheduleRunLogService;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
+import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -264,27 +265,11 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     private Integer resolveWeekdayNo(String classTime) {
-        Integer slot = parseClassTime(classTime);
-        if (slot == null || slot < 1) {
-            return null;
-        }
-        return ((slot - 1) / 5) + 1;
+        return ScheduleTaskMetaUtils.resolveWeekdayNo(classTime);
     }
 
     private Integer resolvePeriodNo(String classTime) {
-        Integer slot = parseClassTime(classTime);
-        if (slot == null || slot < 1) {
-            return null;
-        }
-        return ((slot - 1) % 5) + 1;
-    }
-
-    private Integer parseClassTime(String classTime) {
-        try {
-            return classTime == null ? null : Integer.parseInt(classTime);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
+        return ScheduleTaskMetaUtils.resolvePeriodNo(classTime);
     }
 
     private SchTask getOrCreateTask(ClassTask legacyTask) {
@@ -317,25 +302,16 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     private String buildTaskCode(ClassTask legacyTask) {
-        String raw = buildTaskKey(legacyTask.getClassNo(), legacyTask.getCourseNo(), legacyTask.getTeacherNo())
-                + "_" + safe(legacyTask.getSemester());
-        String sanitized = raw.replaceAll("[^A-Za-z0-9_]", "_");
-        if (sanitized.length() > 32) {
-            return sanitized.substring(0, 32);
-        }
-        return sanitized;
+        return ScheduleTaskMetaUtils.buildTaskCode(
+                legacyTask.getSemester(),
+                legacyTask.getClassNo(),
+                legacyTask.getCourseNo(),
+                legacyTask.getTeacherNo()
+        );
     }
 
     private String buildTaskRemark(ClassTask legacyTask) {
-        return "semester=" + safe(legacyTask.getSemester())
-                + ",legacyId=" + (legacyTask.getId() == null ? "" : legacyTask.getId())
-                + ",classNo=" + safe(legacyTask.getClassNo())
-                + ",courseNo=" + safe(legacyTask.getCourseNo())
-                + ",teacherNo=" + safe(legacyTask.getTeacherNo())
-                + ",gradeNo=" + safe(legacyTask.getGradeNo())
-                + ",courseName=" + safe(legacyTask.getCourseName())
-                + ",courseAttr=" + safe(legacyTask.getCourseAttr())
-                + ",teacherName=" + safe(legacyTask.getRealname());
+        return ScheduleTaskMetaUtils.buildTaskRemark(legacyTask);
     }
 
     private String buildTaskKey(String classNo, String courseNo, String teacherNo) {

@@ -16,6 +16,7 @@ import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
 import com.lyk.coursearrange.service.ClassTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -70,16 +71,23 @@ public class ScheduleTaskController {
     }
 
     @PostMapping
+    @Transactional(rollbackFor = Exception.class)
     public ServerResponse<?> save(@RequestBody ClassTaskDTO request) {
+        validateTaskDuplicate(request);
+        SchTask standardTask = buildStandardTask(request);
+        if (!schTaskService.save(standardTask)) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
+        }
         ClassTask classTask = new ClassTask();
         BeanUtils.copyProperties(request, classTask);
         log.info("新增标准排课任务，semester={}, courseNo={}, classNo={}",
                 classTask.getSemester(), classTask.getCourseNo(), classTask.getClassNo());
-        if (classTaskService.save(classTask)) {
-            scheduleLogMirrorService.mirrorTask(classTask);
-            return ServerResponse.ofSuccess("添加课程任务成功");
+        if (!classTaskService.save(classTask)) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
         }
-        throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
+        standardTask.setRemark(ScheduleTaskMetaUtils.buildTaskRemark(classTask));
+        schTaskService.updateById(standardTask);
+        return ServerResponse.ofSuccess("添加课程任务成功");
     }
 
     @DeleteMapping("/{id}")
@@ -274,5 +282,51 @@ public class ScheduleTaskController {
             return "";
         }
         return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
+    }
+
+    private void validateTaskDuplicate(ClassTaskDTO request) {
+        String taskCode = ScheduleTaskMetaUtils.buildTaskCode(request);
+        LambdaQueryWrapper<SchTask> wrapper = new LambdaQueryWrapper<SchTask>()
+                .eq(SchTask::getTaskCode, taskCode)
+                .eq(SchTask::getDeleted, 0)
+                .last("limit 1");
+        if (schTaskService.getOne(wrapper, false) != null) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "相同班级、课程、教师、学期的任务已存在");
+        }
+    }
+
+    private SchTask buildStandardTask(ClassTaskDTO request) {
+        SchTask task = new SchTask();
+        task.setTaskCode(ScheduleTaskMetaUtils.buildTaskCode(request));
+        task.setSchoolYearId(0L);
+        task.setTermId(0L);
+        task.setStageId(0L);
+        task.setCourseId(0L);
+        task.setTeacherId(0L);
+        task.setStudentCount(request.getStudentNum() == null ? 0 : request.getStudentNum());
+        task.setWeekHours(request.getWeeksNumber() == null ? 0 : request.getWeeksNumber());
+        task.setTotalHours((request.getWeeksNumber() == null || request.getWeeksSum() == null)
+                ? 0
+                : request.getWeeksNumber() * request.getWeeksSum());
+        task.setNeedContinuous(0);
+        task.setContinuousSize(1);
+        task.setNeedFixedRoom(0);
+        task.setNeedFixedTime("1".equals(request.getIsFix()) ? 1 : 0);
+        task.setFixedWeekdayNo(ScheduleTaskMetaUtils.resolveWeekdayNo(request.getClassTime()));
+        task.setFixedPeriodNo(ScheduleTaskMetaUtils.resolvePeriodNo(request.getClassTime()));
+        task.setPriorityLevel(5);
+        task.setAllowConflict(0);
+        task.setTaskStatus("PENDING");
+        task.setSourceType("MANUAL");
+        task.setStatus(1);
+        task.setRemark("semester=" + ScheduleTaskMetaUtils.safe(request.getSemester())
+                + ",classNo=" + ScheduleTaskMetaUtils.safe(request.getClassNo())
+                + ",courseNo=" + ScheduleTaskMetaUtils.safe(request.getCourseNo())
+                + ",teacherNo=" + ScheduleTaskMetaUtils.safe(request.getTeacherNo())
+                + ",gradeNo=" + ScheduleTaskMetaUtils.safe(request.getGradeNo())
+                + ",courseName=" + ScheduleTaskMetaUtils.safe(request.getCourseName())
+                + ",courseAttr=" + ScheduleTaskMetaUtils.safe(request.getCourseAttr())
+                + ",teacherName=" + ScheduleTaskMetaUtils.safe(request.getRealname()));
+        return task;
     }
 }
