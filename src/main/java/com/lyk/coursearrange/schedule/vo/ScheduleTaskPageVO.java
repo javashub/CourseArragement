@@ -15,6 +15,8 @@ public class ScheduleTaskPageVO implements Serializable {
 
     private Integer id;
 
+    private Long standardId;
+
     private String semester;
 
     private String gradeNo;

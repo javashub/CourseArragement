@@ -146,7 +146,7 @@
           <template #default="{ row }">
             <el-space>
               <el-button link type="primary" @click="goToSchedule(row.classNo)">课表</el-button>
-              <el-button link type="danger" :disabled="!row.id" @click="removeTask(row)">删除</el-button>
+              <el-button link type="danger" :disabled="!row.id && !row.standardId" @click="removeTask(row)">删除</el-button>
             </el-space>
           </template>
         </el-table-column>
@@ -379,6 +379,7 @@ import {
   arrangeClassTask,
   createClassTask,
   deleteClassTask,
+  deleteStandardClassTask,
   downloadClassTaskTemplate,
   fetchArrangeLogs,
   fetchClassInfoPage,
@@ -797,7 +798,11 @@ async function submitTask() {
 
 async function removeTask(row) {
   await ElMessageBox.confirm(`确认删除班级“${row.classNo}”的任务吗？`, '删除确认', { type: 'warning' });
-  await deleteClassTask(row.id);
+  if (row.standardId) {
+    await deleteStandardClassTask(row.standardId);
+  } else {
+    await deleteClassTask(row.id);
+  }
   ElMessage.success('排课任务删除成功');
   await loadClassTasks();
 }

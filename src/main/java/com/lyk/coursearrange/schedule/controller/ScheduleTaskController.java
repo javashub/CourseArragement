@@ -93,6 +93,20 @@ public class ScheduleTaskController {
         throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除失败");
     }
 
+    @DeleteMapping("/standard/{id}")
+    public ServerResponse<?> deleteStandard(@PathVariable Long id) {
+        SchTask task = schTaskService.getById(id);
+        if (task == null || task.getDeleted() != null && task.getDeleted() == 1) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "标准排课任务不存在");
+        }
+        Map<String, String> meta = ScheduleTaskMetaUtils.parseTaskRemark(task.getRemark());
+        if (schTaskService.removeById(id)) {
+            removeMatchedLegacyTask(meta);
+            return ServerResponse.ofSuccess("删除成功");
+        }
+        throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除失败");
+    }
+
     @GetMapping("/semesters")
     public ServerResponse<?> listSemesters() {
         Set<String> standardSemesters = listStandardSemesters();
@@ -163,6 +177,7 @@ public class ScheduleTaskController {
 
         ScheduleTaskPageVO vo = new ScheduleTaskPageVO();
         vo.setId(resolveLegacyTaskId(meta, legacyTask));
+        vo.setStandardId(task.getId());
         vo.setSemester(meta.getOrDefault("semester", ""));
         vo.setGradeNo(meta.getOrDefault("gradeNo", ""));
         vo.setClassNo(meta.getOrDefault("classNo", ""));
@@ -232,6 +247,26 @@ public class ScheduleTaskController {
                 classNo == null ? "" : classNo,
                 courseNo == null ? "" : courseNo,
                 teacherNo == null ? "" : teacherNo);
+    }
+
+    private void removeMatchedLegacyTask(Map<String, String> meta) {
+        String semester = meta.getOrDefault("semester", "");
+        String classNo = meta.getOrDefault("classNo", "");
+        String courseNo = meta.getOrDefault("courseNo", "");
+        String teacherNo = meta.getOrDefault("teacherNo", "");
+        if (semester.isBlank() || classNo.isBlank() || courseNo.isBlank() || teacherNo.isBlank()) {
+            return;
+        }
+        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
+                .eq(ClassTask::getSemester, semester)
+                .eq(ClassTask::getClassNo, classNo)
+                .eq(ClassTask::getCourseNo, courseNo)
+                .eq(ClassTask::getTeacherNo, teacherNo)
+                .last("limit 1");
+        ClassTask legacyTask = classTaskService.getOne(wrapper, false);
+        if (legacyTask != null) {
+            classTaskService.removeById(legacyTask.getId());
+        }
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {

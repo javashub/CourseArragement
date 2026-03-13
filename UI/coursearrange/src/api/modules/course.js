@@ -28,6 +28,10 @@ export function deleteClassTask(id) {
   return request.delete(`/schedule/tasks/${id}`);
 }
 
+export function deleteStandardClassTask(id) {
+  return request.delete(`/schedule/tasks/standard/${id}`);
+}
+
 export function arrangeClassTask(semester) {
   return request.post('/schedule/tasks/arrange', null, {
     params: { semester }
