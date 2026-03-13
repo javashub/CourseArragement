@@ -79,16 +79,18 @@ export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
 }
 
 export function fetchCoursePlanByClassNo(classNo, options = {}) {
+  const { semester, ...rest } = options || {};
   return request.get('/schedule/plans/by-class', {
-    params: { classNo },
-    ...options
+    params: { classNo, semester },
+    ...rest
   });
 }
 
 export function fetchCoursePlanByTeacherNo(teacherNo, options = {}) {
+  const { semester, ...rest } = options || {};
   return request.get('/schedule/plans/by-teacher', {
-    params: { teacherNo },
-    ...options
+    params: { teacherNo, semester },
+    ...rest
   });
 }
 

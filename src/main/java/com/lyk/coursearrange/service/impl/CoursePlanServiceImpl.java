@@ -12,6 +12,10 @@ import com.lyk.coursearrange.dao.CoursePlanDao;
 import com.lyk.coursearrange.entity.Teacher;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.lyk.coursearrange.entity.response.CoursePlanVo;
+import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
+import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.SchScheduleResultService;
+import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.service.CoursePlanAdjustLogService;
 import com.lyk.coursearrange.service.CourseInfoService;
 import com.lyk.coursearrange.service.CoursePlanService;
@@ -25,8 +29,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -50,22 +56,36 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
     private AuthFacadeService authFacadeService;
     @Resource
     private ScheduleLogMirrorService scheduleLogMirrorService;
+    @Resource
+    private SchScheduleResultService schScheduleResultService;
+    @Resource
+    private SchTaskService schTaskService;
 
     /**
      * 根据班级编号查询课表
      * @param classNo 班级编号
      */
     @Override
-    public ServerResponse queryCoursePlanByClassNo(String classNo) {
+    public ServerResponse queryCoursePlanByClassNo(String classNo, String semester) {
+        List<CoursePlanVo> standardPlans = listStandardPlans(semester, classNo, null);
+        if (!standardPlans.isEmpty()) {
+            return ServerResponse.ofSuccess(standardPlans);
+        }
         LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<CoursePlan>().eq(CoursePlan::getClassNo, classNo).orderByAsc(CoursePlan::getClassTime);
+        wrapper.eq(semester != null && !semester.isBlank(), CoursePlan::getSemester, semester);
         List<CoursePlan> coursePlanList = coursePlanDao.selectList(wrapper);
 
         return buildCoursePlanResponse(coursePlanList, "该班级没有课表");
     }
 
     @Override
-    public ServerResponse queryCoursePlanByTeacherNo(String teacherNo) {
+    public ServerResponse queryCoursePlanByTeacherNo(String teacherNo, String semester) {
+        List<CoursePlanVo> standardPlans = listStandardPlans(semester, null, teacherNo);
+        if (!standardPlans.isEmpty()) {
+            return ServerResponse.ofSuccess(standardPlans);
+        }
         LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<CoursePlan>().eq(CoursePlan::getTeacherNo, teacherNo).orderByAsc(CoursePlan::getClassTime);
+        wrapper.eq(semester != null && !semester.isBlank(), CoursePlan::getSemester, semester);
         List<CoursePlan> coursePlanList = coursePlanDao.selectList(wrapper);
 
         return buildCoursePlanResponse(coursePlanList, "该教师没有课表");
@@ -205,5 +225,85 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         });
 
         return ServerResponse.ofSuccess(coursePlanVos);
+    }
+
+    private List<CoursePlanVo> listStandardPlans(String semester, String classNo, String teacherNo) {
+        if (semester == null || semester.isBlank()) {
+            return List.of();
+        }
+        LambdaQueryWrapper<SchScheduleResult> resultWrapper = new LambdaQueryWrapper<>();
+        resultWrapper.eq(SchScheduleResult::getDeleted, 0)
+                .eq(SchScheduleResult::getRemark, semester)
+                .orderByAsc(SchScheduleResult::getWeekdayNo)
+                .orderByAsc(SchScheduleResult::getPeriodNo);
+        List<SchScheduleResult> results = schScheduleResultService.list(resultWrapper);
+        if (results.isEmpty()) {
+            return List.of();
+        }
+        List<Long> taskIds = results.stream()
+                .map(SchScheduleResult::getTaskId)
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+        if (taskIds.isEmpty()) {
+            return List.of();
+        }
+        List<SchTask> tasks = schTaskService.listByIds(taskIds);
+        Map<Long, SchTask> taskMap = new HashMap<>();
+        for (SchTask task : tasks) {
+            taskMap.put(task.getId(), task);
+        }
+        return results.stream()
+                .map(item -> buildStandardPlanVo(item, taskMap.get(item.getTaskId())))
+                .filter(item -> item != null)
+                .filter(item -> classNo == null || classNo.isBlank() || classNo.equals(item.getClassNo()))
+                .filter(item -> teacherNo == null || teacherNo.isBlank() || teacherNo.equals(item.getTeacherNo()))
+                .toList();
+    }
+
+    private CoursePlanVo buildStandardPlanVo(SchScheduleResult result, SchTask task) {
+        if (task == null) {
+            return null;
+        }
+        Map<String, String> taskMeta = parseTaskRemark(task.getRemark());
+        String classNo = taskMeta.getOrDefault("classNo", "");
+        String courseNo = taskMeta.getOrDefault("courseNo", "");
+        String teacherNo = taskMeta.getOrDefault("teacherNo", "");
+        String courseName = taskMeta.getOrDefault("courseName", courseNo);
+        String teacherName = taskMeta.getOrDefault("teacherName", teacherNo);
+        CoursePlanVo vo = new CoursePlanVo();
+        vo.setId(result.getId() == null ? null : result.getId().intValue());
+        vo.setSemester(result.getRemark());
+        vo.setClassNo(classNo);
+        vo.setCourseNo(courseNo);
+        vo.setTeacherNo(teacherNo);
+        vo.setCourseName(courseName);
+        vo.setRealname(teacherName);
+        vo.setGradeNo(taskMeta.getOrDefault("gradeNo", ""));
+        vo.setClassroomNo(result.getClassroomId() == null || result.getClassroomId() == 0 ? "" : String.valueOf(result.getClassroomId()));
+        vo.setClassTime(toLegacyClassTime(result.getWeekdayNo(), result.getPeriodNo()));
+        return vo;
+    }
+
+    private Map<String, String> parseTaskRemark(String remark) {
+        Map<String, String> result = new HashMap<>();
+        if (remark == null || remark.isBlank()) {
+            return result;
+        }
+        String[] parts = remark.split(",");
+        for (String part : parts) {
+            String[] keyValue = part.split("=", 2);
+            if (keyValue.length == 2) {
+                result.put(keyValue[0], keyValue[1]);
+            }
+        }
+        return result;
+    }
+
+    private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {
+        if (weekdayNo == null || periodNo == null) {
+            return "";
+        }
+        return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
     }
 }

@@ -421,8 +421,8 @@ async function loadCoursePlan() {
   planLoadError.value = '';
   try {
     const response = viewMode.value === 'class'
-      ? await fetchCoursePlanByClassNo(selectedClassNo.value, { meta: { silentError: true } })
-      : await fetchCoursePlanByTeacherNo(selectedTeacherNo.value, { meta: { silentError: true } });
+      ? await fetchCoursePlanByClassNo(selectedClassNo.value, { semester: selectedSemester.value, meta: { silentError: true } })
+      : await fetchCoursePlanByTeacherNo(selectedTeacherNo.value, { semester: selectedSemester.value, meta: { silentError: true } });
     planList.value = response.data || [];
     await loadAdjustLogs();
   } catch (error) {

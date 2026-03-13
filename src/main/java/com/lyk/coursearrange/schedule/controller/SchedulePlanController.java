@@ -24,13 +24,15 @@ public class SchedulePlanController {
     }
 
     @GetMapping("/by-class")
-    public ServerResponse<?> byClass(@RequestParam String classNo) {
-        return coursePlanService.queryCoursePlanByClassNo(classNo);
+    public ServerResponse<?> byClass(@RequestParam String classNo,
+                                     @RequestParam(required = false) String semester) {
+        return coursePlanService.queryCoursePlanByClassNo(classNo, semester);
     }
 
     @GetMapping("/by-teacher")
-    public ServerResponse<?> byTeacher(@RequestParam String teacherNo) {
-        return coursePlanService.queryCoursePlanByTeacherNo(teacherNo);
+    public ServerResponse<?> byTeacher(@RequestParam String teacherNo,
+                                       @RequestParam(required = false) String semester) {
+        return coursePlanService.queryCoursePlanByTeacherNo(teacherNo, semester);
     }
 
     @PostMapping("/adjust")

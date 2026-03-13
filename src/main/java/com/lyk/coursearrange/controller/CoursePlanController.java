@@ -31,16 +31,18 @@ public class CoursePlanController {
      * 根据班级查询课程表
      */
     @GetMapping("/courseplan/{classno}")
-    public ServerResponse queryCoursePlanByClassNo(@PathVariable("classno") String classNo) {
-        return coursePlanService.queryCoursePlanByClassNo(classNo);
+    public ServerResponse queryCoursePlanByClassNo(@PathVariable("classno") String classNo,
+                                                   @RequestParam(required = false) String semester) {
+        return coursePlanService.queryCoursePlanByClassNo(classNo, semester);
     }
 
     /**
      * 根据教师查询课程表
      */
     @GetMapping("/courseplan/teacher/{teacherno}")
-    public ServerResponse queryCoursePlanByTeacherNo(@PathVariable("teacherno") String teacherNo) {
-        return coursePlanService.queryCoursePlanByTeacherNo(teacherNo);
+    public ServerResponse queryCoursePlanByTeacherNo(@PathVariable("teacherno") String teacherNo,
+                                                     @RequestParam(required = false) String semester) {
+        return coursePlanService.queryCoursePlanByTeacherNo(teacherNo, semester);
     }
 
     /**

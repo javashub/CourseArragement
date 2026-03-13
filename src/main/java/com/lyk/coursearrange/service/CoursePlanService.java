@@ -18,12 +18,12 @@ public interface CoursePlanService extends IService<CoursePlan> {
     /**
      * 根据班级编号查询课程安排
      */
-    ServerResponse queryCoursePlanByClassNo(@PathVariable("classno") String classNo);
+    ServerResponse queryCoursePlanByClassNo(@PathVariable("classno") String classNo, String semester);
 
     /**
      * 根据教师编号查询课程安排
      */
-    ServerResponse queryCoursePlanByTeacherNo(@PathVariable("teacherno") String teacherNo);
+    ServerResponse queryCoursePlanByTeacherNo(@PathVariable("teacherno") String teacherNo, String semester);
 
     /**
      * 调整课表时间片。

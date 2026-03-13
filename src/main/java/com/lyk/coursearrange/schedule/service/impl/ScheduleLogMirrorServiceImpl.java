@@ -293,6 +293,9 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
 
     private String buildTaskRemark(ClassTask legacyTask) {
         return "semester=" + safe(legacyTask.getSemester())
+                + ",classNo=" + safe(legacyTask.getClassNo())
+                + ",courseNo=" + safe(legacyTask.getCourseNo())
+                + ",teacherNo=" + safe(legacyTask.getTeacherNo())
                 + ",gradeNo=" + safe(legacyTask.getGradeNo())
                 + ",courseName=" + safe(legacyTask.getCourseName())
                 + ",teacherName=" + safe(legacyTask.getRealname());
