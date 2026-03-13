@@ -2,15 +2,8 @@ package com.lyk.coursearrange.excel.service.impl;
 
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lyk.coursearrange.auth.service.AuthAccountSyncService;
-import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.vo.ImportResultVO;
-import com.lyk.coursearrange.entity.CourseInfo;
-import com.lyk.coursearrange.entity.Classroom;
-import com.lyk.coursearrange.entity.Student;
-import com.lyk.coursearrange.entity.Teacher;
-import com.lyk.coursearrange.entity.TeachbuildInfo;
 import com.lyk.coursearrange.excel.model.ClassroomExcelRow;
 import com.lyk.coursearrange.excel.model.ClassroomImportExcelRow;
 import com.lyk.coursearrange.excel.model.CourseInfoExcelRow;
@@ -22,11 +15,17 @@ import com.lyk.coursearrange.excel.model.TeachbuildImportExcelRow;
 import com.lyk.coursearrange.excel.model.TeacherExcelRow;
 import com.lyk.coursearrange.excel.model.TeacherImportExcelRow;
 import com.lyk.coursearrange.excel.service.BaseResourceExcelService;
-import com.lyk.coursearrange.service.ClassroomService;
-import com.lyk.coursearrange.service.CourseInfoService;
-import com.lyk.coursearrange.service.StudentService;
-import com.lyk.coursearrange.service.TeachbuildInfoService;
-import com.lyk.coursearrange.service.TeacherService;
+import com.lyk.coursearrange.resource.entity.ResBuilding;
+import com.lyk.coursearrange.resource.entity.ResClassroom;
+import com.lyk.coursearrange.resource.entity.ResCourse;
+import com.lyk.coursearrange.resource.entity.ResStudent;
+import com.lyk.coursearrange.resource.entity.ResTeacher;
+import com.lyk.coursearrange.resource.service.ResBuildingService;
+import com.lyk.coursearrange.resource.service.ResClassroomService;
+import com.lyk.coursearrange.resource.service.ResCourseService;
+import com.lyk.coursearrange.resource.service.ResStudentService;
+import com.lyk.coursearrange.resource.service.ResTeacherService;
+import com.lyk.coursearrange.resource.service.ResourceAccountSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -50,28 +49,24 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
 
-    private final TeacherService teacherService;
-    private final StudentService studentService;
-    private final CourseInfoService courseInfoService;
-    private final TeachbuildInfoService teachbuildInfoService;
-    private final ClassroomService classroomService;
-    private final PasswordService passwordService;
-    private final AuthAccountSyncService authAccountSyncService;
+    private final ResTeacherService teacherService;
+    private final ResStudentService studentService;
+    private final ResCourseService courseInfoService;
+    private final ResBuildingService teachbuildInfoService;
+    private final ResClassroomService classroomService;
+    private final ResourceAccountSyncService resourceAccountSyncService;
 
     @Override
     public void writeTeacherTemplate(HttpServletResponse response) throws IOException {
         List<TeacherImportExcelRow> rows = new ArrayList<>();
         TeacherImportExcelRow sample = new TeacherImportExcelRow();
         sample.setTeacherNo("T2026001");
-        sample.setUsername("zhangsan");
         sample.setRealname("张老师");
         sample.setJobtitle("讲师");
-        sample.setTeach("高等数学");
-        sample.setAge(35);
+        sample.setTeach("主授高等数学");
         sample.setTelephone("13800000000");
         sample.setEmail("teacher@school.edu.cn");
-        sample.setAddress("主校区教师公寓 3 栋 302");
-        sample.setStatusText("正常");
+        sample.setStatusText("启用");
         rows.add(sample);
         writeExcel(response, "教师导入模板.xlsx", "教师导入模板", TeacherImportExcelRow.class, rows);
     }
@@ -81,15 +76,13 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         List<StudentImportExcelRow> rows = new ArrayList<>();
         StudentImportExcelRow sample = new StudentImportExcelRow();
         sample.setStudentNo("2026020001");
-        sample.setUsername("lisi");
         sample.setRealname("李同学");
-        sample.setGrade("2025");
-        sample.setClassNo("2501");
-        sample.setAge(18);
+        sample.setGrade("2026级");
+        sample.setClassNo("2501班");
         sample.setTelephone("13800000001");
         sample.setEmail("student@school.edu.cn");
-        sample.setAddress("主校区宿舍 5 栋 402");
-        sample.setStatusText("正常");
+        sample.setAddress("备注：主校区宿舍 5 栋 402");
+        sample.setStatusText("启用");
         rows.add(sample);
         writeExcel(response, "学生导入模板.xlsx", "学生导入模板", StudentImportExcelRow.class, rows);
     }
@@ -98,12 +91,12 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     public void writeCourseTemplate(HttpServletResponse response) throws IOException {
         List<CourseInfoImportExcelRow> rows = new ArrayList<>();
         CourseInfoImportExcelRow sample = new CourseInfoImportExcelRow();
-        sample.setCourseNo("10001");
+        sample.setCourseNo("C10001");
         sample.setCourseName("高等数学");
-        sample.setCourseAttr("必修");
-        sample.setPublisher("高等教育出版社");
-        sample.setPiority(1);
-        sample.setStatusText("正常");
+        sample.setCourseAttr("REQUIRED");
+        sample.setPublisher("高数");
+        sample.setPiority(2);
+        sample.setStatusText("启用");
         sample.setRemark("大一上学期核心课程");
         rows.add(sample);
         writeExcel(response, "课程导入模板.xlsx", "课程导入模板", CourseInfoImportExcelRow.class, rows);
@@ -113,9 +106,9 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     public void writeTeachbuildTemplate(HttpServletResponse response) throws IOException {
         List<TeachbuildImportExcelRow> rows = new ArrayList<>();
         TeachbuildImportExcelRow sample = new TeachbuildImportExcelRow();
-        sample.setTeachBuildNo("08");
+        sample.setTeachBuildNo("B08");
         sample.setTeachBuildName("实验楼");
-        sample.setTeachBuildLocation("主校区东区");
+        sample.setTeachBuildLocation("主校区东区，默认公共教学楼");
         rows.add(sample);
         writeExcel(response, "教学楼导入模板.xlsx", "教学楼导入模板", TeachbuildImportExcelRow.class, rows);
     }
@@ -124,11 +117,11 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     public void writeClassroomTemplate(HttpServletResponse response) throws IOException {
         List<ClassroomImportExcelRow> rows = new ArrayList<>();
         ClassroomImportExcelRow sample = new ClassroomImportExcelRow();
-        sample.setClassroomNo("08-302");
+        sample.setClassroomNo("B08-302");
         sample.setClassroomName("实验楼 302");
-        sample.setTeachbuildNo("08");
+        sample.setTeachbuildNo("B08");
         sample.setCapacity(60);
-        sample.setAttr("实验室");
+        sample.setAttr("LAB");
         sample.setRemark("支持投影和实验台");
         rows.add(sample);
         writeExcel(response, "教室导入模板.xlsx", "教室导入模板", ClassroomImportExcelRow.class, rows);
@@ -136,10 +129,14 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
 
     @Override
     public void exportTeachers(String keyword, Integer status, HttpServletResponse response) throws IOException {
-        List<TeacherExcelRow> rows = teacherService.list(new LambdaQueryWrapper<Teacher>()
-                        .like(StringUtils.isNotBlank(keyword), Teacher::getRealname, keyword)
-                        .eq(status != null, Teacher::getStatus, status)
-                        .orderByAsc(Teacher::getTeacherNo))
+        List<TeacherExcelRow> rows = teacherService.list(new LambdaQueryWrapper<ResTeacher>()
+                        .eq(ResTeacher::getDeleted, 0)
+                        .and(StringUtils.isNotBlank(keyword), wrapper -> wrapper
+                                .like(ResTeacher::getTeacherName, keyword)
+                                .or()
+                                .like(ResTeacher::getTeacherCode, keyword))
+                        .eq(status != null, ResTeacher::getStatus, status)
+                        .orderByAsc(ResTeacher::getTeacherCode))
                 .stream()
                 .map(this::toTeacherRow)
                 .collect(Collectors.toList());
@@ -148,10 +145,14 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
 
     @Override
     public void exportStudents(String keyword, Integer status, HttpServletResponse response) throws IOException {
-        List<StudentExcelRow> rows = studentService.list(new LambdaQueryWrapper<Student>()
-                        .like(StringUtils.isNotBlank(keyword), Student::getRealname, keyword)
-                        .eq(status != null, Student::getStatus, status)
-                        .orderByAsc(Student::getStudentNo))
+        List<StudentExcelRow> rows = studentService.list(new LambdaQueryWrapper<ResStudent>()
+                        .eq(ResStudent::getDeleted, 0)
+                        .and(StringUtils.isNotBlank(keyword), wrapper -> wrapper
+                                .like(ResStudent::getStudentName, keyword)
+                                .or()
+                                .like(ResStudent::getStudentCode, keyword))
+                        .eq(status != null, ResStudent::getStatus, status)
+                        .orderByAsc(ResStudent::getStudentCode))
                 .stream()
                 .map(this::toStudentRow)
                 .collect(Collectors.toList());
@@ -160,10 +161,14 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
 
     @Override
     public void exportCourses(String keyword, Integer status, HttpServletResponse response) throws IOException {
-        List<CourseInfoExcelRow> rows = courseInfoService.list(new LambdaQueryWrapper<CourseInfo>()
-                        .like(StringUtils.isNotBlank(keyword), CourseInfo::getCourseName, keyword)
-                        .eq(status != null, CourseInfo::getStatus, status)
-                        .orderByAsc(CourseInfo::getCourseNo))
+        List<CourseInfoExcelRow> rows = courseInfoService.list(new LambdaQueryWrapper<ResCourse>()
+                        .eq(ResCourse::getDeleted, 0)
+                        .and(StringUtils.isNotBlank(keyword), wrapper -> wrapper
+                                .like(ResCourse::getCourseName, keyword)
+                                .or()
+                                .like(ResCourse::getCourseCode, keyword))
+                        .eq(status != null, ResCourse::getStatus, status)
+                        .orderByAsc(ResCourse::getCourseCode))
                 .stream()
                 .map(this::toCourseRow)
                 .collect(Collectors.toList());
@@ -172,11 +177,12 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
 
     @Override
     public void exportTeachbuilds(String keyword, HttpServletResponse response) throws IOException {
-        List<TeachbuildExcelRow> rows = teachbuildInfoService.list(new LambdaQueryWrapper<TeachbuildInfo>()
-                        .like(StringUtils.isNotBlank(keyword), TeachbuildInfo::getTeachBuildName, keyword)
+        List<TeachbuildExcelRow> rows = teachbuildInfoService.list(new LambdaQueryWrapper<ResBuilding>()
+                        .eq(ResBuilding::getDeleted, 0)
+                        .like(StringUtils.isNotBlank(keyword), ResBuilding::getBuildingName, keyword)
                         .or(StringUtils.isNotBlank(keyword))
-                        .like(StringUtils.isNotBlank(keyword), TeachbuildInfo::getTeachBuildNo, keyword)
-                        .orderByAsc(TeachbuildInfo::getTeachBuildNo))
+                        .like(StringUtils.isNotBlank(keyword), ResBuilding::getBuildingCode, keyword)
+                        .orderByAsc(ResBuilding::getBuildingCode))
                 .stream()
                 .map(this::toTeachbuildRow)
                 .collect(Collectors.toList());
@@ -185,14 +191,21 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
 
     @Override
     public void exportClassrooms(String keyword, String teachbuildNo, HttpServletResponse response) throws IOException {
-        List<ClassroomExcelRow> rows = classroomService.list(new LambdaQueryWrapper<Classroom>()
+        List<ClassroomExcelRow> rows = classroomService.list(new LambdaQueryWrapper<ResClassroom>()
+                        .eq(ResClassroom::getDeleted, 0)
                         .and(StringUtils.isNotBlank(keyword), wrapper -> wrapper
-                                .like(Classroom::getClassroomNo, keyword)
+                                .like(ResClassroom::getClassroomCode, keyword)
                                 .or()
-                                .like(Classroom::getClassroomName, keyword))
-                        .eq(StringUtils.isNotBlank(teachbuildNo), Classroom::getTeachbuildNo, teachbuildNo)
-                        .orderByAsc(Classroom::getClassroomNo))
+                                .like(ResClassroom::getClassroomName, keyword))
+                        .orderByAsc(ResClassroom::getClassroomCode))
                 .stream()
+                .filter(item -> {
+                    if (StringUtils.isBlank(teachbuildNo)) {
+                        return true;
+                    }
+                    ResBuilding building = teachbuildInfoService.getById(item.getBuildingId());
+                    return building != null && StringUtils.equals(building.getBuildingCode(), teachbuildNo);
+                })
                 .map(this::toClassroomRow)
                 .collect(Collectors.toList());
         writeExcel(response, "教室数据导出.xlsx", "教室数据", ClassroomExcelRow.class, rows);
@@ -220,24 +233,24 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             if (errors.size() > before) {
                 continue;
             }
-            Teacher teacher = teacherService.getOne(new LambdaQueryWrapper<Teacher>().eq(Teacher::getTeacherNo, trim(row.getTeacherNo())));
-            boolean isNew = teacher == null;
-            if (isNew) {
-                teacher = new Teacher();
-                teacher.setTeacherNo(trim(row.getTeacherNo()));
-                teacher.setPassword(passwordService.encode("123456"));
+            ResTeacher teacher = teacherService.getOne(new LambdaQueryWrapper<ResTeacher>()
+                    .eq(ResTeacher::getTeacherCode, trim(row.getTeacherNo()))
+                    .eq(ResTeacher::getDeleted, 0));
+            if (teacher == null) {
+                teacher = new ResTeacher();
+                teacher.setTeacherCode(trim(row.getTeacherNo()));
             }
-            teacher.setUsername(StringUtils.defaultIfBlank(trim(row.getUsername()), teacher.getTeacherNo()));
-            teacher.setRealname(trim(row.getRealname()));
-            teacher.setJobtitle(trim(row.getJobtitle()));
-            teacher.setTeach(trim(row.getTeach()));
-            teacher.setAge(row.getAge());
-            teacher.setTelephone(trim(row.getTelephone()));
+            teacher.setTeacherName(trim(row.getRealname()));
+            teacher.setTitleName(trim(row.getJobtitle()));
+            teacher.setRemark(trim(row.getTeach()));
+            teacher.setMobile(trim(row.getTelephone()));
             teacher.setEmail(trim(row.getEmail()));
-            teacher.setAddress(trim(row.getAddress()));
-            teacher.setStatus(parseStatus(trim(row.getStatusText()), 0));
+            teacher.setStatus(parseResourceStatus(trim(row.getStatusText()), 1));
+            teacher.setHireStatus("ACTIVE");
+            teacher.setMaxWeekHours(16);
+            teacher.setMaxDayHours(4);
             teacherService.saveOrUpdate(teacher);
-            authAccountSyncService.syncTeacherAccount(teacher);
+            resourceAccountSyncService.syncTeacherAccount(teacher);
             imported++;
         }
         return buildImportResponse(rows.size(), errors, imported, "教师");
@@ -265,24 +278,22 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             if (errors.size() > before) {
                 continue;
             }
-            Student student = studentService.getOne(new LambdaQueryWrapper<Student>().eq(Student::getStudentNo, trim(row.getStudentNo())));
-            boolean isNew = student == null;
-            if (isNew) {
-                student = new Student();
-                student.setStudentNo(trim(row.getStudentNo()));
-                student.setPassword(passwordService.encode("123456"));
+            ResStudent student = studentService.getOne(new LambdaQueryWrapper<ResStudent>()
+                    .eq(ResStudent::getStudentCode, trim(row.getStudentNo()))
+                    .eq(ResStudent::getDeleted, 0));
+            if (student == null) {
+                student = new ResStudent();
+                student.setStudentCode(trim(row.getStudentNo()));
             }
-            student.setUsername(StringUtils.defaultIfBlank(trim(row.getUsername()), student.getStudentNo()));
-            student.setRealname(trim(row.getRealname()));
-            student.setGrade(trim(row.getGrade()));
-            student.setClassNo(trim(row.getClassNo()));
-            student.setAge(row.getAge());
-            student.setTelephone(trim(row.getTelephone()));
+            student.setStudentName(trim(row.getRealname()));
+            student.setRemark(StringUtils.defaultIfBlank(trim(row.getAddress()), trim(row.getClassNo())));
+            student.setEntryYear(parseEntryYear(row.getGrade(), row.getStudentNo()));
+            student.setMobile(trim(row.getTelephone()));
             student.setEmail(trim(row.getEmail()));
-            student.setAddress(trim(row.getAddress()));
-            student.setStatus(parseStatus(trim(row.getStatusText()), 0));
+            student.setStatus(parseResourceStatus(trim(row.getStatusText()), 1));
+            student.setStageId(defaultStageId());
             studentService.saveOrUpdate(student);
-            authAccountSyncService.syncStudentAccount(student);
+            resourceAccountSyncService.syncStudentAccount(student);
             imported++;
         }
         return buildImportResponse(rows.size(), errors, imported, "学生");
@@ -310,16 +321,21 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             if (errors.size() > before) {
                 continue;
             }
-            CourseInfo courseInfo = courseInfoService.getOne(new LambdaQueryWrapper<CourseInfo>().eq(CourseInfo::getCourseNo, trim(row.getCourseNo())));
+            ResCourse courseInfo = courseInfoService.getOne(new LambdaQueryWrapper<ResCourse>()
+                    .eq(ResCourse::getCourseCode, trim(row.getCourseNo()))
+                    .eq(ResCourse::getDeleted, 0));
             if (courseInfo == null) {
-                courseInfo = new CourseInfo();
-                courseInfo.setCourseNo(trim(row.getCourseNo()));
+                courseInfo = new ResCourse();
+                courseInfo.setCourseCode(trim(row.getCourseNo()));
             }
             courseInfo.setCourseName(trim(row.getCourseName()));
-            courseInfo.setCourseAttr(trim(row.getCourseAttr()));
-            courseInfo.setPublisher(trim(row.getPublisher()));
-            courseInfo.setPiority(row.getPiority() == null ? 0 : row.getPiority());
-            courseInfo.setStatus(parseStatus(trim(row.getStatusText()), 0));
+            courseInfo.setCourseType(StringUtils.defaultIfBlank(trim(row.getCourseAttr()), "REQUIRED"));
+            courseInfo.setCourseShortName(trim(row.getPublisher()));
+            courseInfo.setWeekHours(row.getPiority() == null ? 0 : row.getPiority());
+            courseInfo.setTotalHours((row.getPiority() == null ? 0 : row.getPiority()) * 16);
+            courseInfo.setNeedSpecialRoom(0);
+            courseInfo.setRoomType("NORMAL");
+            courseInfo.setStatus(parseResourceStatus(trim(row.getStatusText()), 1));
             courseInfo.setRemark(trim(row.getRemark()));
             courseInfoService.saveOrUpdate(courseInfo);
             imported++;
@@ -349,14 +365,18 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             if (errors.size() > before) {
                 continue;
             }
-            TeachbuildInfo teachbuildInfo = teachbuildInfoService.getOne(new LambdaQueryWrapper<TeachbuildInfo>()
-                    .eq(TeachbuildInfo::getTeachBuildNo, trim(row.getTeachBuildNo())));
+            ResBuilding teachbuildInfo = teachbuildInfoService.getOne(new LambdaQueryWrapper<ResBuilding>()
+                    .eq(ResBuilding::getBuildingCode, trim(row.getTeachBuildNo()))
+                    .eq(ResBuilding::getDeleted, 0));
             if (teachbuildInfo == null) {
-                teachbuildInfo = new TeachbuildInfo();
-                teachbuildInfo.setTeachBuildNo(trim(row.getTeachBuildNo()));
+                teachbuildInfo = new ResBuilding();
+                teachbuildInfo.setBuildingCode(trim(row.getTeachBuildNo()));
             }
-            teachbuildInfo.setTeachBuildName(trim(row.getTeachBuildName()));
-            teachbuildInfo.setTeachBuildLocation(trim(row.getTeachBuildLocation()));
+            teachbuildInfo.setBuildingName(trim(row.getTeachBuildName()));
+            teachbuildInfo.setRemark(trim(row.getTeachBuildLocation()));
+            teachbuildInfo.setBuildingType("TEACHING");
+            teachbuildInfo.setCampusId(defaultCampusId());
+            teachbuildInfo.setStatus(1);
             teachbuildInfoService.saveOrUpdate(teachbuildInfo);
             imported++;
         }
@@ -385,16 +405,29 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             if (errors.size() > before) {
                 continue;
             }
-            Classroom classroom = classroomService.getOne(new LambdaQueryWrapper<Classroom>()
-                    .eq(Classroom::getClassroomNo, trim(row.getClassroomNo())));
+            ResBuilding building = teachbuildInfoService.getOne(new LambdaQueryWrapper<ResBuilding>()
+                    .eq(ResBuilding::getBuildingCode, trim(row.getTeachbuildNo()))
+                    .eq(ResBuilding::getDeleted, 0)
+                    .last("limit 1"));
+            if (building == null) {
+                errors.add("第 " + (index + 2) + " 行教学楼编号不存在，请先导入教学楼");
+                continue;
+            }
+            ResClassroom classroom = classroomService.getOne(new LambdaQueryWrapper<ResClassroom>()
+                    .eq(ResClassroom::getClassroomCode, trim(row.getClassroomNo()))
+                    .eq(ResClassroom::getDeleted, 0));
             if (classroom == null) {
-                classroom = new Classroom();
-                classroom.setClassroomNo(trim(row.getClassroomNo()));
+                classroom = new ResClassroom();
+                classroom.setClassroomCode(trim(row.getClassroomNo()));
             }
             classroom.setClassroomName(trim(row.getClassroomName()));
-            classroom.setTeachbuildNo(trim(row.getTeachbuildNo()));
-            classroom.setCapacity(row.getCapacity() == null ? 0 : row.getCapacity());
-            classroom.setAttr(trim(row.getAttr()));
+            classroom.setBuildingId(building.getId());
+            classroom.setCampusId(building.getCampusId());
+            classroom.setCollegeId(building.getCollegeId());
+            classroom.setSeatCount(row.getCapacity() == null ? 0 : row.getCapacity());
+            classroom.setRoomType(StringUtils.defaultIfBlank(trim(row.getAttr()), "NORMAL"));
+            classroom.setStatus(1);
+            classroom.setIsShared(1);
             classroom.setRemark(trim(row.getRemark()));
             classroomService.saveOrUpdate(classroom);
             imported++;
@@ -402,63 +435,64 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         return buildImportResponse(rows.size(), errors, imported, "教室");
     }
 
-    private TeacherExcelRow toTeacherRow(Teacher teacher) {
+    private TeacherExcelRow toTeacherRow(ResTeacher teacher) {
         TeacherExcelRow row = new TeacherExcelRow();
-        row.setTeacherNo(teacher.getTeacherNo());
-        row.setUsername(teacher.getUsername());
-        row.setRealname(teacher.getRealname());
-        row.setJobtitle(teacher.getJobtitle());
-        row.setTeach(teacher.getTeach());
-        row.setAge(teacher.getAge());
-        row.setTelephone(teacher.getTelephone());
+        row.setTeacherNo(teacher.getTeacherCode());
+        row.setUsername(teacher.getTeacherCode());
+        row.setRealname(teacher.getTeacherName());
+        row.setJobtitle(teacher.getTitleName());
+        row.setTeach(teacher.getRemark());
+        row.setAge(null);
+        row.setTelephone(teacher.getMobile());
         row.setEmail(teacher.getEmail());
-        row.setAddress(teacher.getAddress());
-        row.setStatusText(teacher.getStatus() != null && teacher.getStatus() == 0 ? "正常" : "封禁");
+        row.setAddress("");
+        row.setStatusText(teacher.getStatus() != null && teacher.getStatus() == 1 ? "启用" : "停用");
         return row;
     }
 
-    private StudentExcelRow toStudentRow(Student student) {
+    private StudentExcelRow toStudentRow(ResStudent student) {
         StudentExcelRow row = new StudentExcelRow();
-        row.setStudentNo(student.getStudentNo());
-        row.setUsername(student.getUsername());
-        row.setRealname(student.getRealname());
-        row.setGrade(student.getGrade());
-        row.setClassNo(student.getClassNo());
-        row.setAge(student.getAge());
-        row.setTelephone(student.getTelephone());
+        row.setStudentNo(student.getStudentCode());
+        row.setUsername(student.getStudentCode());
+        row.setRealname(student.getStudentName());
+        row.setGrade(student.getEntryYear() == null ? "" : student.getEntryYear() + "级");
+        row.setClassNo(student.getRemark());
+        row.setAge(null);
+        row.setTelephone(student.getMobile());
         row.setEmail(student.getEmail());
-        row.setAddress(student.getAddress());
-        row.setStatusText(student.getStatus() != null && student.getStatus() == 0 ? "正常" : "封禁");
+        row.setAddress(student.getRemark());
+        row.setStatusText(student.getStatus() != null && student.getStatus() == 1 ? "启用" : "停用");
         return row;
     }
 
-    private CourseInfoExcelRow toCourseRow(CourseInfo course) {
+    private CourseInfoExcelRow toCourseRow(ResCourse course) {
         CourseInfoExcelRow row = new CourseInfoExcelRow();
-        row.setCourseNo(course.getCourseNo());
+        row.setCourseNo(course.getCourseCode());
         row.setCourseName(course.getCourseName());
-        row.setCourseAttr(course.getCourseAttr());
-        row.setPublisher(course.getPublisher());
-        row.setPiority(course.getPiority());
-        row.setStatusText(course.getStatus() != null && course.getStatus() == 0 ? "正常" : "停用");
+        row.setCourseAttr(course.getCourseType());
+        row.setPublisher(course.getCourseShortName());
+        row.setPiority(course.getWeekHours());
+        row.setStatusText(course.getStatus() != null && course.getStatus() == 1 ? "启用" : "停用");
         row.setRemark(course.getRemark());
         return row;
     }
 
-    private TeachbuildExcelRow toTeachbuildRow(TeachbuildInfo teachbuildInfo) {
+    private TeachbuildExcelRow toTeachbuildRow(ResBuilding teachbuildInfo) {
         TeachbuildExcelRow row = new TeachbuildExcelRow();
-        row.setTeachBuildNo(teachbuildInfo.getTeachBuildNo());
-        row.setTeachBuildName(teachbuildInfo.getTeachBuildName());
-        row.setTeachBuildLocation(teachbuildInfo.getTeachBuildLocation());
+        row.setTeachBuildNo(teachbuildInfo.getBuildingCode());
+        row.setTeachBuildName(teachbuildInfo.getBuildingName());
+        row.setTeachBuildLocation(teachbuildInfo.getRemark());
         return row;
     }
 
-    private ClassroomExcelRow toClassroomRow(Classroom classroom) {
+    private ClassroomExcelRow toClassroomRow(ResClassroom classroom) {
         ClassroomExcelRow row = new ClassroomExcelRow();
-        row.setClassroomNo(classroom.getClassroomNo());
+        row.setClassroomNo(classroom.getClassroomCode());
         row.setClassroomName(classroom.getClassroomName());
-        row.setTeachbuildNo(classroom.getTeachbuildNo());
-        row.setCapacity(classroom.getCapacity());
-        row.setAttr(classroom.getAttr());
+        ResBuilding building = teachbuildInfoService.getById(classroom.getBuildingId());
+        row.setTeachbuildNo(building == null ? "" : building.getBuildingCode());
+        row.setCapacity(classroom.getSeatCount());
+        row.setAttr(classroom.getRoomType());
         row.setRemark(classroom.getRemark());
         return row;
     }
@@ -519,18 +553,38 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
                 buildImportResult(totalCount, imported, List.of()));
     }
 
-    private Integer parseStatus(String statusText, int defaultValue) {
+    private Integer parseResourceStatus(String statusText, int defaultValue) {
         if (StringUtils.isBlank(statusText)) {
             return defaultValue;
         }
         String normalized = statusText.trim();
-        if ("正常".equals(normalized) || "启用".equals(normalized) || "0".equals(normalized)) {
-            return 0;
-        }
-        if ("封禁".equals(normalized) || "停用".equals(normalized) || "1".equals(normalized)) {
+        if ("正常".equals(normalized) || "启用".equals(normalized) || "1".equals(normalized)) {
             return 1;
         }
+        if ("封禁".equals(normalized) || "停用".equals(normalized) || "0".equals(normalized)) {
+            return 0;
+        }
         return defaultValue;
+    }
+
+    private Long defaultCampusId() {
+        return 0L;
+    }
+
+    private Long defaultStageId() {
+        return 0L;
+    }
+
+    private Integer parseEntryYear(String gradeText, String studentCode) {
+        String gradeNumber = StringUtils.defaultIfBlank(trim(gradeText), "").replaceAll("[^0-9]", "");
+        if (gradeNumber.length() >= 4) {
+            return Integer.parseInt(gradeNumber.substring(0, 4));
+        }
+        String studentCodeNumber = StringUtils.defaultIfBlank(trim(studentCode), "").replaceAll("[^0-9]", "");
+        if (studentCodeNumber.length() >= 4) {
+            return Integer.parseInt(studentCodeNumber.substring(0, 4));
+        }
+        return java.time.LocalDate.now().getYear();
     }
 
     private String trim(String value) {
