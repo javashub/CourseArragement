@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -91,6 +92,40 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
             taskService.removeById(task.getId());
         } catch (Exception exception) {
             log.warn("移除标准排课任务镜像失败，legacyId={}", legacyTask.getId(), exception);
+        }
+    }
+
+    @Override
+    public void replaceTaskMirrorsBySemesters(Set<String> semesters, List<ClassTask> legacyTasks) {
+        if (semesters == null || semesters.isEmpty()) {
+            return;
+        }
+        try {
+            LambdaQueryWrapper<SchTask> removeWrapper = new LambdaQueryWrapper<>();
+            removeWrapper.eq(SchTask::getDeleted, 0)
+                    .and(wrapper -> {
+                        boolean first = true;
+                        for (String semester : semesters) {
+                            if (semester == null || semester.isBlank()) {
+                                continue;
+                            }
+                            if (first) {
+                                wrapper.like(SchTask::getRemark, "semester=" + semester);
+                                first = false;
+                            } else {
+                                wrapper.or().like(SchTask::getRemark, "semester=" + semester);
+                            }
+                        }
+                    });
+            taskService.remove(removeWrapper);
+            if (legacyTasks == null || legacyTasks.isEmpty()) {
+                return;
+            }
+            for (ClassTask legacyTask : legacyTasks) {
+                mirrorTask(legacyTask);
+            }
+        } catch (Exception exception) {
+            log.warn("批量刷新标准排课任务镜像失败，semesters={}", semesters, exception);
         }
     }
 

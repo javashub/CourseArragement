@@ -7,6 +7,7 @@ import com.lyk.coursearrange.common.vo.ImportResultVO;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.excel.model.ClassTaskExcelRow;
 import com.lyk.coursearrange.excel.service.ClassTaskExcelService;
+import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.service.ClassTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
     private static final String TEMPLATE_FILE_NAME = "课程任务导入模板.xlsx";
 
     private final ClassTaskService classTaskService;
+    private final ScheduleLogMirrorService scheduleLogMirrorService;
 
     @Override
     public void writeTemplate(HttpServletResponse response) throws IOException {
@@ -91,6 +93,7 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
             return ServerResponse.ofError("课程任务导入失败，保存数据时出现异常",
                     buildImportResult(rows.size(), 0, List.of("保存课程任务到数据库失败")));
         }
+        scheduleLogMirrorService.replaceTaskMirrorsBySemesters(semesters, classTasks);
         return ServerResponse.ofSuccess(
                 String.format("课程任务导入成功，共 %s 条，已覆盖学期：%s", classTasks.size(), String.join("、", semesters)),
                 buildImportResult(rows.size(), classTasks.size(), List.of())
