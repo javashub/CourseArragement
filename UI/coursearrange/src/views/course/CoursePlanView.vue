@@ -5,7 +5,7 @@
         <div class="eyebrow">Task Orchestrator</div>
         <h1 class="hero-title">排课任务</h1>
         <p class="hero-description">
-          先把开课任务、学期切换和一键排课打通。当前页直接接现有排课接口，后续再把任务约束和执行日志并入新模型。
+          先把开课任务、学期切换和一键排课打通。当前页已经优先读取标准排课任务，排课执行仍兼容旧算法链路，后续会继续替换旧表实现。
         </p>
       </div>
       <div class="hero-actions">
@@ -146,7 +146,7 @@
           <template #default="{ row }">
             <el-space>
               <el-button link type="primary" @click="goToSchedule(row.classNo)">课表</el-button>
-              <el-button link type="danger" @click="removeTask(row)">删除</el-button>
+              <el-button link type="danger" :disabled="!row.id" @click="removeTask(row)">删除</el-button>
             </el-space>
           </template>
         </el-table-column>
