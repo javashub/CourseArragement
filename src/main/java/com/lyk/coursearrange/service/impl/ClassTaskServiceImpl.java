@@ -154,6 +154,15 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     }
 
     @Override
+    public long countScheduleTasks() {
+        long standardCount = schTaskService.count(new LambdaQueryWrapper<SchTask>().eq(SchTask::getDeleted, 0));
+        if (standardCount > 0) {
+            return standardCount;
+        }
+        return count();
+    }
+
+    @Override
     public List<ScheduleExecuteLog> listRecentExecuteLogs(String semester, Integer limit) {
         int safeLimit = limit == null || limit < 1 ? 10 : Math.min(limit, 50);
         LambdaQueryWrapper<ScheduleExecuteLog> wrapper = new LambdaQueryWrapper<ScheduleExecuteLog>()

@@ -64,7 +64,7 @@ public class SystemController {
         // 教室数量
         long classrooms = classroomService.count();
         // 当前课程任务数量
-        long classtasks = classTaskService.count();
+        long classtasks = classTaskService.countScheduleTasks();
         // 学习文档数
         long docs = docService.count();
         // 题库数量

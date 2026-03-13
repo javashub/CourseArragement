@@ -228,12 +228,9 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
     }
 
     private List<CoursePlanVo> listStandardPlans(String semester, String classNo, String teacherNo) {
-        if (semester == null || semester.isBlank()) {
-            return List.of();
-        }
         LambdaQueryWrapper<SchScheduleResult> resultWrapper = new LambdaQueryWrapper<>();
         resultWrapper.eq(SchScheduleResult::getDeleted, 0)
-                .eq(SchScheduleResult::getRemark, semester)
+                .eq(semester != null && !semester.isBlank(), SchScheduleResult::getRemark, semester)
                 .orderByAsc(SchScheduleResult::getWeekdayNo)
                 .orderByAsc(SchScheduleResult::getPeriodNo);
         List<SchScheduleResult> results = schScheduleResultService.list(resultWrapper);
