@@ -69,9 +69,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         int taskCount = 0;
         try {
             log.info("开始排课,时间：{}", start);
-            ensureLegacyTasksForSemester(semester);
-            // 1、获得开课任务 tb_class_task 表
-            List<ClassTask> classTaskList = classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
+            // 1、优先从标准任务构造排课输入，旧 tb_class_task 仅作兼容兜底
+            List<ClassTask> classTaskList = listSchedulingTasks(semester);
             if (null == classTaskList || classTaskList.isEmpty()) {
                 throw buildSchedulingException(start, semester, taskCount,
                         "排课失败，查询不到排课任务！请导入排课任务再进行排课~", ResultCode.BUSINESS_ERROR);
@@ -118,13 +117,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         }
     }
 
-    /**
-     * 步骤说明：
-     * 1. 当某学期已经迁移到 sch_task，但旧 tb_class_task 还没有数据时，
-     *    在执行旧排课算法前自动回填 legacy 任务。
-     * 2. 这样标准任务可以先成为主数据，旧算法仍然可复用。
-     * 3. 仅在 legacy 任务为空时执行，避免覆盖用户现有数据。
-     */
     @Override
     public void ensureLegacyTasksForSemester(String semester) {
         if (semester == null || semester.isBlank()) {
@@ -151,6 +143,27 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         }
         saveBatch(legacyTasks);
         log.info("标准排课任务已回填到旧任务表，semester={}, count={}", semester, legacyTasks.size());
+    }
+
+    /**
+     * 步骤说明：
+     * 1. 排课算法当前仍然使用 legacy ClassTask 结构作为内存输入。
+     * 2. 但任务来源优先切到 sch_task，再转成 legacy 对象，不再强依赖 tb_class_task。
+     * 3. 只有标准任务为空时，才回退旧表。
+     */
+    private List<ClassTask> listSchedulingTasks(String semester) {
+        List<SchTask> standardTasks = schTaskService.list(new LambdaQueryWrapper<SchTask>()
+                .eq(SchTask::getDeleted, 0)
+                .like(SchTask::getRemark, "semester=" + semester)
+                .orderByAsc(SchTask::getId));
+        if (!standardTasks.isEmpty()) {
+            return standardTasks.stream()
+                    .map(this::convertStandardTaskToLegacy)
+                    .filter(Objects::nonNull)
+                    .toList();
+        }
+        ensureLegacyTasksForSemester(semester);
+        return classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
     }
 
     @Override
@@ -326,7 +339,11 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         List<String> resultList = new ArrayList<>();
         List<String> resultGeneList = collectGene(individualMap);
         String classroomNo = "";
-        List<String> gradeList = classTaskDao.selectByColumnName(ConstantInfo.GRADE_NO);
+        List<String> gradeList = resultGeneList.stream()
+                .map(gene -> ClassUtil.cutGene(ConstantInfo.GRADE_NO, gene))
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
         Map<String, List<String>> gradeMap = collectGeneByGrade(resultGeneList, gradeList);
         for (Map.Entry<String, List<String>> entry : gradeMap.entrySet()) {
             String gradeNo = entry.getKey();
@@ -757,7 +774,11 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      */
     private Map<String, List<String>> transformIndividual(List<String> resultGeneList) {
         Map<String, List<String>> individualMap = new HashMap<>();
-        List<String> classNoList = classTaskDao.selectClassNo();
+        List<String> classNoList = resultGeneList.stream()
+                .map(gene -> ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene))
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
 
         for (String classNo : classNoList) {
             List<String> geneList = new ArrayList<>();
