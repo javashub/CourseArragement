@@ -40,8 +40,8 @@
               @change="applyTeacherFilter"
               @clear="applyTeacherFilter"
             >
-              <el-option label="正常" :value="0" />
-              <el-option label="封禁" :value="1" />
+              <el-option label="启用" :value="1" />
+              <el-option label="停用" :value="0" />
             </el-select>
             <div class="toolbar-actions">
               <el-upload class="excel-upload" :show-file-list="false" :auto-upload="false" :before-upload="handleTeacherImport" accept=".xls,.xlsx">
@@ -67,13 +67,15 @@
           <el-table :data="teacherState.displayRecords" stripe v-loading="teacherState.loading">
             <el-table-column prop="teacherNo" label="教师编号" min-width="130" />
             <el-table-column prop="realname" label="姓名" min-width="110" />
-            <el-table-column prop="teach" label="教授科目" min-width="140" />
             <el-table-column prop="jobtitle" label="职称" min-width="120" />
+            <el-table-column prop="maxWeekHours" label="周上限课时" width="110" />
+            <el-table-column prop="maxDayHours" label="日上限课时" width="110" />
+            <el-table-column prop="teach" label="备注/授课说明" min-width="140" />
             <el-table-column prop="telephone" label="联系电话" min-width="140" />
             <el-table-column label="状态" width="90">
               <template #default="{ row }">
-                <el-tag :type="row.status === 0 ? 'success' : 'warning'" effect="plain">
-                  {{ row.status === 0 ? '正常' : '封禁' }}
+                <el-tag :type="row.status === 1 ? 'success' : 'warning'" effect="plain">
+                  {{ row.status === 1 ? '启用' : '停用' }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -81,7 +83,7 @@
               <template #default="{ row }">
                 <el-button link type="primary" @click="openTeacherDialog(row)">编辑</el-button>
                 <el-button link type="warning" @click="toggleTeacher(row)">
-                  {{ row.status === 0 ? '封禁' : '解封' }}
+                  {{ row.status === 1 ? '停用' : '启用' }}
                 </el-button>
                 <el-button link type="danger" @click="removeTeacher(row)">删除</el-button>
               </template>
@@ -117,8 +119,8 @@
               @change="applyStudentFilter"
               @clear="applyStudentFilter"
             >
-              <el-option label="正常" :value="0" />
-              <el-option label="封禁" :value="1" />
+              <el-option label="启用" :value="1" />
+              <el-option label="停用" :value="0" />
             </el-select>
             <div class="toolbar-actions">
               <el-upload class="excel-upload" :show-file-list="false" :auto-upload="false" :before-upload="handleStudentImport" accept=".xls,.xlsx">
@@ -145,12 +147,12 @@
             <el-table-column prop="studentNo" label="学号" min-width="130" />
             <el-table-column prop="realname" label="姓名" min-width="110" />
             <el-table-column prop="grade" label="年级" min-width="120" />
-            <el-table-column prop="classNo" label="班级" min-width="120" />
+            <el-table-column prop="classNo" label="备注/班级说明" min-width="120" />
             <el-table-column prop="telephone" label="联系电话" min-width="140" />
             <el-table-column label="状态" width="90">
               <template #default="{ row }">
-                <el-tag :type="row.status === 0 ? 'success' : 'warning'" effect="plain">
-                  {{ row.status === 0 ? '正常' : '封禁' }}
+                <el-tag :type="row.status === 1 ? 'success' : 'warning'" effect="plain">
+                  {{ row.status === 1 ? '启用' : '停用' }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -158,7 +160,7 @@
               <template #default="{ row }">
                 <el-button link type="primary" @click="openStudentDialog(row)">编辑</el-button>
                 <el-button link type="warning" @click="toggleStudent(row)">
-                  {{ row.status === 0 ? '封禁' : '解封' }}
+                  {{ row.status === 1 ? '停用' : '启用' }}
                 </el-button>
                 <el-button link type="danger" @click="removeStudent(row)">删除</el-button>
               </template>
@@ -345,7 +347,7 @@
             </div>
           </el-form-item>
           <el-form-item label="登录账号">
-            <el-input v-model="teacherForm.username" placeholder="例如 zhangsan" />
+            <el-input disabled value="自动使用教师编号作为登录账号" placeholder="自动使用教师编号作为登录账号" />
           </el-form-item>
         </div>
         <div class="form-grid">
@@ -357,11 +359,14 @@
           </el-form-item>
         </div>
         <div class="form-grid">
-          <el-form-item label="教授科目">
-            <el-input v-model="teacherForm.teach" placeholder="例如 高等数学、英语" />
+          <el-form-item label="授课说明">
+            <el-input v-model="teacherForm.teach" placeholder="例如 主授高等数学，兼授线性代数" />
           </el-form-item>
-          <el-form-item label="年龄">
-            <el-input-number v-model="teacherForm.age" :min="18" :max="90" controls-position="right" />
+          <el-form-item label="任职状态">
+            <el-select v-model="teacherForm.hireStatus" placeholder="例如 ACTIVE 在职">
+              <el-option label="在职" value="ACTIVE" />
+              <el-option label="离职" value="INACTIVE" />
+            </el-select>
           </el-form-item>
         </div>
         <div class="form-grid">
@@ -371,6 +376,23 @@
           <el-form-item label="邮箱">
             <el-input v-model="teacherForm.email" placeholder="例如 teacher@school.edu.cn" />
           </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="周上限课时">
+            <el-input-number v-model="teacherForm.maxWeekHours" :min="0" :max="40" controls-position="right" />
+          </el-form-item>
+          <el-form-item label="日上限课时">
+            <el-input-number v-model="teacherForm.maxDayHours" :min="0" :max="12" controls-position="right" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="状态">
+            <el-radio-group v-model="teacherForm.status">
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="0">停用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <div />
         </div>
         <el-form-item label="联系地址">
           <el-input v-model="teacherForm.address" placeholder="例如 主校区教师公寓 3 栋 302" />
@@ -392,7 +414,7 @@
             </div>
           </el-form-item>
           <el-form-item label="登录账号">
-            <el-input v-model="studentForm.username" placeholder="例如 lisi" />
+            <el-input disabled value="自动使用学号作为登录账号" placeholder="自动使用学号作为登录账号" />
           </el-form-item>
         </div>
         <div class="form-grid">
@@ -400,7 +422,7 @@
             <el-input v-model="studentForm.realname" placeholder="例如 李同学" />
           </el-form-item>
           <el-form-item label="年级">
-            <el-input v-model="studentForm.grade" placeholder="例如 02、2024级、初一" />
+            <el-input v-model="studentForm.grade" placeholder="例如 2024级" />
           </el-form-item>
         </div>
         <div class="form-grid">
@@ -409,16 +431,10 @@
           </el-form-item>
           <el-form-item label="状态">
             <el-radio-group v-model="studentForm.status">
-              <el-radio :value="0">正常</el-radio>
-              <el-radio :value="1">封禁</el-radio>
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="0">停用</el-radio>
             </el-radio-group>
           </el-form-item>
-        </div>
-        <div v-if="!studentForm.id" class="form-grid">
-          <el-form-item label="初始密码">
-            <el-input v-model="studentForm.password" show-password placeholder="例如 123456" />
-          </el-form-item>
-          <div />
         </div>
         <div class="form-grid">
           <el-form-item label="联系电话">
@@ -644,14 +660,16 @@ function createTeacherForm() {
   return {
     id: null,
     teacherNo: '',
-    username: '',
     realname: '',
     jobtitle: '',
     teach: '',
     telephone: '',
     email: '',
     address: '',
-    age: 30
+    maxWeekHours: 16,
+    maxDayHours: 4,
+    hireStatus: 'ACTIVE',
+    status: 1
   };
 }
 
@@ -659,15 +677,14 @@ function createStudentForm() {
   return {
     id: null,
     studentNo: '',
-    username: '',
-    password: '123456',
     realname: '',
-    grade: '',
+    grade: `${new Date().getFullYear()}级`,
     classNo: '',
     telephone: '',
     email: '',
     address: '',
-    status: 0
+    entryYear: new Date().getFullYear(),
+    status: 1
   };
 }
 
@@ -942,13 +959,13 @@ async function submitTeacher() {
 
 async function generateTeacherNo() {
   const response = await fetchNextTeacherNo();
-  const nextNo = response.data ? String(Number(response.data) + 1) : '';
-  teacherForm.value.teacherNo = nextNo;
+  teacherForm.value.teacherNo = response.data || '';
 }
 
 async function toggleTeacher(row) {
-  await toggleTeacherStatus(row.id);
-  ElMessage.success(row.status === 0 ? '教师账号已封禁' : '教师账号已解封');
+  const nextStatus = row.status === 1 ? 0 : 1;
+  await toggleTeacherStatus(row.id, nextStatus);
+  ElMessage.success(row.status === 1 ? '教师账号已停用' : '教师账号已启用');
   await loadTeachers();
 }
 
@@ -1000,7 +1017,6 @@ async function openStudentDialog(row) {
   const response = await fetchStudentDetail(row.id);
   studentForm.value = {
     ...createStudentForm(),
-    password: '',
     ...(response.data || {})
   };
   studentDialogVisible.value = true;
@@ -1013,6 +1029,7 @@ async function generateStudentNo() {
   }
   const response = await fetchNextStudentNo(studentForm.value.grade);
   studentForm.value.studentNo = response.data || '';
+  studentForm.value.entryYear = Number(String(studentForm.value.studentNo).slice(0, 4)) || new Date().getFullYear();
 }
 
 async function submitStudent() {
@@ -1074,9 +1091,9 @@ async function handleStudentImport(file) {
 async function toggleStudent(row) {
   await updateStudent(row.id, {
     ...row,
-    status: row.status === 0 ? 1 : 0
+    status: row.status === 1 ? 0 : 1
   });
-  ElMessage.success(row.status === 0 ? '学生账号已封禁' : '学生账号已解封');
+  ElMessage.success(row.status === 1 ? '学生账号已停用' : '学生账号已启用');
   await loadStudents();
 }
 

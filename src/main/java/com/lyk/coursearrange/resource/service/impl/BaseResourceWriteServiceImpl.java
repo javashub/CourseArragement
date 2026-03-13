@@ -1,18 +1,26 @@
 package com.lyk.coursearrange.resource.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lyk.coursearrange.common.constants.SystemConstants;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.resource.entity.ResBuilding;
 import com.lyk.coursearrange.resource.entity.ResClassroom;
 import com.lyk.coursearrange.resource.entity.ResCourse;
+import com.lyk.coursearrange.resource.entity.ResStudent;
+import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.request.ResourceClassroomSaveRequest;
 import com.lyk.coursearrange.resource.request.ResourceCourseSaveRequest;
+import com.lyk.coursearrange.resource.request.ResourceStudentSaveRequest;
+import com.lyk.coursearrange.resource.request.ResourceTeacherSaveRequest;
 import com.lyk.coursearrange.resource.service.BaseResourceReadService;
 import com.lyk.coursearrange.resource.service.BaseResourceWriteService;
+import com.lyk.coursearrange.resource.service.ResourceAccountSyncService;
 import com.lyk.coursearrange.resource.service.ResBuildingService;
 import com.lyk.coursearrange.resource.service.ResClassroomService;
 import com.lyk.coursearrange.resource.service.ResCourseService;
+import com.lyk.coursearrange.resource.service.ResStudentService;
+import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.resource.vo.ResourceClassroomPageVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,18 +36,94 @@ import org.springframework.transaction.annotation.Transactional;
 public class BaseResourceWriteServiceImpl implements BaseResourceWriteService {
 
     private final ResCourseService courseService;
+    private final ResTeacherService teacherService;
+    private final ResStudentService studentService;
     private final ResBuildingService buildingService;
     private final ResClassroomService classroomService;
+    private final ResourceAccountSyncService resourceAccountSyncService;
     private final BaseResourceReadService readService;
 
     public BaseResourceWriteServiceImpl(ResCourseService courseService,
+                                        ResTeacherService teacherService,
+                                        ResStudentService studentService,
                                         ResBuildingService buildingService,
                                         ResClassroomService classroomService,
+                                        ResourceAccountSyncService resourceAccountSyncService,
                                         BaseResourceReadService readService) {
         this.courseService = courseService;
+        this.teacherService = teacherService;
+        this.studentService = studentService;
         this.buildingService = buildingService;
         this.classroomService = classroomService;
+        this.resourceAccountSyncService = resourceAccountSyncService;
         this.readService = readService;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ResTeacher saveTeacher(ResourceTeacherSaveRequest request) {
+        validateTeacherCodeUnique(request.getId(), request.getTeacherCode());
+        ResTeacher entity = request.getId() == null ? new ResTeacher() : getTeacherOrThrow(request.getId());
+        BeanUtils.copyProperties(request, entity);
+        if (StringUtils.isBlank(entity.getHireStatus())) {
+            entity.setHireStatus("ACTIVE");
+        }
+        if (entity.getAllowCrossCampus() == null) {
+            entity.setAllowCrossCampus(0);
+        }
+        if (entity.getAllowCrossCollege() == null) {
+            entity.setAllowCrossCollege(0);
+        }
+        teacherService.saveOrUpdate(entity);
+        resourceAccountSyncService.syncTeacherAccount(entity);
+        log.info("保存资源教师成功，teacherCode={}, id={}", entity.getTeacherCode(), entity.getId());
+        return entity;
+    }
+
+    @Override
+    public void changeTeacherStatus(Long id, Integer status) {
+        ResTeacher entity = getTeacherOrThrow(id);
+        entity.setStatus(status);
+        teacherService.updateById(entity);
+        resourceAccountSyncService.syncTeacherAccount(entity);
+        log.info("修改资源教师状态成功，id={}, status={}", id, status);
+    }
+
+    @Override
+    public void deleteTeacher(Long id) {
+        getTeacherOrThrow(id);
+        teacherService.removeById(id);
+        resourceAccountSyncService.disableBySource(SystemConstants.SourceType.TEACHER, id);
+        log.info("删除资源教师成功，id={}", id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ResStudent saveStudent(ResourceStudentSaveRequest request) {
+        validateStudentCodeUnique(request.getId(), request.getStudentCode());
+        ResStudent entity = request.getId() == null ? new ResStudent() : getStudentOrThrow(request.getId());
+        BeanUtils.copyProperties(request, entity);
+        studentService.saveOrUpdate(entity);
+        resourceAccountSyncService.syncStudentAccount(entity);
+        log.info("保存资源学生成功，studentCode={}, id={}", entity.getStudentCode(), entity.getId());
+        return entity;
+    }
+
+    @Override
+    public void changeStudentStatus(Long id, Integer status) {
+        ResStudent entity = getStudentOrThrow(id);
+        entity.setStatus(status);
+        studentService.updateById(entity);
+        resourceAccountSyncService.syncStudentAccount(entity);
+        log.info("修改资源学生状态成功，id={}, status={}", id, status);
+    }
+
+    @Override
+    public void deleteStudent(Long id) {
+        getStudentOrThrow(id);
+        studentService.removeById(id);
+        resourceAccountSyncService.disableBySource(SystemConstants.SourceType.STUDENT, id);
+        log.info("删除资源学生成功，id={}", id);
     }
 
     @Override
@@ -113,6 +197,26 @@ public class BaseResourceWriteServiceImpl implements BaseResourceWriteService {
         }
     }
 
+    private void validateTeacherCodeUnique(Long id, String teacherCode) {
+        LambdaQueryWrapper<ResTeacher> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ResTeacher::getTeacherCode, teacherCode)
+                .eq(ResTeacher::getDeleted, 0)
+                .ne(id != null, ResTeacher::getId, id);
+        if (teacherService.count(wrapper) > 0) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "教师编码已存在");
+        }
+    }
+
+    private void validateStudentCodeUnique(Long id, String studentCode) {
+        LambdaQueryWrapper<ResStudent> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ResStudent::getStudentCode, studentCode)
+                .eq(ResStudent::getDeleted, 0)
+                .ne(id != null, ResStudent::getId, id);
+        if (studentService.count(wrapper) > 0) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "学号已存在");
+        }
+    }
+
     private void validateClassroomCodeUnique(Long id, String classroomCode) {
         LambdaQueryWrapper<ResClassroom> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ResClassroom::getClassroomCode, classroomCode)
@@ -139,6 +243,22 @@ public class BaseResourceWriteServiceImpl implements BaseResourceWriteService {
         ResCourse entity = courseService.getById(id);
         if (entity == null || Integer.valueOf(1).equals(entity.getDeleted())) {
             throw new BusinessException(ResultCode.NOT_FOUND, "课程不存在");
+        }
+        return entity;
+    }
+
+    private ResTeacher getTeacherOrThrow(Long id) {
+        ResTeacher entity = teacherService.getById(id);
+        if (entity == null || Integer.valueOf(1).equals(entity.getDeleted())) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "教师不存在");
+        }
+        return entity;
+    }
+
+    private ResStudent getStudentOrThrow(Long id) {
+        ResStudent entity = studentService.getById(id);
+        if (entity == null || Integer.valueOf(1).equals(entity.getDeleted())) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "学生不存在");
         }
         return entity;
     }

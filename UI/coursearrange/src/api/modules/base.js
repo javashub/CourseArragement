@@ -20,6 +20,57 @@ function normalizeCourseRecord(record = {}) {
   };
 }
 
+function normalizeTeacherRecord(record = {}) {
+  return {
+    ...record,
+    teacherNo: record.teacherNo ?? record.teacherCode ?? '',
+    teacherCode: record.teacherCode ?? record.teacherNo ?? '',
+    realname: record.realname ?? record.teacherName ?? '',
+    teacherName: record.teacherName ?? record.realname ?? '',
+    telephone: record.telephone ?? record.mobile ?? '',
+    mobile: record.mobile ?? record.telephone ?? '',
+    jobtitle: record.jobtitle ?? record.titleName ?? '',
+    titleName: record.titleName ?? record.jobtitle ?? '',
+    teach: record.teach ?? record.remark ?? '',
+    status: record.status ?? 1
+  };
+}
+
+function normalizeStudentRecord(record = {}) {
+  return {
+    ...record,
+    studentNo: record.studentNo ?? record.studentCode ?? '',
+    studentCode: record.studentCode ?? record.studentNo ?? '',
+    realname: record.realname ?? record.studentName ?? '',
+    studentName: record.studentName ?? record.realname ?? '',
+    telephone: record.telephone ?? record.mobile ?? '',
+    mobile: record.mobile ?? record.telephone ?? '',
+    grade: record.grade ?? (record.entryYear ? `${record.entryYear}级` : ''),
+    classNo: record.classNo ?? '',
+    status: record.status ?? 1
+  };
+}
+
+function normalizeTeacherPageResponse(response) {
+  return {
+    ...response,
+    data: {
+      ...(response.data || {}),
+      records: (response.data?.records || []).map(normalizeTeacherRecord)
+    }
+  };
+}
+
+function normalizeStudentPageResponse(response) {
+  return {
+    ...response,
+    data: {
+      ...(response.data || {}),
+      records: (response.data?.records || []).map(normalizeStudentRecord)
+    }
+  };
+}
+
 function normalizeCoursePageResponse(response) {
   return {
     ...response,
@@ -27,6 +78,39 @@ function normalizeCoursePageResponse(response) {
       ...(response.data || {}),
       records: (response.data?.records || []).map(normalizeCourseRecord)
     }
+  };
+}
+
+function buildTeacherPayload(payload = {}) {
+  return {
+    id: payload.id,
+    teacherCode: payload.teacherCode ?? payload.teacherNo ?? '',
+    teacherName: payload.teacherName ?? payload.realname ?? '',
+    gender: payload.gender ?? '',
+    mobile: payload.mobile ?? payload.telephone ?? '',
+    email: payload.email ?? '',
+    titleName: payload.titleName ?? payload.jobtitle ?? '',
+    allowCrossCampus: Number(payload.allowCrossCampus ?? 0) || 0,
+    allowCrossCollege: Number(payload.allowCrossCollege ?? 0) || 0,
+    maxWeekHours: Number(payload.maxWeekHours ?? 16) || 0,
+    maxDayHours: Number(payload.maxDayHours ?? 4) || 0,
+    hireStatus: payload.hireStatus ?? 'ACTIVE',
+    status: payload.status ?? 1,
+    remark: payload.remark ?? payload.teach ?? ''
+  };
+}
+
+function buildStudentPayload(payload = {}) {
+  return {
+    id: payload.id,
+    studentCode: payload.studentCode ?? payload.studentNo ?? '',
+    studentName: payload.studentName ?? payload.realname ?? '',
+    gender: payload.gender ?? '',
+    mobile: payload.mobile ?? payload.telephone ?? '',
+    email: payload.email ?? '',
+    entryYear: Number(payload.entryYear ?? (payload.grade ? String(payload.grade).replaceAll(/[^0-9]/g, '').slice(0, 4) : '')) || new Date().getFullYear(),
+    status: payload.status ?? 1,
+    remark: payload.remark ?? payload.classNo ?? ''
   };
 }
 
@@ -48,75 +132,80 @@ function buildCoursePayload(payload = {}) {
 }
 
 export function fetchTeacherPage(page = 1, limit = 10) {
-  return request.get(`/legacy-api/teacher/query/${page}`, {
-    ...legacyOptions,
-    params: { limit }
-  });
+  return request.get('/resources/teachers/page', {
+    params: { pageNum: page, pageSize: limit }
+  }).then(normalizeTeacherPageResponse);
 }
 
 export function searchTeacherPage(keyword, page = 1, limit = 10) {
-  return request.get(`/legacy-api/teacher/search/${page}/${encodeURIComponent(keyword)}`, {
-    ...legacyOptions,
-    params: { limit }
-  });
+  return request.get('/resources/teachers/page', {
+    params: { keyword, pageNum: page, pageSize: limit }
+  }).then(normalizeTeacherPageResponse);
 }
 
 export function fetchTeacherDetail(id) {
-  return request.get(`/legacy-api/teacher/${id}`, legacyOptions);
+  return request.get(`/resources/teachers/${id}`).then((response) => ({
+    ...response,
+    data: normalizeTeacherRecord(response.data)
+  }));
 }
 
 export function createTeacher(payload) {
-  return request.post('/legacy-api/teacher/add', payload, legacyOptions);
+  return request.post('/resources/teachers', buildTeacherPayload(payload));
 }
 
 export function updateTeacher(payload) {
-  return request.post('/legacy-api/teacher/modify', payload, legacyOptions);
+  return request.post('/resources/teachers', buildTeacherPayload(payload));
 }
 
 export function deleteTeacher(id) {
-  return request.delete(`/legacy-api/teacher/delete/${id}`, legacyOptions);
+  return request.delete(`/resources/teachers/${id}`);
 }
 
-export function toggleTeacherStatus(id) {
-  return request.get(`/legacy-api/teacher/lock/${id}`, legacyOptions);
+export function toggleTeacherStatus(id, status) {
+  return request.post(`/resources/teachers/${id}/status/${status}`);
 }
 
 export function fetchNextTeacherNo() {
-  return request.get('/legacy-api/teacher/no', legacyOptions);
+  return request.get('/resources/teachers/next-code');
 }
 
 export function fetchStudentPage(page = 1, limit = 10) {
-  return request.get(`/legacy-api/student/students/${page}`, {
-    ...legacyOptions,
-    params: { limit }
-  });
+  return request.get('/resources/students/page', {
+    params: { pageNum: page, pageSize: limit }
+  }).then(normalizeStudentPageResponse);
 }
 
 export function searchStudentPage(keyword, page = 1, limit = 10) {
-  return request.get(`/legacy-api/student/search/${encodeURIComponent(keyword)}`, {
-    ...legacyOptions,
-    params: { page, limit }
-  });
+  return request.get('/resources/students/page', {
+    params: { keyword, pageNum: page, pageSize: limit }
+  }).then(normalizeStudentPageResponse);
 }
 
 export function fetchStudentDetail(id) {
-  return request.get(`/legacy-api/student/${id}`, legacyOptions);
+  return request.get(`/resources/students/${id}`).then((response) => ({
+    ...response,
+    data: normalizeStudentRecord(response.data)
+  }));
 }
 
 export function createStudent(payload) {
-  return request.post('/legacy-api/student/register', payload, legacyOptions);
+  return request.post('/resources/students', buildStudentPayload(payload));
 }
 
 export function updateStudent(id, payload) {
-  return request.post(`/legacy-api/student/modify/${id}`, payload, legacyOptions);
+  return request.post('/resources/students', buildStudentPayload({ ...payload, id }));
 }
 
 export function deleteStudent(id) {
-  return request.delete(`/legacy-api/student/delete/${id}`, legacyOptions);
+  return request.delete(`/resources/students/${id}`);
 }
 
 export function fetchNextStudentNo(grade) {
-  return request.post(`/legacy-api/student/createno/${encodeURIComponent(grade)}`, null, legacyOptions);
+  const entryYear = Number(String(grade || '').replaceAll(/[^0-9]/g, '').slice(0, 4)) || new Date().getFullYear();
+  return request.get('/resources/students/next-code', {
+    params: { entryYear }
+  });
 }
 
 export function fetchCoursePage(page = 1, limit = 10) {
