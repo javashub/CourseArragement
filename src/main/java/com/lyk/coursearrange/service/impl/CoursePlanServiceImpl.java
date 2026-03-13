@@ -17,6 +17,7 @@ import com.lyk.coursearrange.service.CourseInfoService;
 import com.lyk.coursearrange.service.CoursePlanService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.service.TeacherService;
+import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -47,6 +48,8 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
     private CoursePlanAdjustLogService coursePlanAdjustLogService;
     @Resource
     private AuthFacadeService authFacadeService;
+    @Resource
+    private ScheduleLogMirrorService scheduleLogMirrorService;
 
     /**
      * 根据班级编号查询课表
@@ -169,6 +172,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
             log.warn("记录调课日志时获取当前用户失败，planId={}", coursePlan.getId(), exception);
         }
         coursePlanAdjustLogService.save(logEntity);
+        scheduleLogMirrorService.mirrorAdjustLog(logEntity);
     }
 
     private ServerResponse buildCoursePlanResponse(List<CoursePlan> coursePlanList, String emptyMessage) {

@@ -15,6 +15,7 @@ import com.lyk.coursearrange.entity.ScheduleExecuteLog;
 import com.lyk.coursearrange.common.ConstantInfo;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.service.ScheduleExecuteLogService;
+import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
 import com.lyk.coursearrange.util.ClassUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,8 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private ScheduleExecuteLogService scheduleExecuteLogService;
     @Resource
     private AuthFacadeService authFacadeService;
+    @Resource
+    private ScheduleLogMirrorService scheduleLogMirrorService;
 
     /**
      * 排课算法入口
@@ -137,6 +140,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             log.warn("获取当前操作人失败，排课日志将以匿名方式记录", exception);
         }
         scheduleExecuteLogService.save(executeLog);
+        scheduleLogMirrorService.mirrorExecuteLog(executeLog);
     }
 
     private String resolveOperatorName(CurrentUserVO currentUser) {
