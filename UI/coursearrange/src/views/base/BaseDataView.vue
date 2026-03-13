@@ -5,7 +5,8 @@
         <div class="eyebrow">Base Resource Studio</div>
         <h1 class="hero-title">基础数据</h1>
         <p class="hero-description">
-          先把教师、学生、课程、教室这些基础资源做成统一后台入口。当前阶段优先保证联调闭环，后续再把接口逐步升级为新规范。
+          先把教师、学生、课程、教室这些基础资源做成统一后台入口。当前阶段优先把课程、教室切到新的资源表结构，逐步替换旧的
+          `tb_*` 逻辑。
         </p>
       </div>
       <div class="hero-stats">
@@ -193,8 +194,8 @@
               @change="applyCourseFilter"
               @clear="applyCourseFilter"
             >
-              <el-option label="正常" :value="0" />
-              <el-option label="停用" :value="1" />
+              <el-option label="启用" :value="1" />
+              <el-option label="停用" :value="0" />
             </el-select>
             <div class="toolbar-actions">
               <el-upload class="excel-upload" :show-file-list="false" :auto-upload="false" :before-upload="handleCourseImport" accept=".xls,.xlsx">
@@ -218,14 +219,15 @@
           />
 
           <el-table :data="courseState.displayRecords" stripe v-loading="courseState.loading">
-            <el-table-column prop="courseNo" label="课程编号" min-width="130" />
+            <el-table-column prop="courseCode" label="课程编码" min-width="130" />
             <el-table-column prop="courseName" label="课程名称" min-width="160" />
-            <el-table-column prop="courseAttr" label="课程属性" min-width="140" />
-            <el-table-column prop="publisher" label="出版社" min-width="160" />
+            <el-table-column prop="courseType" label="课程类型" min-width="120" />
+            <el-table-column prop="weekHours" label="周课时" width="100" />
+            <el-table-column prop="roomType" label="教室类型" min-width="120" />
             <el-table-column label="状态" width="90">
               <template #default="{ row }">
-                <el-tag :type="row.status === 0 ? 'success' : 'info'" effect="plain">
-                  {{ row.status === 0 ? '正常' : '停用' }}
+                <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="plain">
+                  {{ row.status === 1 ? '启用' : '停用' }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -233,7 +235,7 @@
               <template #default="{ row }">
                 <el-button link type="primary" @click="openCourseDialog(row)">编辑</el-button>
                 <el-button link type="warning" @click="toggleCourse(row)">
-                  {{ row.status === 0 ? '停用' : '启用' }}
+                  {{ row.status === 1 ? '停用' : '启用' }}
                 </el-button>
                 <el-button link type="danger" @click="removeCourse(row)">删除</el-button>
               </template>
@@ -273,8 +275,8 @@
               <el-option
                 v-for="item in teachbuildOptions"
                 :key="item.id"
-                :label="`${item.teachBuildNo} ${item.teachBuildName}`"
-                :value="item.teachBuildNo"
+                :label="`${item.buildingCode} ${item.buildingName}`"
+                :value="item.buildingCode"
               />
             </el-select>
             <div class="toolbar-actions">
@@ -306,9 +308,10 @@
           <el-table :data="classroomState.displayRecords" stripe v-loading="classroomState.loading">
             <el-table-column prop="classroomNo" label="教室编号" min-width="130" />
             <el-table-column prop="classroomName" label="教室名称" min-width="150" />
-            <el-table-column prop="teachbuildNo" label="教学楼编号" min-width="120" />
-            <el-table-column prop="capacity" label="容量" width="90" />
-            <el-table-column prop="attr" label="教室属性" min-width="120" />
+            <el-table-column prop="buildingCode" label="教学楼编号" min-width="120" />
+            <el-table-column prop="buildingName" label="教学楼名称" min-width="150" />
+            <el-table-column prop="seatCount" label="座位数" width="90" />
+            <el-table-column prop="roomType" label="教室类型" min-width="120" />
             <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
             <el-table-column label="操作" width="160" fixed="right">
               <template #default="{ row }">
@@ -440,7 +443,7 @@
         <div class="form-grid">
           <el-form-item label="课程编号">
             <div class="inline-field">
-              <el-input v-model="courseForm.courseNo" placeholder="例如 10001" />
+              <el-input v-model="courseForm.courseCode" placeholder="例如 C10001" />
               <el-button @click="generateCourseNo">生成编号</el-button>
             </div>
           </el-form-item>
@@ -449,23 +452,46 @@
           </el-form-item>
         </div>
         <div class="form-grid">
-          <el-form-item label="课程属性">
-            <el-input v-model="courseForm.courseAttr" placeholder="例如 必修、选修、实验课" />
+          <el-form-item label="课程简称">
+            <el-input v-model="courseForm.courseShortName" placeholder="例如 高数、大学英语" />
           </el-form-item>
-          <el-form-item label="出版社">
-            <el-input v-model="courseForm.publisher" placeholder="例如 高等教育出版社" />
+          <el-form-item label="课程类型">
+            <el-select v-model="courseForm.courseType" placeholder="例如 REQUIRED 必修课">
+              <el-option label="必修课" value="REQUIRED" />
+              <el-option label="选修课" value="ELECTIVE" />
+              <el-option label="公共课" value="PUBLIC" />
+              <el-option label="实验课" value="LAB" />
+              <el-option label="体育课" value="SPORT" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="总课时">
+            <el-input-number v-model="courseForm.totalHours" :min="0" :max="999" controls-position="right" />
+          </el-form-item>
+          <el-form-item label="周课时">
+            <el-input-number v-model="courseForm.weekHours" :min="0" :max="30" controls-position="right" />
+          </el-form-item>
+        </div>
+        <div class="form-grid">
+          <el-form-item label="专用教室">
+            <el-radio-group v-model="courseForm.needSpecialRoom">
+              <el-radio :value="0">不需要</el-radio>
+              <el-radio :value="1">需要</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="教室类型">
+            <el-input v-model="courseForm.roomType" placeholder="例如 NORMAL、LAB、COMPUTER" />
           </el-form-item>
         </div>
         <div class="form-grid">
           <el-form-item label="状态">
             <el-radio-group v-model="courseForm.status">
-              <el-radio :value="0">正常</el-radio>
-              <el-radio :value="1">停用</el-radio>
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="0">停用</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="优先级">
-            <el-input-number v-model="courseForm.piority" :min="0" :max="99" controls-position="right" />
-          </el-form-item>
+          <div />
         </div>
         <el-form-item label="备注">
           <el-input v-model="courseForm.remark" type="textarea" :rows="3" placeholder="例如 大一上学期核心课程" />
@@ -481,32 +507,37 @@
       <el-form :model="classroomForm" label-position="top">
         <div class="form-grid">
           <el-form-item label="教室编号">
-            <el-input v-model="classroomForm.classroomNo" placeholder="例如 A101、08-302" />
+            <el-input v-model="classroomForm.classroomCode" placeholder="例如 A101、08-302" />
           </el-form-item>
           <el-form-item label="教室名称">
             <el-input v-model="classroomForm.classroomName" placeholder="例如 第一多媒体教室" />
           </el-form-item>
         </div>
         <div class="form-grid">
-          <el-form-item label="教学楼编号">
-            <el-select v-model="classroomForm.teachbuildNo" clearable filterable placeholder="例如 08 实验楼">
+          <el-form-item label="教学楼">
+            <el-select v-model="classroomForm.buildingCode" clearable filterable placeholder="例如 B08 实验楼">
               <el-option
                 v-for="item in teachbuildOptions"
                 :key="item.id"
-                :label="`${item.teachBuildNo} ${item.teachBuildName}`"
-                :value="item.teachBuildNo"
+                :label="`${item.buildingCode} ${item.buildingName}`"
+                :value="item.buildingCode"
               />
             </el-select>
           </el-form-item>
-          <el-form-item label="容量">
-            <el-input-number v-model="classroomForm.capacity" :min="0" :max="500" controls-position="right" />
+          <el-form-item label="座位数">
+            <el-input-number v-model="classroomForm.seatCount" :min="0" :max="500" controls-position="right" />
           </el-form-item>
         </div>
         <div class="form-grid">
-          <el-form-item label="教室属性">
-            <el-input v-model="classroomForm.attr" placeholder="例如 普通教室、实验室、机房" />
+          <el-form-item label="教室类型">
+            <el-input v-model="classroomForm.roomType" placeholder="例如 NORMAL、LAB、COMPUTER" />
           </el-form-item>
-          <div />
+          <el-form-item label="状态">
+            <el-radio-group v-model="classroomForm.status">
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="0">停用</el-radio>
+            </el-radio-group>
+          </el-form-item>
         </div>
         <el-form-item label="备注">
           <el-input v-model="classroomForm.remark" type="textarea" :rows="3" placeholder="例如 支持投影和录播设备" />
@@ -643,12 +674,15 @@ function createStudentForm() {
 function createCourseForm() {
   return {
     id: null,
-    courseNo: '',
+    courseCode: '',
     courseName: '',
-    courseAttr: '',
-    publisher: '',
-    status: 0,
-    piority: 0,
+    courseShortName: '',
+    courseType: 'REQUIRED',
+    totalHours: 32,
+    weekHours: 2,
+    needSpecialRoom: 0,
+    roomType: 'NORMAL',
+    status: 1,
     remark: ''
   };
 }
@@ -656,11 +690,12 @@ function createCourseForm() {
 function createClassroomForm() {
   return {
     id: null,
-    classroomNo: '',
+    classroomCode: '',
     classroomName: '',
-    teachbuildNo: '',
-    capacity: 40,
-    attr: '',
+    buildingCode: '',
+    seatCount: 40,
+    roomType: 'NORMAL',
+    status: 1,
     remark: ''
   };
 }
@@ -742,8 +777,12 @@ function applyClassroomFilter() {
   const keyword = classroomState.keyword.trim().toLowerCase();
   classroomState.displayRecords = classroomState.records.filter((item) => {
     const matchKeyword = !keyword
-      || [item.classroomNo, item.classroomName, item.remark].filter(Boolean).join(' ').toLowerCase().includes(keyword);
-    const matchTeachbuild = !classroomState.teachbuildFilter || item.teachbuildNo === classroomState.teachbuildFilter;
+      || [item.classroomCode, item.classroomName, item.buildingCode, item.buildingName, item.remark]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(keyword);
+    const matchTeachbuild = !classroomState.teachbuildFilter || item.buildingCode === classroomState.teachbuildFilter;
     return matchKeyword && matchTeachbuild;
   });
 }
@@ -812,7 +851,10 @@ async function loadClassrooms() {
   classroomState.loading = true;
   classroomState.errorMessage = '';
   try {
-    const response = await fetchClassroomPage(classroomState.pageNum, classroomState.pageSize);
+    const response = await fetchClassroomPage(classroomState.pageNum, classroomState.pageSize, {
+      keyword: classroomState.keyword || undefined,
+      buildingCode: classroomState.teachbuildFilter || undefined
+    });
     applyPageData(classroomState, response.data);
     applyClassroomFilter();
   } catch (error) {
@@ -1045,7 +1087,7 @@ function openCourseDialog(row) {
 
 async function generateCourseNo() {
   const response = await fetchNextCourseNo();
-  courseForm.value.courseNo = response.data || '';
+  courseForm.value.courseCode = response.data || '';
 }
 
 async function submitCourse() {
@@ -1107,9 +1149,9 @@ async function handleCourseImport(file) {
 async function toggleCourse(row) {
   await updateCourse(row.id, {
     ...row,
-    status: row.status === 0 ? 1 : 0
+    status: row.status === 1 ? 0 : 1
   });
-  ElMessage.success(row.status === 0 ? '课程已停用' : '课程已启用');
+  ElMessage.success(row.status === 1 ? '课程已停用' : '课程已启用');
   await loadCourses();
 }
 

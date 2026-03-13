@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @MapperScan({
         "com.lyk.coursearrange.dao",
+        "com.lyk.coursearrange.resource.mapper",
         "com.lyk.coursearrange.organization.mapper",
         "com.lyk.coursearrange.system.config.mapper",
         "com.lyk.coursearrange.system.dict.mapper",

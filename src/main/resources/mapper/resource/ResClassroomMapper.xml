@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lyk.coursearrange.resource.mapper.ResClassroomMapper">
+
+    <select id="selectPageWithBuilding" resultType="com.lyk.coursearrange.resource.vo.ResourceClassroomPageVO">
+        select
+            rc.id,
+            rc.classroom_code as classroomCode,
+            rc.classroom_name as classroomName,
+            rc.building_id as buildingId,
+            rb.building_code as buildingCode,
+            rb.building_name as buildingName,
+            rc.seat_count as seatCount,
+            rc.room_type as roomType,
+            rc.status,
+            rc.remark
+        from res_classroom rc
+        left join res_building rb on rb.id = rc.building_id and rb.deleted = 0
+        where rc.deleted = 0
+        <if test="query != null and query.keyword != null and query.keyword != ''">
+            and (
+                rc.classroom_code like concat('%', #{query.keyword}, '%')
+                or rc.classroom_name like concat('%', #{query.keyword}, '%')
+                or rb.building_code like concat('%', #{query.keyword}, '%')
+                or rb.building_name like concat('%', #{query.keyword}, '%')
+            )
+        </if>
+        <if test="query != null and query.buildingCode != null and query.buildingCode != ''">
+            and rb.building_code = #{query.buildingCode}
+        </if>
+        <if test="query != null and query.status != null">
+            and rc.status = #{query.status}
+        </if>
+        order by rc.updated_at desc, rc.id desc
+    </select>
+
+    <select id="selectDetailById" resultType="com.lyk.coursearrange.resource.vo.ResourceClassroomPageVO">
+        select
+            rc.id,
+            rc.classroom_code as classroomCode,
+            rc.classroom_name as classroomName,
+            rc.building_id as buildingId,
+            rb.building_code as buildingCode,
+            rb.building_name as buildingName,
+            rc.seat_count as seatCount,
+            rc.room_type as roomType,
+            rc.status,
+            rc.remark
+        from res_classroom rc
+        left join res_building rb on rb.id = rc.building_id and rb.deleted = 0
+        where rc.deleted = 0
+          and rc.id = #{id}
+        limit 1
+    </select>
+</mapper>

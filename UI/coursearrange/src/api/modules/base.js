@@ -6,6 +6,47 @@ const legacyOptions = {
   baseURL: ''
 };
 
+function normalizeCourseRecord(record = {}) {
+  return {
+    ...record,
+    courseNo: record.courseNo ?? record.courseCode ?? '',
+    courseCode: record.courseCode ?? record.courseNo ?? '',
+    courseAttr: record.courseAttr ?? record.courseType ?? '',
+    courseType: record.courseType ?? record.courseAttr ?? '',
+    publisher: record.publisher ?? record.courseShortName ?? '',
+    courseShortName: record.courseShortName ?? record.publisher ?? '',
+    piority: record.piority ?? record.weekHours ?? 0,
+    weekHours: record.weekHours ?? record.piority ?? 0
+  };
+}
+
+function normalizeCoursePageResponse(response) {
+  return {
+    ...response,
+    data: {
+      ...(response.data || {}),
+      records: (response.data?.records || []).map(normalizeCourseRecord)
+    }
+  };
+}
+
+function buildCoursePayload(payload = {}) {
+  const weekHours = Number(payload.weekHours ?? payload.piority ?? 0) || 0;
+  return {
+    id: payload.id,
+    courseCode: payload.courseCode ?? payload.courseNo ?? '',
+    courseName: payload.courseName ?? '',
+    courseShortName: payload.courseShortName ?? payload.publisher ?? '',
+    courseType: payload.courseType ?? payload.courseAttr ?? 'REQUIRED',
+    totalHours: Number(payload.totalHours ?? weekHours * 16) || 0,
+    weekHours,
+    needSpecialRoom: Number(payload.needSpecialRoom ?? 0) || 0,
+    roomType: payload.roomType ?? 'NORMAL',
+    status: payload.status ?? 1,
+    remark: payload.remark ?? ''
+  };
+}
+
 export function fetchTeacherPage(page = 1, limit = 10) {
   return request.get(`/legacy-api/teacher/query/${page}`, {
     ...legacyOptions,
@@ -79,60 +120,57 @@ export function fetchNextStudentNo(grade) {
 }
 
 export function fetchCoursePage(page = 1, limit = 10) {
-  return request.get(`/legacy-api/courseinfo/${page}`, {
-    ...legacyOptions,
-    params: { limit }
-  });
+  return request.get('/resources/courses/page', {
+    params: { pageNum: page, pageSize: limit }
+  }).then(normalizeCoursePageResponse);
 }
 
 export function searchCoursePage(keyword, page = 1, limit = 10) {
-  return request.get(`/legacy-api/courseinfo/search/${page}/${encodeURIComponent(keyword)}`, {
-    ...legacyOptions,
-    params: { limit }
-  });
+  return request.get('/resources/courses/page', {
+    params: { keyword, pageNum: page, pageSize: limit }
+  }).then(normalizeCoursePageResponse);
 }
 
 export function createCourse(payload) {
-  return request.post('/legacy-api/courseinfo/add', payload, legacyOptions);
+  return request.post('/resources/courses', buildCoursePayload(payload));
 }
 
 export function updateCourse(id, payload) {
-  return request.post(`/legacy-api/courseinfo/modify/${id}`, payload, legacyOptions);
+  return request.post('/resources/courses', buildCoursePayload({ ...payload, id }));
 }
 
 export function deleteCourse(id) {
-  return request.delete(`/legacy-api/courseinfo/delete/${id}`, legacyOptions);
+  return request.delete(`/resources/courses/${id}`);
 }
 
 export function fetchNextCourseNo() {
-  return request.get('/legacy-api/courseinfo/get-no', legacyOptions);
+  return request.get('/resources/courses/next-code');
 }
 
-export function fetchClassroomPage(page = 1, limit = 10) {
-  return request.get(`/legacy-api/classroom/${page}`, {
-    ...legacyOptions,
-    params: { limit }
+export function fetchClassroomPage(page = 1, limit = 10, params = {}) {
+  return request.get('/resources/classrooms/page', {
+    params: { pageNum: page, pageSize: limit, ...params }
   });
 }
 
 export function fetchClassroomDetail(id) {
-  return request.get(`/legacy-api/classroom/query/${id}`, legacyOptions);
+  return request.get(`/resources/classrooms/${id}`);
 }
 
 export function createClassroom(payload) {
-  return request.post('/legacy-api/classroom/add', payload, legacyOptions);
+  return request.post('/resources/classrooms', payload);
 }
 
 export function updateClassroom(payload) {
-  return request.post('/legacy-api/classroom/modify', payload, legacyOptions);
+  return request.post('/resources/classrooms', payload);
 }
 
 export function deleteClassroom(id) {
-  return request.delete(`/legacy-api/classroom/delete/${id}`, legacyOptions);
+  return request.delete(`/resources/classrooms/${id}`);
 }
 
 export function fetchTeachbuildList() {
-  return request.get('/legacy-api/teachbuildinfo/list', legacyOptions);
+  return request.get('/resources/buildings/options');
 }
 
 async function downloadExcel(url, fileName) {
