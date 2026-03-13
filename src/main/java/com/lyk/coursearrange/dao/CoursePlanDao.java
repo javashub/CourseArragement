@@ -4,7 +4,7 @@ import com.lyk.coursearrange.entity.CoursePlan;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.Delete;
 
 /**
  * @author lequal
@@ -17,6 +17,6 @@ public interface CoursePlanDao extends BaseMapper<CoursePlan> {
     void insertCoursePlan(@Param("grade_no") String grade_no, @Param("class_no") String class_no, @Param("course_no") String course_no,
                           @Param("teacher_no") String teacher_no, @Param("classroom_no") String classroom_no, @Param("class_time") String class_time, @Param("semester") String semester);
 
-    @Update("truncate tb_course_plan")
-    void deleteAllPlan();
+    @Delete("delete from tb_course_plan where semester = #{semester}")
+    void deleteBySemester(@Param("semester") String semester);
 }

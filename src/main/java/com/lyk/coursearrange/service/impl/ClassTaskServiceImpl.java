@@ -100,7 +100,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             // 8、优先写入标准课表结果，旧 tb_course_plan 仅作为兼容副本保留
             scheduleLogMirrorService.replaceScheduleResults(semester, classTaskList, coursePlanList);
             // 9、写入 tb_course_plan 兼容旧查询与旧接口
-            coursePlanDao.deleteAllPlan();
+            coursePlanDao.deleteBySemester(semester);
             for (CoursePlan coursePlan : coursePlanList) {
                 coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
                         coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
