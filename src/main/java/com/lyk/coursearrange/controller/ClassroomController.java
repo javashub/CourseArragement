@@ -15,6 +15,7 @@ import com.lyk.coursearrange.entity.request.ClassroomAddRequest;
 import com.lyk.coursearrange.service.ClassroomService;
 import com.lyk.coursearrange.service.CoursePlanService;
 import com.lyk.coursearrange.service.TeachbuildInfoService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -25,6 +26,7 @@ import java.util.*;
  * @since 2020-03-23
  */
 @RestController
+@Slf4j
 @RequestMapping("/classroom")
 public class ClassroomController {
 
@@ -48,12 +50,20 @@ public class ClassroomController {
         // 指定教学楼下的所有教室
         List<Classroom> allClassroom = classroomService.list(wrapper);
 
-        List<CoursePlan> coursePlanList = coursePlanService.list();
+        List<CoursePlan> coursePlanList;
+        try {
+            coursePlanList = coursePlanService.list();
+        } catch (Exception exception) {
+            log.warn("查询 legacy 课表副本失败，将按全部教室可用处理，teachbuildNo={}", teachbuildNo, exception);
+            coursePlanList = Collections.emptyList();
+        }
         // 得到已经使用了的教室编号
         Set<String> usedClassroom = new HashSet<>();
         for (CoursePlan coursePlan : coursePlanList) {
             // 截取占用的教室所属编号前两位，即教学楼编号
-            if (teachbuildNo.equals(coursePlan.getClassroomNo().substring(0, 2))) {
+            if (coursePlan.getClassroomNo() != null
+                    && coursePlan.getClassroomNo().length() >= 2
+                    && teachbuildNo.equals(coursePlan.getClassroomNo().substring(0, 2))) {
                 usedClassroom.add(coursePlan.getClassroomNo());
             }
         }
