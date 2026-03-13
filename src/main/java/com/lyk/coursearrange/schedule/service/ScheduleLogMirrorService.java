@@ -18,6 +18,8 @@ public interface ScheduleLogMirrorService {
 
     void mirrorScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans);
 
+    void syncAdjustedPlan(CoursePlan legacyPlan, String beforeClassTime);
+
     void mirrorExecuteLog(ScheduleExecuteLog legacyLog);
 
     void mirrorAdjustLog(CoursePlanAdjustLog legacyLog);

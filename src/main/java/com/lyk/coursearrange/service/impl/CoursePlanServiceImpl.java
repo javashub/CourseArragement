@@ -94,6 +94,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         coursePlan.setClassroomNo(targetClassroomNo);
         boolean updated = updateById(coursePlan);
         if (updated) {
+            scheduleLogMirrorService.syncAdjustedPlan(coursePlan, beforeClassTime);
             saveAdjustLog(coursePlan, beforeClassTime, beforeClassroomNo, targetClassTime, targetClassroomNo);
             return ServerResponse.ofSuccess("调课成功", coursePlan);
         }

@@ -134,6 +134,49 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     @Override
+    public void syncAdjustedPlan(CoursePlan legacyPlan, String beforeClassTime) {
+        try {
+            SchTask task = findTaskByKey(legacyPlan.getClassNo(), legacyPlan.getCourseNo(), legacyPlan.getTeacherNo(), legacyPlan.getSemester());
+            if (task == null) {
+                return;
+            }
+            Integer beforeWeekdayNo = resolveWeekdayNo(beforeClassTime);
+            Integer beforePeriodNo = resolvePeriodNo(beforeClassTime);
+            Integer afterWeekdayNo = resolveWeekdayNo(legacyPlan.getClassTime());
+            Integer afterPeriodNo = resolvePeriodNo(legacyPlan.getClassTime());
+
+            LambdaQueryWrapper<SchScheduleResult> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(SchScheduleResult::getTaskId, task.getId())
+                    .eq(SchScheduleResult::getRemark, legacyPlan.getSemester())
+                    .eq(beforeWeekdayNo != null, SchScheduleResult::getWeekdayNo, beforeWeekdayNo)
+                    .eq(beforePeriodNo != null, SchScheduleResult::getPeriodNo, beforePeriodNo)
+                    .last("limit 1");
+            SchScheduleResult result = resultService.getOne(wrapper, false);
+            if (result == null) {
+                result = new SchScheduleResult();
+                result.setTaskId(task.getId());
+                result.setSchoolYearId(0L);
+                result.setTermId(0L);
+                result.setStageId(0L);
+                result.setCourseId(0L);
+                result.setTeacherId(0L);
+                result.setClassroomId(0L);
+                result.setWeekRangeType("ALL");
+                result.setIsLocked(0);
+                result.setConflictFlag(0);
+                result.setStatus(1);
+                result.setRemark(legacyPlan.getSemester());
+            }
+            result.setWeekdayNo(afterWeekdayNo);
+            result.setPeriodNo(afterPeriodNo);
+            result.setSourceType("DRAG");
+            resultService.saveOrUpdate(result);
+        } catch (Exception exception) {
+            log.warn("同步标准课表调课结果失败，planId={}", legacyPlan.getId(), exception);
+        }
+    }
+
+    @Override
     public void mirrorExecuteLog(ScheduleExecuteLog legacyLog) {
         try {
             SchScheduleRunLog logEntity = new SchScheduleRunLog();
@@ -220,8 +263,19 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     private SchTask findTask(ClassTask legacyTask) {
+        return findTaskByCode(buildTaskCode(legacyTask));
+    }
+
+    private SchTask findTaskByKey(String classNo, String courseNo, String teacherNo, String semester) {
+        String raw = buildTaskKey(classNo, courseNo, teacherNo) + "_" + safe(semester);
+        String sanitized = raw.replaceAll("[^A-Za-z0-9_]", "_");
+        String taskCode = sanitized.length() > 32 ? sanitized.substring(0, 32) : sanitized;
+        return findTaskByCode(taskCode);
+    }
+
+    private SchTask findTaskByCode(String taskCode) {
         LambdaQueryWrapper<SchTask> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SchTask::getTaskCode, buildTaskCode(legacyTask))
+        wrapper.eq(SchTask::getTaskCode, taskCode)
                 .eq(SchTask::getDeleted, 0)
                 .last("limit 1");
         return taskService.getOne(wrapper, false);
