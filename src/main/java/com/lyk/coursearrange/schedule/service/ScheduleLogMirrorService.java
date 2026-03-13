@@ -19,7 +19,7 @@ public interface ScheduleLogMirrorService {
 
     void replaceTaskMirrorsBySemesters(Set<String> semesters, List<ClassTask> legacyTasks);
 
-    void mirrorScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans);
+    void replaceScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans);
 
     void syncAdjustedPlan(CoursePlan legacyPlan, String beforeClassTime);
 

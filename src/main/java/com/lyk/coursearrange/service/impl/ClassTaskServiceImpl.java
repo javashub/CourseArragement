@@ -97,7 +97,9 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             List<String> resultList = finalResult(individualMap);
             // 7、解码
             List<CoursePlan> coursePlanList = decoding(resultList);
-            // 8、写入tb_course_plan上课计划表
+            // 8、优先写入标准课表结果，旧 tb_course_plan 仅作为兼容副本保留
+            scheduleLogMirrorService.replaceScheduleResults(semester, classTaskList, coursePlanList);
+            // 9、写入 tb_course_plan 兼容旧查询与旧接口
             coursePlanDao.deleteAllPlan();
             for (CoursePlan coursePlan : coursePlanList) {
                 coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
@@ -107,7 +109,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             log.info("完成排课,耗时：{}", duration);
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
                     String.format("排课成功，生成 %s 条课表记录", coursePlanList.size()));
-            scheduleLogMirrorService.mirrorScheduleResults(semester, classTaskList, coursePlanList);
             return ServerResponse.ofSuccess(String.format("排课成功，耗时：%sms", duration));
         } catch (BusinessException exception) {
             throw exception;

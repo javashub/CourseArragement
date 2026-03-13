@@ -131,41 +131,37 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     @Override
-    public void mirrorScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans) {
-        try {
-            Map<String, Long> taskIdMap = new HashMap<>();
-            for (ClassTask legacyTask : legacyTasks) {
-                SchTask schTask = getOrCreateTask(legacyTask);
-                taskIdMap.put(buildTaskKey(legacyTask.getClassNo(), legacyTask.getCourseNo(), legacyTask.getTeacherNo()), schTask.getId());
-            }
+    public void replaceScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans) {
+        Map<String, Long> taskIdMap = new HashMap<>();
+        for (ClassTask legacyTask : legacyTasks) {
+            SchTask schTask = getOrCreateTask(legacyTask);
+            taskIdMap.put(buildTaskKey(legacyTask.getClassNo(), legacyTask.getCourseNo(), legacyTask.getTeacherNo()), schTask.getId());
+        }
 
-            LambdaQueryWrapper<SchScheduleResult> removeWrapper = new LambdaQueryWrapper<>();
-            removeWrapper.eq(SchScheduleResult::getRemark, semester);
-            resultService.remove(removeWrapper);
+        LambdaQueryWrapper<SchScheduleResult> removeWrapper = new LambdaQueryWrapper<>();
+        removeWrapper.eq(SchScheduleResult::getRemark, semester);
+        resultService.remove(removeWrapper);
 
-            for (CoursePlan legacyPlan : legacyPlans) {
-                SchScheduleResult result = new SchScheduleResult();
-                result.setRunLogId(null);
-                result.setTaskId(taskIdMap.getOrDefault(
-                        buildTaskKey(legacyPlan.getClassNo(), legacyPlan.getCourseNo(), legacyPlan.getTeacherNo()), 0L));
-                result.setSchoolYearId(0L);
-                result.setTermId(0L);
-                result.setStageId(0L);
-                result.setCourseId(0L);
-                result.setTeacherId(0L);
-                result.setClassroomId(0L);
-                result.setWeekdayNo(resolveWeekdayNo(legacyPlan.getClassTime()));
-                result.setPeriodNo(resolvePeriodNo(legacyPlan.getClassTime()));
-                result.setWeekRangeType("ALL");
-                result.setIsLocked(0);
-                result.setSourceType("AUTO");
-                result.setConflictFlag(0);
-                result.setStatus(1);
-                result.setRemark(semester);
-                resultService.save(result);
-            }
-        } catch (Exception exception) {
-            log.warn("镜像标准课表结果失败，将继续保留旧课表链路，semester={}", semester, exception);
+        for (CoursePlan legacyPlan : legacyPlans) {
+            SchScheduleResult result = new SchScheduleResult();
+            result.setRunLogId(null);
+            result.setTaskId(taskIdMap.getOrDefault(
+                    buildTaskKey(legacyPlan.getClassNo(), legacyPlan.getCourseNo(), legacyPlan.getTeacherNo()), 0L));
+            result.setSchoolYearId(0L);
+            result.setTermId(0L);
+            result.setStageId(0L);
+            result.setCourseId(0L);
+            result.setTeacherId(0L);
+            result.setClassroomId(0L);
+            result.setWeekdayNo(resolveWeekdayNo(legacyPlan.getClassTime()));
+            result.setPeriodNo(resolvePeriodNo(legacyPlan.getClassTime()));
+            result.setWeekRangeType("ALL");
+            result.setIsLocked(0);
+            result.setSourceType("AUTO");
+            result.setConflictFlag(0);
+            result.setStatus(1);
+            result.setRemark(semester);
+            resultService.save(result);
         }
     }
 
