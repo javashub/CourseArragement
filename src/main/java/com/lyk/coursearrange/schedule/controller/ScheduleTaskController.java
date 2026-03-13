@@ -8,6 +8,7 @@ import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
+import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.service.ClassTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -36,9 +37,12 @@ import java.util.stream.Collectors;
 public class ScheduleTaskController {
 
     private final ClassTaskService classTaskService;
+    private final ScheduleLogMirrorService scheduleLogMirrorService;
 
-    public ScheduleTaskController(ClassTaskService classTaskService) {
+    public ScheduleTaskController(ClassTaskService classTaskService,
+                                  ScheduleLogMirrorService scheduleLogMirrorService) {
         this.classTaskService = classTaskService;
+        this.scheduleLogMirrorService = scheduleLogMirrorService;
     }
 
     @GetMapping("/page")
@@ -59,6 +63,7 @@ public class ScheduleTaskController {
         log.info("新增标准排课任务，semester={}, courseNo={}, classNo={}",
                 classTask.getSemester(), classTask.getCourseNo(), classTask.getClassNo());
         if (classTaskService.save(classTask)) {
+            scheduleLogMirrorService.mirrorTask(classTask);
             return ServerResponse.ofSuccess("添加课程任务成功");
         }
         throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
@@ -67,7 +72,9 @@ public class ScheduleTaskController {
     @DeleteMapping("/{id}")
     public ServerResponse<?> delete(@PathVariable Integer id) {
         requireClassTaskExists(id);
+        ClassTask classTask = classTaskService.getById(id);
         if (classTaskService.removeById(id)) {
+            scheduleLogMirrorService.removeTaskMirror(classTask);
             return ServerResponse.ofSuccess("删除成功");
         }
         throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除失败");

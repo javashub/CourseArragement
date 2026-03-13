@@ -101,6 +101,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             log.info("完成排课,耗时：{}", duration);
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
                     String.format("排课成功，生成 %s 条课表记录", coursePlanList.size()));
+            scheduleLogMirrorService.mirrorScheduleResults(semester, classTaskList, coursePlanList);
             return ServerResponse.ofSuccess(String.format("排课成功，耗时：%sms", duration));
         } catch (BusinessException exception) {
             throw exception;

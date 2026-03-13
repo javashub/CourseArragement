@@ -1,15 +1,25 @@
 package com.lyk.coursearrange.schedule.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
+import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.ScheduleExecuteLog;
 import com.lyk.coursearrange.schedule.entity.SchScheduleAdjustLog;
+import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
 import com.lyk.coursearrange.schedule.entity.SchScheduleRunLog;
+import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.SchScheduleResultService;
 import com.lyk.coursearrange.schedule.service.SchScheduleAdjustLogService;
 import com.lyk.coursearrange.schedule.service.SchScheduleRunLogService;
+import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -26,11 +36,101 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
 
     private final SchScheduleRunLogService runLogService;
     private final SchScheduleAdjustLogService adjustLogService;
+    private final SchTaskService taskService;
+    private final SchScheduleResultService resultService;
 
     public ScheduleLogMirrorServiceImpl(SchScheduleRunLogService runLogService,
-                                        SchScheduleAdjustLogService adjustLogService) {
+                                        SchScheduleAdjustLogService adjustLogService,
+                                        SchTaskService taskService,
+                                        SchScheduleResultService resultService) {
         this.runLogService = runLogService;
         this.adjustLogService = adjustLogService;
+        this.taskService = taskService;
+        this.resultService = resultService;
+    }
+
+    @Override
+    public void mirrorTask(ClassTask legacyTask) {
+        try {
+            SchTask task = getOrCreateTask(legacyTask);
+            task.setSchoolYearId(0L);
+            task.setTermId(0L);
+            task.setStageId(0L);
+            task.setCourseId(0L);
+            task.setTeacherId(0L);
+            task.setStudentCount(legacyTask.getStudentNum());
+            task.setWeekHours(legacyTask.getWeeksNumber());
+            task.setTotalHours((legacyTask.getWeeksNumber() == null || legacyTask.getWeeksSum() == null)
+                    ? 0
+                    : legacyTask.getWeeksNumber() * legacyTask.getWeeksSum());
+            task.setNeedContinuous(0);
+            task.setContinuousSize(1);
+            task.setNeedFixedRoom(0);
+            task.setNeedFixedTime("1".equals(legacyTask.getIsFix()) ? 1 : 0);
+            task.setFixedWeekdayNo(resolveWeekdayNo(legacyTask.getClassTime()));
+            task.setFixedPeriodNo(resolvePeriodNo(legacyTask.getClassTime()));
+            task.setPriorityLevel(5);
+            task.setAllowConflict(0);
+            task.setTaskStatus("PENDING");
+            task.setSourceType("LEGACY_SYNC");
+            task.setStatus(1);
+            task.setRemark(buildTaskRemark(legacyTask));
+            taskService.saveOrUpdate(task);
+        } catch (Exception exception) {
+            log.warn("镜像标准排课任务失败，将继续保留旧任务链路，legacyId={}", legacyTask.getId(), exception);
+        }
+    }
+
+    @Override
+    public void removeTaskMirror(ClassTask legacyTask) {
+        try {
+            SchTask task = findTask(legacyTask);
+            if (task == null) {
+                return;
+            }
+            taskService.removeById(task.getId());
+        } catch (Exception exception) {
+            log.warn("移除标准排课任务镜像失败，legacyId={}", legacyTask.getId(), exception);
+        }
+    }
+
+    @Override
+    public void mirrorScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans) {
+        try {
+            Map<String, Long> taskIdMap = new HashMap<>();
+            for (ClassTask legacyTask : legacyTasks) {
+                SchTask schTask = getOrCreateTask(legacyTask);
+                taskIdMap.put(buildTaskKey(legacyTask.getClassNo(), legacyTask.getCourseNo(), legacyTask.getTeacherNo()), schTask.getId());
+            }
+
+            LambdaQueryWrapper<SchScheduleResult> removeWrapper = new LambdaQueryWrapper<>();
+            removeWrapper.eq(SchScheduleResult::getRemark, semester);
+            resultService.remove(removeWrapper);
+
+            for (CoursePlan legacyPlan : legacyPlans) {
+                SchScheduleResult result = new SchScheduleResult();
+                result.setRunLogId(null);
+                result.setTaskId(taskIdMap.getOrDefault(
+                        buildTaskKey(legacyPlan.getClassNo(), legacyPlan.getCourseNo(), legacyPlan.getTeacherNo()), 0L));
+                result.setSchoolYearId(0L);
+                result.setTermId(0L);
+                result.setStageId(0L);
+                result.setCourseId(0L);
+                result.setTeacherId(0L);
+                result.setClassroomId(0L);
+                result.setWeekdayNo(resolveWeekdayNo(legacyPlan.getClassTime()));
+                result.setPeriodNo(resolvePeriodNo(legacyPlan.getClassTime()));
+                result.setWeekRangeType("ALL");
+                result.setIsLocked(0);
+                result.setSourceType("AUTO");
+                result.setConflictFlag(0);
+                result.setStatus(1);
+                result.setRemark(semester);
+                resultService.save(result);
+            }
+        } catch (Exception exception) {
+            log.warn("镜像标准课表结果失败，将继续保留旧课表链路，semester={}", semester, exception);
+        }
     }
 
     @Override
@@ -107,5 +207,48 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
         } catch (NumberFormatException exception) {
             return null;
         }
+    }
+
+    private SchTask getOrCreateTask(ClassTask legacyTask) {
+        SchTask existing = findTask(legacyTask);
+        if (existing != null) {
+            return existing;
+        }
+        SchTask task = new SchTask();
+        task.setTaskCode(buildTaskCode(legacyTask));
+        return task;
+    }
+
+    private SchTask findTask(ClassTask legacyTask) {
+        LambdaQueryWrapper<SchTask> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SchTask::getTaskCode, buildTaskCode(legacyTask))
+                .eq(SchTask::getDeleted, 0)
+                .last("limit 1");
+        return taskService.getOne(wrapper, false);
+    }
+
+    private String buildTaskCode(ClassTask legacyTask) {
+        String raw = buildTaskKey(legacyTask.getClassNo(), legacyTask.getCourseNo(), legacyTask.getTeacherNo())
+                + "_" + safe(legacyTask.getSemester());
+        String sanitized = raw.replaceAll("[^A-Za-z0-9_]", "_");
+        if (sanitized.length() > 32) {
+            return sanitized.substring(0, 32);
+        }
+        return sanitized;
+    }
+
+    private String buildTaskRemark(ClassTask legacyTask) {
+        return "semester=" + safe(legacyTask.getSemester())
+                + ",gradeNo=" + safe(legacyTask.getGradeNo())
+                + ",courseName=" + safe(legacyTask.getCourseName())
+                + ",teacherName=" + safe(legacyTask.getRealname());
+    }
+
+    private String buildTaskKey(String classNo, String courseNo, String teacherNo) {
+        return safe(classNo) + "_" + safe(courseNo) + "_" + safe(teacherNo);
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 }
