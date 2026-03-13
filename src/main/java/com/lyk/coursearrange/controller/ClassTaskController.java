@@ -53,8 +53,13 @@ public class ClassTaskController {
             return ServerResponse.ofSuccess(standardPage);
         }
         LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester);
-        IPage<ClassTask> ipage = classTaskService.page(new Page<>(page, limit), wrapper);
-        return ServerResponse.ofSuccess(ipage);
+        try {
+            IPage<ClassTask> ipage = classTaskService.page(new Page<>(page, limit), wrapper);
+            return ServerResponse.ofSuccess(ipage);
+        } catch (Exception exception) {
+            log.warn("查询 legacy 开课任务失败，semester={}", semester, exception);
+            return ServerResponse.ofSuccess(new Page<>(page, limit, 0));
+        }
     }
 
     /**
@@ -74,11 +79,20 @@ public class ClassTaskController {
         BeanUtils.copyProperties(c, classTask);
         log.info("新增课程任务，semester={}, courseNo={}, classNo={}",
                 classTask.getSemester(), classTask.getCourseNo(), classTask.getClassNo());
-        if (!classTaskService.save(classTask)) {
-            return throwBusiness(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
+        try {
+            if (!classTaskService.save(classTask)) {
+                log.warn("legacy 排课任务副本写入失败，semester={}, classNo={}", classTask.getSemester(), classTask.getClassNo());
+            }
+        } catch (Exception exception) {
+            log.warn("写入 legacy 排课任务副本失败，semester={}, classNo={}",
+                    classTask.getSemester(), classTask.getClassNo(), exception);
         }
-        standardTask.setRemark(ScheduleTaskMetaUtils.buildTaskRemark(classTask));
-        schTaskService.updateById(standardTask);
+        try {
+            standardTask.setRemark(ScheduleTaskMetaUtils.buildTaskRemark(classTask));
+            schTaskService.updateById(standardTask);
+        } catch (Exception exception) {
+            log.warn("回写标准排课任务 legacyId 失败，standardId={}", standardTask.getId(), exception);
+        }
         return ServerResponse.ofSuccess("添加课程任务成功");
     }
 
@@ -89,10 +103,14 @@ public class ClassTaskController {
      */
     @DeleteMapping("/deleteclasstask/{id}")
     public ServerResponse deleteClassTask(@PathVariable("id") Integer id) {
-        ClassTask classTask = classTaskService.getById(id);
-        if (classTask != null && classTaskService.removeById(id)) {
-            scheduleLogMirrorService.removeTaskMirror(classTask);
-            return ServerResponse.ofSuccess("删除成功");
+        try {
+            ClassTask classTask = classTaskService.getById(id);
+            if (classTask != null && classTaskService.removeById(id)) {
+                scheduleLogMirrorService.removeTaskMirror(classTask);
+                return ServerResponse.ofSuccess("删除成功");
+            }
+        } catch (Exception exception) {
+            log.warn("删除 legacy 排课任务失败，将尝试按标准任务删除，id={}", id, exception);
         }
         SchTask standardTask = schTaskService.getById(id.longValue());
         if (standardTask != null && (standardTask.getDeleted() == null || standardTask.getDeleted() == 0)
@@ -112,11 +130,14 @@ public class ClassTaskController {
             return ServerResponse.ofSuccess(standardSemesters);
         }
         LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>().select(ClassTask::getSemester).groupBy(ClassTask::getSemester);
-        List<ClassTask> list = classTaskService.list(wrapper);
-
-        Set<String> set = list.stream().map(ClassTask::getSemester).collect(Collectors.toSet());
-
-        return ServerResponse.ofSuccess(set);
+        try {
+            List<ClassTask> list = classTaskService.list(wrapper);
+            Set<String> set = list.stream().map(ClassTask::getSemester).collect(Collectors.toSet());
+            return ServerResponse.ofSuccess(set);
+        } catch (Exception exception) {
+            log.warn("查询 legacy 学期列表失败", exception);
+            return ServerResponse.ofSuccess(Set.of());
+        }
     }
 
     /**

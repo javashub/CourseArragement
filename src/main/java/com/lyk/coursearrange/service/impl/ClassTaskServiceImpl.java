@@ -98,11 +98,15 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             List<CoursePlan> coursePlanList = decoding(resultList);
             // 8、优先写入标准课表结果，旧 tb_course_plan 仅作为兼容副本保留
             scheduleLogMirrorService.replaceScheduleResults(semester, classTaskList, coursePlanList);
-            // 9、写入 tb_course_plan 兼容旧查询与旧接口
-            coursePlanDao.deleteBySemester(semester);
-            for (CoursePlan coursePlan : coursePlanList) {
-                coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
-                        coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
+            // 9、写入 tb_course_plan 兼容旧查询与旧接口。后续删除旧表后，这里允许降级失败。
+            try {
+                coursePlanDao.deleteBySemester(semester);
+                for (CoursePlan coursePlan : coursePlanList) {
+                    coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
+                            coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
+                }
+            } catch (Exception exception) {
+                log.warn("写入 legacy 课表副本失败，后续将仅使用标准课表结果，semester={}", semester, exception);
             }
             long duration = System.currentTimeMillis() - start;
             log.info("完成排课,耗时：{}", duration);
@@ -141,8 +145,12 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         if (legacyTasks.isEmpty()) {
             return;
         }
-        saveBatch(legacyTasks);
-        log.info("标准排课任务已回填到旧任务表，semester={}, count={}", semester, legacyTasks.size());
+        try {
+            saveBatch(legacyTasks);
+            log.info("标准排课任务已回填到旧任务表，semester={}, count={}", semester, legacyTasks.size());
+        } catch (Exception exception) {
+            log.warn("回填 legacy 排课任务失败，后续仅使用标准任务执行，semester={}", semester, exception);
+        }
     }
 
     /**
@@ -163,7 +171,12 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                     .toList();
         }
         ensureLegacyTasksForSemester(semester);
-        return classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
+        try {
+            return classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
+        } catch (Exception exception) {
+            log.warn("查询 legacy 排课任务失败，将仅使用标准任务，semester={}", semester, exception);
+            return List.of();
+        }
     }
 
     @Override
@@ -172,7 +185,12 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         if (standardCount > 0) {
             return standardCount;
         }
-        return count();
+        try {
+            return count();
+        } catch (Exception exception) {
+            log.warn("统计 legacy 排课任务失败，将返回标准任务统计结果 0", exception);
+            return 0;
+        }
     }
 
     @Override

@@ -66,8 +66,13 @@ public class ScheduleTaskController {
         LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
                 .eq(ClassTask::getSemester, semester)
                 .orderByDesc(ClassTask::getId);
-        IPage<ClassTask> page = classTaskService.page(new Page<>(pageNum, pageSize), wrapper);
-        return ServerResponse.ofSuccess(page);
+        try {
+            IPage<ClassTask> page = classTaskService.page(new Page<>(pageNum, pageSize), wrapper);
+            return ServerResponse.ofSuccess(page);
+        } catch (Exception exception) {
+            log.warn("查询 legacy 排课任务分页失败，semester={}", semester, exception);
+            return ServerResponse.ofSuccess(new Page<>(pageNum, pageSize, 0));
+        }
     }
 
     @PostMapping
@@ -124,8 +129,13 @@ public class ScheduleTaskController {
         LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
                 .select(ClassTask::getSemester)
                 .groupBy(ClassTask::getSemester);
-        List<ClassTask> list = classTaskService.list(wrapper);
-        return ServerResponse.ofSuccess(list.stream().map(ClassTask::getSemester).collect(Collectors.toSet()));
+        try {
+            List<ClassTask> list = classTaskService.list(wrapper);
+            return ServerResponse.ofSuccess(list.stream().map(ClassTask::getSemester).collect(Collectors.toSet()));
+        } catch (Exception exception) {
+            log.warn("查询 legacy 学期列表失败", exception);
+            return ServerResponse.ofSuccess(Set.of());
+        }
     }
 
     @PostMapping("/arrange")
@@ -271,9 +281,14 @@ public class ScheduleTaskController {
                 .eq(ClassTask::getCourseNo, courseNo)
                 .eq(ClassTask::getTeacherNo, teacherNo)
                 .last("limit 1");
-        ClassTask legacyTask = classTaskService.getOne(wrapper, false);
-        if (legacyTask != null) {
-            classTaskService.removeById(legacyTask.getId());
+        try {
+            ClassTask legacyTask = classTaskService.getOne(wrapper, false);
+            if (legacyTask != null) {
+                classTaskService.removeById(legacyTask.getId());
+            }
+        } catch (Exception exception) {
+            log.warn("删除 legacy 排课任务副本失败，semester={}, classNo={}, courseNo={}, teacherNo={}",
+                    semester, classNo, courseNo, teacherNo, exception);
         }
     }
 
