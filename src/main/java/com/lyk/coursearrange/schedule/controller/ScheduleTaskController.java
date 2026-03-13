@@ -87,21 +87,36 @@ public class ScheduleTaskController {
         BeanUtils.copyProperties(request, classTask);
         log.info("新增标准排课任务，semester={}, courseNo={}, classNo={}",
                 classTask.getSemester(), classTask.getCourseNo(), classTask.getClassNo());
-        if (!classTaskService.save(classTask)) {
-            throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
+        try {
+            if (!classTaskService.save(classTask)) {
+                log.warn("写入 legacy 排课任务副本失败，semester={}, classNo={}", classTask.getSemester(), classTask.getClassNo());
+            } else {
+                standardTask.setRemark(ScheduleTaskMetaUtils.buildTaskRemark(classTask));
+                schTaskService.updateById(standardTask);
+            }
+        } catch (Exception exception) {
+            log.warn("写入 legacy 排课任务副本失败，后续仅保留标准任务，standardId={}", standardTask.getId(), exception);
         }
-        standardTask.setRemark(ScheduleTaskMetaUtils.buildTaskRemark(classTask));
-        schTaskService.updateById(standardTask);
         return ServerResponse.ofSuccess("添加课程任务成功");
     }
 
     @DeleteMapping("/{id}")
     public ServerResponse<?> delete(@PathVariable Integer id) {
-        requireClassTaskExists(id);
-        ClassTask classTask = classTaskService.getById(id);
-        if (classTaskService.removeById(id)) {
-            scheduleLogMirrorService.removeTaskMirror(classTask);
-            return ServerResponse.ofSuccess("删除成功");
+        try {
+            requireClassTaskExists(id);
+            ClassTask classTask = classTaskService.getById(id);
+            if (classTaskService.removeById(id)) {
+                scheduleLogMirrorService.removeTaskMirror(classTask);
+                return ServerResponse.ofSuccess("删除成功");
+            }
+        } catch (Exception exception) {
+            log.warn("删除 legacy 排课任务失败，将尝试按标准任务删除，id={}", id, exception);
+            SchTask standardTask = schTaskService.getById(id.longValue());
+            if (standardTask != null && (standardTask.getDeleted() == null || standardTask.getDeleted() == 0)
+                    && schTaskService.removeById(standardTask.getId())) {
+                removeMatchedLegacyTask(ScheduleTaskMetaUtils.parseTaskRemark(standardTask.getRemark()));
+                return ServerResponse.ofSuccess("删除成功");
+            }
         }
         throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除失败");
     }

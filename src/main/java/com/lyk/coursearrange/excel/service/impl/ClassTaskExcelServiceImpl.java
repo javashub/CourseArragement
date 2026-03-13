@@ -87,15 +87,19 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
             return ServerResponse.ofError("课程任务导入失败，请修正后重试", buildImportResult(rows.size(), classTasks.size(), errors));
         }
 
-        classTaskService.remove(new LambdaQueryWrapper<ClassTask>().in(ClassTask::getSemester, semesters));
-        boolean saved = classTaskService.saveBatch(classTasks);
-        if (!saved) {
-            return ServerResponse.ofError("课程任务导入失败，保存数据时出现异常",
-                    buildImportResult(rows.size(), 0, List.of("保存课程任务到数据库失败")));
+        boolean legacySaved = true;
+        try {
+            classTaskService.remove(new LambdaQueryWrapper<ClassTask>().in(ClassTask::getSemester, semesters));
+            legacySaved = classTaskService.saveBatch(classTasks);
+        } catch (Exception exception) {
+            legacySaved = false;
+            log.warn("写入 legacy 课程任务副本失败，将仅刷新标准任务镜像，semesters={}", semesters, exception);
         }
         scheduleLogMirrorService.replaceTaskMirrorsBySemesters(semesters, classTasks);
         return ServerResponse.ofSuccess(
-                String.format("课程任务导入成功，共 %s 条，已覆盖学期：%s", classTasks.size(), String.join("、", semesters)),
+                legacySaved
+                        ? String.format("课程任务导入成功，共 %s 条，已覆盖学期：%s", classTasks.size(), String.join("、", semesters))
+                        : String.format("课程任务导入成功，共 %s 条，标准任务已更新；legacy 副本未写入", classTasks.size()),
                 buildImportResult(rows.size(), classTasks.size(), List.of())
         );
     }
