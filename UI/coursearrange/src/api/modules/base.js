@@ -207,6 +207,9 @@ export function importTeacherExcel(file) {
   const formData = new FormData();
   formData.append('file', file);
   return request.post('/excel/base/teachers/import', formData, {
+    meta: {
+      silentError: true
+    },
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -217,6 +220,9 @@ export function importStudentExcel(file) {
   const formData = new FormData();
   formData.append('file', file);
   return request.post('/excel/base/students/import', formData, {
+    meta: {
+      silentError: true
+    },
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -227,6 +233,9 @@ export function importCourseExcel(file) {
   const formData = new FormData();
   formData.append('file', file);
   return request.post('/excel/base/courses/import', formData, {
+    meta: {
+      silentError: true
+    },
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -268,6 +277,9 @@ export function importTeachbuildExcel(file) {
   const formData = new FormData();
   formData.append('file', file);
   return request.post('/excel/base/teachbuilds/import', formData, {
+    meta: {
+      silentError: true
+    },
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -278,6 +290,9 @@ export function importClassroomExcel(file) {
   const formData = new FormData();
   formData.append('file', file);
   return request.post('/excel/base/classrooms/import', formData, {
+    meta: {
+      silentError: true
+    },
     headers: {
       'Content-Type': 'multipart/form-data'
     }

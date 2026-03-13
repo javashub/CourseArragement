@@ -33,6 +33,9 @@ export function uploadClassTaskExcel(file) {
   const formData = new FormData();
   formData.append('file', file);
   return request.post('/excel/class-task/import', formData, {
+    meta: {
+      silentError: true
+    },
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -70,12 +73,18 @@ export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
   });
 }
 
-export function fetchCoursePlanByClassNo(classNo) {
-  return request.get(`/legacy-api/courseplan/${encodeURIComponent(classNo)}`, legacyOptions);
+export function fetchCoursePlanByClassNo(classNo, options = {}) {
+  return request.get(`/legacy-api/courseplan/${encodeURIComponent(classNo)}`, {
+    ...legacyOptions,
+    ...options
+  });
 }
 
-export function fetchCoursePlanByTeacherNo(teacherNo) {
-  return request.get(`/legacy-api/courseplan/teacher/${encodeURIComponent(teacherNo)}`, legacyOptions);
+export function fetchCoursePlanByTeacherNo(teacherNo, options = {}) {
+  return request.get(`/legacy-api/courseplan/teacher/${encodeURIComponent(teacherNo)}`, {
+    ...legacyOptions,
+    ...options
+  });
 }
 
 export function adjustCoursePlan(payload) {

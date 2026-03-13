@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { TOKEN_KEY } from '@/constants/storage';
+import { getErrorMessage, getErrorPayload } from '@/utils/http';
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -19,14 +20,19 @@ request.interceptors.response.use(
   (response) => {
     const { data } = response;
     if (typeof data?.code === 'number' && data.code !== 0) {
-      ElMessage.error(data.message || '请求失败');
+      if (!response.config?.meta?.silentError) {
+        ElMessage.error(data.message || '请求失败');
+      }
       return Promise.reject(data);
     }
     return data;
   },
   (error) => {
-    ElMessage.error(error.response?.data?.message || error.message || '网络异常');
-    return Promise.reject(error);
+    const payload = getErrorPayload(error);
+    if (!error.config?.meta?.silentError) {
+      ElMessage.error(getErrorMessage(error, '网络异常'));
+    }
+    return Promise.reject(payload || error);
   }
 );
 

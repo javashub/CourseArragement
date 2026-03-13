@@ -70,9 +70,7 @@ async function handleLogin() {
     ElMessage.success('登录成功');
     const redirectPath = (route.query.redirect || authStore.firstAccessiblePath || '/dashboard').toString();
     router.push(redirectPath);
-  } catch (error) {
-    console.error(error);
-  }
+  } catch (error) {}
 }
 </script>
 
