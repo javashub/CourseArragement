@@ -1,12 +1,33 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { TOKEN_KEY } from '@/constants/storage';
+import { AUTH_CONTEXT_KEY, TOKEN_KEY, USER_KEY } from '@/constants/storage';
 import { getErrorMessage, getErrorPayload } from '@/utils/http';
+import { removeStorage } from '@/utils/storage';
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 15000
 });
+
+let redirectingToLogin = false;
+
+function redirectToLogin() {
+  if (redirectingToLogin) {
+    return;
+  }
+  redirectingToLogin = true;
+  removeStorage(TOKEN_KEY);
+  removeStorage(USER_KEY);
+  removeStorage(AUTH_CONTEXT_KEY);
+  const currentHash = window.location.hash?.replace(/^#/, '') || '/';
+  const onLoginPage = currentHash.startsWith('/login');
+  if (!onLoginPage) {
+    const redirect = encodeURIComponent(currentHash);
+    window.location.replace(`${window.location.pathname}${window.location.search}#/login?redirect=${redirect}`);
+    return;
+  }
+  window.location.replace(`${window.location.pathname}${window.location.search}#/login`);
+}
 
 request.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY);
@@ -29,6 +50,13 @@ request.interceptors.response.use(
   },
   (error) => {
     const payload = getErrorPayload(error);
+    if (payload?.code === 401) {
+      if (!error.config?.meta?.silentError) {
+        ElMessage.error(getErrorMessage(payload, '登录已失效，请重新登录'));
+      }
+      redirectToLogin();
+      return Promise.reject(payload);
+    }
     if (!error.config?.meta?.silentError) {
       ElMessage.error(getErrorMessage(error, '网络异常'));
     }
