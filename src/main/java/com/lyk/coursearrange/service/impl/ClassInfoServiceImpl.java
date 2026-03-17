@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.dao.ClassInfoDao;
@@ -39,5 +40,16 @@ public class ClassInfoServiceImpl extends ServiceImpl<ClassInfoDao, ClassInfo> i
             map.put("total", total);
         }
         return ServerResponse.ofSuccess(map);
+    }
+
+    @Override
+    public List<ClassInfo> listClassOptions(String gradeNo) {
+        QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>()
+                .select("id", "class_no", "class_name", "remark")
+                .orderByAsc("class_no");
+        if (!"".equals(gradeNo)) {
+            wrapper.eq("remark", gradeNo);
+        }
+        return classInfoDao.selectList(wrapper);
     }
 }

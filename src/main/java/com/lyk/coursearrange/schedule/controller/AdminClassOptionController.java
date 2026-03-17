@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.schedule.controller;
 
+import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.service.ClassInfoService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/resources/admin-classes")
 public class AdminClassOptionController {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final ClassInfoService classInfoService;
 
     public AdminClassOptionController(ClassInfoService classInfoService) {
@@ -23,6 +26,11 @@ public class AdminClassOptionController {
     public Object page(@RequestParam(defaultValue = "1") Integer pageNum,
                        @RequestParam(defaultValue = "10") Integer pageSize,
                        @RequestParam(defaultValue = "") String gradeNo) {
-        return classInfoService.queryClassInfos(pageNum, pageSize, gradeNo);
+        return classInfoService.queryClassInfos(pageNum, Math.min(pageSize, MAX_PAGE_SIZE), gradeNo);
+    }
+
+    @GetMapping("/options")
+    public Object options(@RequestParam(defaultValue = "") String gradeNo) {
+        return ServerResponse.ofSuccess(classInfoService.listClassOptions(gradeNo));
     }
 }

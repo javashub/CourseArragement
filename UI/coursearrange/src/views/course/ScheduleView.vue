@@ -228,8 +228,8 @@ import { fetchTeacherPage } from '@/api/modules/base';
 import { getErrorMessage } from '@/utils/http';
 import {
   adjustCoursePlan,
+  fetchClassOptions,
   fetchSemesterList,
-  fetchClassInfoPage,
   fetchCoursePlanAdjustLogs,
   fetchCoursePlanByClassNo,
   fetchCoursePlanByTeacherNo
@@ -396,8 +396,8 @@ async function handleDrop(dayIndex, periodIndex) {
 }
 
 async function loadClassOptions() {
-  const response = await fetchClassInfoPage(1, 200);
-  classOptions.value = response.data?.records || [];
+  const response = await fetchClassOptions();
+  classOptions.value = response.data || [];
 }
 
 async function loadSemesterOptions() {

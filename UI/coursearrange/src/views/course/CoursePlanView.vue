@@ -382,7 +382,7 @@ import {
   deleteStandardClassTask,
   downloadClassTaskTemplate,
   fetchArrangeLogs,
-  fetchClassInfoPage,
+  fetchClassOptions,
   fetchClassTaskPage,
   fetchSemesterList,
   uploadClassTaskExcel
@@ -548,8 +548,8 @@ async function loadSemesters() {
 }
 
 async function loadClassOptions() {
-  const response = await fetchClassInfoPage(1, 200);
-  classOptions.value = response.data?.records || [];
+  const response = await fetchClassOptions();
+  classOptions.value = response.data || [];
 }
 
 async function loadCourseOptions() {

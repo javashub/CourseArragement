@@ -6,6 +6,8 @@ const legacyOptions = {
   baseURL: ''
 };
 
+const MAX_PAGE_SIZE = 100;
+
 export function fetchSemesterList() {
   return request.get('/schedule/tasks/semesters');
 }
@@ -76,9 +78,15 @@ export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
   return request.get('/resources/admin-classes/page', {
     params: {
       pageNum: page,
-      pageSize: limit,
+      pageSize: Math.min(limit, MAX_PAGE_SIZE),
       gradeNo
     }
+  });
+}
+
+export function fetchClassOptions(gradeNo = '') {
+  return request.get('/resources/admin-classes/options', {
+    params: { gradeNo }
   });
 }
 
