@@ -66,6 +66,8 @@
 </template>
 
 <script>
+import { fetchClassOptions, fetchCoursePlanByClassNo } from "@/api/modules/course";
+
 export default {
   data() {
     return {
@@ -121,27 +123,25 @@ export default {
   mounted() {},
   methods: {
     // 查询班级编号，班级名
-    queryClass() {
-      this.$axios
-        .get("http://localhost:8080/class-grade/" + this.value2)
-        .then((res) => {
-          let r = res.data.data;
-          this.classNo.splice(0, this.classNo.length);
-          this.value3 = "";
-          r.map((v) => {
-            this.classNo.push({
-              value: v.classNo,
-              lable: v.className,
-            });
+    async queryClass() {
+      try {
+        const response = await fetchClassOptions(this.value2);
+        const records = response.data || [];
+        this.classNo.splice(0, this.classNo.length);
+        this.value3 = "";
+        records.forEach((item) => {
+          this.classNo.push({
+            value: item.classNo,
+            label: item.className || item.classNo,
           });
-        })
-        .catch((error) => {
-          this.$message.error("失败");
         });
+      } catch (error) {
+        this.$message.error("班级列表加载失败");
+      }
     },
 
     // 查询课程表
-    queryCoursePlan() {
+    async queryCoursePlan() {
       this.classTableData.courses.map((item, index) => {
         this.classTableData.courses[index].splice(
           0,
@@ -149,36 +149,38 @@ export default {
         );
       });
 
-      this.$axios
-        .get("http://localhost:8080/courseplan/" + this.value3)
-        .then((res) => {
-          let courseData = res.data.data;
-          console.log(courseData);
-          let level = 0;
-          let times = 0;
-
-          for (let index = 0; index < courseData.length; index++) {
-            times++;
-            const item = courseData[index];
-            if (parseInt(item.classTime) != times) {
-              this.classTableData.courses[level].push("");
-              index = index - 1;
-            } else {
-              this.classTableData.courses[level].push(
-                item.realname +
-                  "-" +
-                  item.courseName +
-                  "(" +
-                  item.classroomNo +
-                  ")"
-              );
-            }
-            if (times % 5 == 0) {
-              level = level + 1;
-            }
-          }
-          this.$message({ message: "查询成功", type: "success" });
+      try {
+        const response = await fetchCoursePlanByClassNo(this.value3, {
+          semester: this.value1 || "",
         });
+        const courseData = response.data || [];
+        let level = 0;
+        let times = 0;
+
+        for (let index = 0; index < courseData.length; index++) {
+          times++;
+          const item = courseData[index];
+          if (parseInt(item.classTime) !== times) {
+            this.classTableData.courses[level].push("");
+            index = index - 1;
+          } else {
+            this.classTableData.courses[level].push(
+              item.realname +
+                "-" +
+                item.courseName +
+                "(" +
+                item.classroomNo +
+                ")"
+            );
+          }
+          if (times % 5 === 0) {
+            level = level + 1;
+          }
+        }
+        this.$message({ message: "查询成功", type: "success" });
+      } catch (error) {
+        this.$message.error("课表查询失败");
+      }
     },
 
     /**

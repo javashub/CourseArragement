@@ -38,10 +38,7 @@ public class ClassInfoController {
      */
     @GetMapping("/class-grade/{grade}")
     public ServerResponse queryClass(@PathVariable("grade") String grade) {
-        QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>().eq("remark", grade);
-        List<ClassInfo> classInfoList = classInfoService.list(wrapper);
-
-        return ServerResponse.ofSuccess(classInfoList);
+        return ServerResponse.ofSuccess(classInfoService.listClassOptions(grade));
     }
 
     /**

@@ -47,6 +47,8 @@
 </template>
 
 <script>
+import { fetchClassOptions } from "@/api/modules/course";
+
 export default {
   name: "center",
   data() {
@@ -102,19 +104,22 @@ export default {
           }
         });
     },
-    handleJoinClass() {
+    async handleJoinClass() {
       let grade = this.form.studentNo.substring(4, 6);
       this.options = [];
       this.visibleForm = true;
-      this.$axios.get("http://localhost:8080/class-grade/" + grade).then(r => {
-        let data = r.data.data;
-        data.map(v => {
+      try {
+        const response = await fetchClassOptions(grade);
+        const data = response.data || [];
+        data.forEach((item) => {
           this.options.push({
-            label: v.classNo,
-            value: v.classNo
+            label: item.classNo,
+            value: item.classNo
           });
         });
-      });
+      } catch (error) {
+        this.$message.error("班级列表加载失败");
+      }
     }
   }
 };
