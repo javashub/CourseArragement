@@ -23,7 +23,8 @@
             class="add-button"
             ref="upload"
             accept=".xls,.xlsx"
-            action="http://localhost:8080/upload"
+            action="#"
+            :http-request="handleUploadRequest"
             :on-remove="handleRemove"
             :on-error="handleError"
             :on-success="uploadSuccess"
@@ -235,6 +236,17 @@
 </template>
 
 <script>
+import {
+  arrangeClassTask,
+  createClassTask,
+  deleteClassTask,
+  deleteStandardClassTask,
+  downloadClassTaskTemplate,
+  fetchClassTaskPage,
+  fetchSemesterList,
+  uploadClassTaskExcel
+} from "@/api/modules/course";
+
 export default {
   name: "ClassTaskList",
   data() {
@@ -311,26 +323,18 @@ export default {
    * 加载Vue实例时执行
    */
   mounted() {
-    this.allClassTask();
     this.getSemester();
   },
 
   methods: {
     // 提交添加
-    commit() {
-      this.$axios
-        .post("http://localhost:8080/addclasstask", this.addClassTaskForm)
-        .then((res) => {
-          if (res.data.code == 0) {
-            // 添加完成
-            this.allClassTask();
-            this.visible = false;
-            this.$message({ message: "添加课程任务成功！", type: "success" });
-          } else {
-            alert(res.data.message);
-          }
-        })
-        .catch((error) => {});
+    async commit() {
+      try {
+        await createClassTask(this.addClassTaskForm);
+        this.allClassTask();
+        this.visible = false;
+        this.$message({ message: "添加课程任务成功！", type: "success" });
+      } catch (error) {}
     },
 
     // 手动添加课程任务
@@ -339,27 +343,24 @@ export default {
     },
 
     // 点击开始提交学期到系统后台排课
-    arrangeCourse() {
-      this.$axios
-        .post("http://localhost:8080/arrange/" + this.semester)
-        .then((res) => {
-          if (res.data.code == 0) {
-            this.allClassTask();
-            this.$message({ message: "排课成功", type: "success" });
-            this.$router.push("/coursetable");
-          } else {
-            this.$message.error("排课失败");
-            this.$message.error(res.data.message);
-          }
-        })
-        .catch((error) => {
-          this.$message.error("排课失败");
-        });
+    async arrangeCourse() {
+      try {
+        await arrangeClassTask(this.semester);
+        this.allClassTask();
+        this.$message({ message: "排课成功", type: "success" });
+        this.$router.push("/coursetable");
+      } catch (error) {
+        this.$message.error("排课失败");
+      }
     },
 
     // 下载模板
-    downloadTemplate() {
-      window.location.href = "http://localhost:8080/download";
+    async downloadTemplate() {
+      try {
+        await downloadClassTaskTemplate();
+      } catch (error) {
+        this.$message.error("模板下载失败");
+      }
     },
 
     // 上传成功
@@ -372,7 +373,17 @@ export default {
     handleRemove(file, fileList) {},
 
     handleError(error, file, fileList) {
+      this.loading = false;
       alert("文件上传失败" + error);
+    },
+
+    async handleUploadRequest(option) {
+      try {
+        const response = await uploadClassTaskExcel(option.file);
+        option.onSuccess(response);
+      } catch (error) {
+        option.onError(error);
+      }
     },
 
     // 提交上传文件事件
@@ -385,10 +396,11 @@ export default {
     handleSelectChange(val) {
       // 这里的V就是选择的学期了
       this.semester = val;
+      this.allClassTask();
     },
 
     deleteById(index, row) {
-      this.deleteClassTaskById(row.id);
+      this.deleteClassTaskById(row);
     },
 
     editById(index, row) {},
@@ -404,52 +416,58 @@ export default {
      * 获得学期列表后默认填充第一个到学期选择下拉列表中
      * 这里只放一个学期先吧
      */
-    getSemester() {
-      this.$axios
-        .get("http://localhost:8080/semester")
-        .then((res) => {
-          let ret = res.data.data;
-          this.semesterData = ret;
-        })
-        .catch((error) => {
-          console.log("查询学期失败");
-        });
+    async getSemester() {
+      try {
+        const response = await fetchSemesterList();
+        const semesters = (response.data || []).sort().reverse();
+        this.semesterData = semesters;
+        if (semesters.length > 0) {
+          this.value = semesters[0];
+          this.semester = semesters[0];
+          this.allClassTask();
+        }
+      } catch (error) {
+        console.log("查询学期失败");
+      }
     },
 
     /**
      * 获得所有开课任务
      */
-    allClassTask() {
-      this.$axios
-        .get(
-          "http://localhost:8080/classtask/" + this.page + "/" + this.semester
-        )
-        .then((res) => {
-          let ret = res.data.data;
-          this.classTaskData = ret.records;
-          this.total = ret.total;
-          if (this.total == 0) {
-            this.$message({ message: "查询不到开课任务", type: "success" });
-          }
-        })
-        .catch((error) => {
-          this.$message.error("查询开课任务失败");
-        });
+    async allClassTask() {
+      if (!this.semester) {
+        this.classTaskData = [];
+        this.total = 0;
+        return;
+      }
+      try {
+        const response = await fetchClassTaskPage(this.page, this.semester, this.pageSize);
+        let ret = response.data || {};
+        this.classTaskData = ret.records || [];
+        this.total = ret.total || 0;
+        if (this.total == 0) {
+          this.$message({ message: "查询不到开课任务", type: "success" });
+        }
+      } catch (error) {
+        this.$message.error("查询开课任务失败");
+      }
     },
 
     /**
      * 删除开课任务
      */
-    deleteClassTaskById(id) {
-      this.$axios
-        .delete("http://localhost:8080/deleteclasstask/" + id)
-        .then((res) => {
-          this.allClassTask();
-          this.$message({ message: "删除成功", type: "success" });
-        })
-        .catch((error) => {
-          this.$message.error("删除失败");
-        });
+    async deleteClassTaskById(row) {
+      try {
+        if (row.standardId) {
+          await deleteStandardClassTask(row.standardId);
+        } else {
+          await deleteClassTask(row.id);
+        }
+        this.allClassTask();
+        this.$message({ message: "删除成功", type: "success" });
+      } catch (error) {
+        this.$message.error("删除失败");
+      }
     },
   },
 };
