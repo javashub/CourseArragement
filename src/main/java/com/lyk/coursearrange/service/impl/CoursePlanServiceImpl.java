@@ -154,15 +154,7 @@ public class CoursePlanServiceImpl implements CoursePlanService {
             throw new BusinessException(ResultCode.SYSTEM_ERROR, "调课失败，请稍后重试");
         }
 
-        CoursePlan legacyPlan = findLegacyPlanByStandard(result, taskMeta, semester, beforeWeekdayNo, beforePeriodNo);
-        if (legacyPlan != null) {
-            legacyPlan.setClassTime(targetClassTime);
-            if (request.getClassroomNo() != null && !request.getClassroomNo().isBlank()) {
-                legacyPlan.setClassroomNo(request.getClassroomNo());
-            }
-            coursePlanLegacySupport.updateById(legacyPlan);
-        }
-        saveAdjustLog(result, taskMeta, beforeWeekdayNo, beforePeriodNo, afterWeekdayNo, afterPeriodNo, legacyPlan);
+        saveAdjustLog(result, taskMeta, beforeWeekdayNo, beforePeriodNo, afterWeekdayNo, afterPeriodNo, null);
         return ServerResponse.ofSuccess("调课成功");
     }
 
@@ -343,21 +335,6 @@ public class CoursePlanServiceImpl implements CoursePlanService {
             }
         }
         return null;
-    }
-
-    private CoursePlan findLegacyPlanByStandard(SchScheduleResult result,
-                                                Map<String, String> taskMeta,
-                                                String semester,
-                                                Integer beforeWeekdayNo,
-                                                Integer beforePeriodNo) {
-        LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<CoursePlan>()
-                .eq(CoursePlan::getSemester, semester)
-                .eq(CoursePlan::getClassNo, taskMeta.getOrDefault("classNo", ""))
-                .eq(CoursePlan::getCourseNo, taskMeta.getOrDefault("courseNo", ""))
-                .eq(CoursePlan::getTeacherNo, taskMeta.getOrDefault("teacherNo", ""))
-                .eq(beforeWeekdayNo != null && beforePeriodNo != null, CoursePlan::getClassTime, toLegacyClassTime(beforeWeekdayNo, beforePeriodNo))
-                .last("limit 1");
-        return coursePlanLegacySupport.getOne(wrapper);
     }
 
     private List<CoursePlanVo> listStandardPlans(String semester, String classNo, String teacherNo) {

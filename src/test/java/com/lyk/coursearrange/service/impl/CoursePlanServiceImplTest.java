@@ -28,6 +28,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.never;
@@ -128,7 +129,7 @@ class CoursePlanServiceImplTest {
     }
 
     @Test
-    void adjustCoursePlan_shouldUpdateLegacyMirrorWhenStandardResultMatches() {
+    void adjustCoursePlan_shouldOnlyUpdateStandardResultWhenStandardResultMatches() {
         SchScheduleResult result = new SchScheduleResult();
         result.setId(101L);
         result.setTaskId(201L);
@@ -141,17 +142,6 @@ class CoursePlanServiceImplTest {
         task.setId(201L);
         task.setRemark("gradeNo=G1,classNo=C1,courseNo=K1,teacherNo=T1");
 
-        CoursePlan legacyPlan = new CoursePlan();
-        legacyPlan.setId(301);
-        legacyPlan.setSemester("2025-2026-1");
-        legacyPlan.setGradeNo("G1");
-        legacyPlan.setClassNo("C1");
-        legacyPlan.setCourseNo("K1");
-        legacyPlan.setTeacherNo("T1");
-        legacyPlan.setClassTime("08");
-        legacyPlan.setClassroomNo("A101");
-        legacyPlan.setDeleted(0);
-
         CoursePlanAdjustRequest request = new CoursePlanAdjustRequest();
         request.setStandardResultId(101L);
         request.setClassTime("09");
@@ -160,22 +150,18 @@ class CoursePlanServiceImplTest {
         when(schTaskService.getById(201L)).thenReturn(task);
         when(schScheduleResultService.list(any(Wrapper.class))).thenReturn(List.of());
         when(schScheduleResultService.updateById(any(SchScheduleResult.class))).thenReturn(true);
-        when(coursePlanLegacySupport.getOne(any())).thenReturn(legacyPlan);
-        when(coursePlanLegacySupport.updateById(any(CoursePlan.class))).thenReturn(true);
 
         ServerResponse<?> response = service.adjustCoursePlan(request);
 
         assertTrue(response.isSuccess());
-        verify(coursePlanLegacySupport).getOne(any());
-        ArgumentCaptor<CoursePlan> legacyCaptor = ArgumentCaptor.forClass(CoursePlan.class);
-        verify(coursePlanLegacySupport).updateById(legacyCaptor.capture());
-        assertEquals("09", legacyCaptor.getValue().getClassTime());
+        verify(coursePlanLegacySupport, never()).getOne(any());
+        verify(coursePlanLegacySupport, never()).updateById(any(CoursePlan.class));
 
         ArgumentCaptor<CoursePlanAdjustLog> logCaptor = ArgumentCaptor.forClass(CoursePlanAdjustLog.class);
         verify(coursePlanAdjustLogService).save(logCaptor.capture());
         CoursePlanAdjustLog log = logCaptor.getValue();
         assertNotNull(log);
-        assertEquals(Integer.valueOf(301), log.getCoursePlanId());
+        assertNull(log.getCoursePlanId());
         assertEquals("08", log.getBeforeClassTime());
         assertEquals("09", log.getAfterClassTime());
         verify(scheduleLogMirrorService).mirrorAdjustLog(any(CoursePlanAdjustLog.class));
@@ -203,7 +189,6 @@ class CoursePlanServiceImplTest {
         when(schTaskService.getById(201L)).thenReturn(task);
         when(schScheduleResultService.list(any(Wrapper.class))).thenReturn(List.of());
         when(schScheduleResultService.updateById(any(SchScheduleResult.class))).thenReturn(true);
-        when(coursePlanLegacySupport.getOne(any())).thenReturn(null);
 
         ServerResponse<?> response = service.adjustCoursePlan(request);
 
