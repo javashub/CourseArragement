@@ -333,9 +333,10 @@ export default {
     },
 
     showRequestSuccess(response, fallback) {
+      const degraded = response?.data?.legacyCoursePlanSaved === false;
       this.$message({
         message: response?.message || fallback,
-        type: "success",
+        type: degraded ? "warning" : "success",
       });
     },
 

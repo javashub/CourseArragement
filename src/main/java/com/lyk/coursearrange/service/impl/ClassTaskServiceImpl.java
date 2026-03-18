@@ -104,13 +104,22 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             log.info("完成排课,耗时：{}", duration);
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
                     String.format("排课成功，生成 %s 条课表记录", coursePlanList.size()));
-            return ServerResponse.ofSuccess(buildSchedulingSuccessMessage(duration, legacyCoursePlanSaved));
+            return buildSchedulingSuccessResponse(duration, coursePlanList.size(), legacyCoursePlanSaved);
         } catch (BusinessException exception) {
             throw exception;
         } catch (Exception e) {
             log.error("排课失败： {}", e.getMessage(), e);
             throw buildSchedulingException(start, semester, taskCount, buildExecuteErrorMessage(e), ResultCode.BUSINESS_ERROR);
         }
+    }
+
+    ServerResponse<Map<String, Object>> buildSchedulingSuccessResponse(long duration, int generatedPlanCount,
+                                                                       boolean legacyCoursePlanSaved) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("durationMs", duration);
+        data.put("generatedPlanCount", generatedPlanCount);
+        data.put("legacyCoursePlanSaved", legacyCoursePlanSaved);
+        return ServerResponse.ofSuccess(buildSchedulingSuccessMessage(duration, legacyCoursePlanSaved), data);
     }
 
     boolean replaceLegacyCoursePlans(String semester, List<CoursePlan> coursePlanList) {
