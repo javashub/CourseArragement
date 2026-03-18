@@ -68,6 +68,15 @@
 </template>
 
 <script>
+import {
+  createCourse,
+  deleteCourse,
+  fetchCoursePage,
+  fetchNextCourseNo,
+  searchCoursePage,
+  updateCourse
+} from "@/api/modules/base";
+
 export default {
   name: "CourseInfoList",
   data() {
@@ -132,10 +141,9 @@ export default {
     // 根据关键字搜索交材信息,有问题呀
     searchCourse() {
       this.page = 1
-      this.$axios
-        .get("http://localhost:8080/courseinfo/search/" + this.page + "/" + this.keyword)
+      searchCoursePage(this.keyword, this.page, this.pageSize)
         .then(res => {
-          let ret = res.data.data
+          let ret = res.data || {}
           this.courseInfoData = ret.records
           this.total = ret.total
           this.$message({message:'查询成功', type: 'success'})
@@ -162,38 +170,28 @@ export default {
       this.type = 2 // 添加
       this.visibleForm = true
       // this.editFormData = {}
-      this.$axios.get("http://localhost:8080/courseinfo/get-no")
+      fetchNextCourseNo()
       .then(res => {
-        if (res.data.code == 0) {
-          // 获取课程编号
-          this.editFormData.courseNo = res.data.message
-        } else {
-          this.$message.error(res.data.message)
-        }
+        this.editFormData.courseNo = res.data
       })
       .catch(error => {})
     },
 
     // 添加教材
     add() {
-      this.$axios.post("http://localhost:8080/courseinfo/add", this.editFormData)
+      createCourse(this.editFormData)
       .then(res => {
-        if (res.data.code == 0) {
-          this.allCourseInfo()
-          this.$message({message:'添加成功', type: 'success'})
-          this.visibleForm = false
-          this.editFormData = {}
-        } else {
-          this.$message.error(res.data.message)
-        }
+        this.allCourseInfo()
+        this.$message({message:'添加成功', type: 'success'})
+        this.visibleForm = false
+        this.editFormData = {}
       })
       .catch(error => {})
     },
 
     // 根据id删除教材信息
     deleteCourseInfoById(id) {
-      this.$axios
-      .delete("http://localhost:8080/courseinfo/delete/" + id)
+      deleteCourse(id)
       .then(res => {
         this.allCourseInfo()
         this.$message({message:'删除成功', type: 'success'})
@@ -205,8 +203,7 @@ export default {
 
     // 更新教材信息
     modifyCourseInfo(modifyData) {
-      this.$axios
-        .post("http://localhost:8080/courseinfo/modify/" + this.editFormData.id, modifyData)
+      updateCourse(this.editFormData.id, modifyData)
         .then(res => {
           this.$message({ message: "更新成功", type: "success" })
           this.allCourseInfo()
@@ -219,10 +216,9 @@ export default {
 
     // 分页查询所有教材信息
     allCourseInfo() {
-      this.$axios
-        .get("http://localhost:8080/courseinfo/" + this.page)
+      fetchCoursePage(this.page, this.pageSize)
         .then(res => {
-          let ret = res.data.data
+          let ret = res.data || {}
           this.courseInfoData = ret.records
           this.total = ret.total
         })

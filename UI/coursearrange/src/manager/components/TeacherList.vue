@@ -88,7 +88,7 @@
           ></el-image>
           <el-upload
             v-else
-            :action="'http://localhost:8080/teacher/upload/' + scope.row.id"
+            :action="getUploadUrl(scope.row.id)"
             :on-success="handleUploadSuccess"
           >
             <i class="el-icon-upload2" style="cursor: pointer"></i>
@@ -257,6 +257,17 @@
 </template>
 
 <script>
+import {
+  createTeacher,
+  deleteTeacher,
+  fetchNextTeacherNo,
+  fetchTeacherPage,
+  searchTeacherPage,
+  updateTeacher
+} from "@/api/modules/base";
+
+const teacherUploadBaseUrl = `${import.meta.env.VITE_API_BASE_URL || '/api'}/teacher/upload/`;
+
 export default {
   name: "TeacherList",
   data() {
@@ -311,14 +322,9 @@ export default {
   methods: {
     addTeacher() {
       // 在弹出添加表单之前从后台获取讲师的编号
-      this.$axios
-        .get("http://localhost:8080/teacher/no")
+      fetchNextTeacherNo()
         .then((res) => {
-          if (res.data.code == 0) {
-            let number = parseInt(res.data.message) + 1;
-            // 给讲师编号赋值
-            this.addTeacherForm.teacherNo = number.toString();
-          }
+          this.addTeacherForm.teacherNo = res.data || "";
         })
         .catch((error) => {});
       this.visibleAddForm = true;
@@ -326,15 +332,11 @@ export default {
 
     // 提交添加讲师的表单
     addCommit() {
-      console.log(this.addTeacherForm);
-      this.$axios
-        .post("http://localhost:8080/teacher/add", this.addTeacherForm)
+      createTeacher(this.addTeacherForm)
         .then((res) => {
-          if (res.data.code == 0) {
-            this.allTeacher();
-            this.visibleAddForm = false;
-            this.$message({ message: "添加讲师成功", type: "success" });
-          }
+          this.allTeacher();
+          this.visibleAddForm = false;
+          this.$message({ message: "添加讲师成功", type: "success" });
         })
         .catch((error) => {
           this.$message.error("添加讲师失败");
@@ -376,8 +378,7 @@ export default {
      * 根据ID更新讲师
      */
     modifyTeacher(modifyData) {
-      this.$axios
-        .post("http://localhost:8080/teacher/modify", modifyData)
+      updateTeacher(modifyData)
         .then((res) => {
           this.$message({ message: "更新成功", type: "success" });
           this.allTeacher();
@@ -393,16 +394,9 @@ export default {
      */
     searchTeacher() {
       this.page = 1;
-      this.$axios
-        .get(
-          "http://localhost:8080/teacher/search/" +
-            this.page +
-            "/" +
-            this.keyword
-        )
+      searchTeacherPage(this.keyword, this.page, this.pageSize)
         .then((res) => {
-          console.log(res);
-          let ret = res.data.data;
+          let ret = res.data || {};
           this.teacherData = ret.records;
           this.total = ret.total;
           this.$message({ message: "查询成功", type: "success" });
@@ -416,8 +410,7 @@ export default {
      * 根据ID删除讲师
      */
     deleteTeacherById(id) {
-      this.$axios
-        .delete("http://localhost:8080/teacher/delete/" + id)
+      deleteTeacher(id)
         .then((res) => {
           this.allTeacher();
           this.$message({ message: "删除成功", type: "success" });
@@ -431,10 +424,9 @@ export default {
      * 获取所有讲师，带分页
      */
     allTeacher() {
-      this.$axios
-        .get("http://localhost:8080/teacher/query/" + this.page)
+      fetchTeacherPage(this.page, this.pageSize)
         .then((res) => {
-          let ret = res.data.data;
+          let ret = res.data || {};
           this.teacherData = ret.records;
           this.total = ret.total;
           // this.$message({message:'查询成功', type: 'success'})
@@ -446,6 +438,9 @@ export default {
     handleUploadSuccess() {
       this.allTeacher();
     },
+    getUploadUrl(id) {
+      return `${teacherUploadBaseUrl}${id}`;
+    }
   },
 };
 </script>
