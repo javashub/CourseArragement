@@ -1,6 +1,9 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.dao.ClassTaskDao;
+import com.lyk.coursearrange.entity.ClassTask;
+import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,15 +18,21 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ClassTaskServiceImplTest {
 
     @Mock
     private SchTaskService schTaskService;
+    @Mock
+    private ClassTaskDao classTaskDao;
 
     @Test
     void ensureLegacyTasksForSemester_shouldIgnoreMissingLegacyTaskTable() {
@@ -49,5 +58,20 @@ class ClassTaskServiceImplTest {
         assertEquals(Boolean.FALSE, response.getData().get("legacyCoursePlanSaved"));
         assertEquals(8, response.getData().get("generatedPlanCount"));
         assertEquals(123L, response.getData().get("durationMs"));
+    }
+
+    @Test
+    void listSchedulingTasks_shouldNotBackfillLegacyTasksBeforeFallbackQuery() {
+        ClassTaskServiceImpl service = spy(new ClassTaskServiceImpl());
+        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
+        when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
+                .thenReturn(List.of());
+        when(classTaskDao.selectList(any())).thenReturn(List.of(new ClassTask()));
+
+        List<ClassTask> tasks = service.listSchedulingTasks("2025-2026-1");
+
+        assertEquals(1, tasks.size());
+        verify(service, never()).ensureLegacyTasksForSemester(anyString());
     }
 }

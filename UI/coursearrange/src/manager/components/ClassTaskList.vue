@@ -82,6 +82,13 @@
       </div>
     </div>
     <el-alert
+      title="当前任务页优先读取标准排课任务，不会主动回填旧 tb_class_task。"
+      type="info"
+      :closable="false"
+      show-icon
+      class="task-source-alert"
+    />
+    <el-alert
       v-if="arrangeResult.message"
       :title="arrangeResult.message"
       :type="arrangeResult.type"
@@ -529,6 +536,10 @@ export default {
 }
 
 .arrange-alert {
+  margin: 12px 0;
+}
+
+.task-source-alert {
   margin: 12px 0;
 }
 

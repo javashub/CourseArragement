@@ -175,9 +175,9 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
      * 步骤说明：
      * 1. 排课算法当前仍然使用 legacy ClassTask 结构作为内存输入。
      * 2. 但任务来源优先切到 sch_task，再转成 legacy 对象，不再强依赖 tb_class_task。
-     * 3. 只有标准任务为空时，才回退旧表。
+     * 3. 标准任务为空时只读 legacy 旧表，不再主动回填 tb_class_task。
      */
-    private List<ClassTask> listSchedulingTasks(String semester) {
+    List<ClassTask> listSchedulingTasks(String semester) {
         List<SchTask> standardTasks = schTaskService.list(new LambdaQueryWrapper<SchTask>()
                 .eq(SchTask::getDeleted, 0)
                 .like(SchTask::getRemark, "semester=" + semester)
@@ -188,7 +188,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
                     .filter(Objects::nonNull)
                     .toList();
         }
-        ensureLegacyTasksForSemester(semester);
         try {
             return classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
         } catch (Exception exception) {
