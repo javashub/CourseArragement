@@ -61,17 +61,17 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
-    void listSchedulingTasks_shouldNotBackfillLegacyTasksBeforeFallbackQuery() {
+    void listSchedulingTasks_shouldReturnEmptyWhenStandardTasksMissing() {
         ClassTaskServiceImpl service = spy(new ClassTaskServiceImpl());
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
         when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
                 .thenReturn(List.of());
-        when(classTaskDao.selectList(any())).thenReturn(List.of(new ClassTask()));
 
         List<ClassTask> tasks = service.listSchedulingTasks("2025-2026-1");
 
-        assertEquals(1, tasks.size());
+        assertTrue(tasks.isEmpty());
         verify(service, never()).ensureLegacyTasksForSemester(anyString());
+        verify(classTaskDao, never()).selectList(any());
     }
 }

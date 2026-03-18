@@ -82,7 +82,7 @@
       </div>
     </div>
     <el-alert
-      title="当前任务页优先读取标准排课任务，不会主动回填旧 tb_class_task。"
+      title="开始排课时只使用标准排课任务；缺少标准任务时不会再回退读取旧 tb_class_task。"
       type="info"
       :closable="false"
       show-icon
