@@ -54,6 +54,13 @@
 </template>
 
 <script>
+import {
+  createLegacyTeachbuild,
+  deleteLegacyTeachbuild,
+  fetchLegacyTeachbuildPage,
+  updateLegacyTeachbuild
+} from "@/api/modules/base";
+
 export default {
   name: "TeachBuildingList",
   data() {
@@ -95,38 +102,24 @@ export default {
      * 提交更新
      */
     commit() {
-      alert(this.type)
       if (this.type == 1) {
-        // 编辑
-        alert(this.type)
         this.modifyTeachBuild(this.editFormData)
       } else {
-        alert(this.type)
-        // type = 2 添加
         this.newteachbuild(this.editFormData)
       }
       
     },
 
     // 添加教学楼
-    newteachbuild(modifyData) {
-      alert('添加')
-      console.log(modifyData);
-      
-      this.$axios
-        .post("http://localhost:8080/teachbuildinfo/add", modifyData)
-        .then(res => {
-          if (res.data.code == 0) {
-            this.$message({ message: "添加成功", type: "success" })
-            this.allTeachBuilding()
-            this.visibleForm = false
-          } else {
-            this.$message.error(res.data.message)
-          }
-        })
-        .catch(error => {
-          this.$message.error("更新失败")
-        });
+    async newteachbuild(modifyData) {
+      try {
+        await createLegacyTeachbuild(modifyData)
+        this.$message({ message: "添加成功", type: "success" })
+        this.allTeachBuilding()
+        this.visibleForm = false
+      } catch (error) {
+        this.$message.error("更新失败")
+      }
     },
 
     handleSizeChange() {},
@@ -150,58 +143,40 @@ export default {
     /**
      * 更新教学楼
      */
-    modifyTeachBuild(modifyData) {
-      this.$axios
-        .post("http://localhost:8080/teachbuildinfo/modify/" + this.editFormData.id, modifyData)
-        .then(res => {
-          if (res.data.code == 0) {
-            this.$message({ message: "更新成功", type: "success" })
-            this.allTeachBuilding()
-            this.visibleForm = false
-          } else {
-            this.$message.error(res.data.message)
-          }
-        })
-        .catch(error => {
-          this.$message.error("更新失败")
-        });
+    async modifyTeachBuild(modifyData) {
+      try {
+        await updateLegacyTeachbuild(this.editFormData.id, modifyData)
+        this.$message({ message: "更新成功", type: "success" })
+        this.allTeachBuilding()
+        this.visibleForm = false
+      } catch (error) {
+        this.$message.error("更新失败")
+      }
     },
 
     // 获取所有教学楼，带分页
-    allTeachBuilding() {
-      this.$axios
-        .get("http://localhost:8080/teachbuildinfo/list/" + this.page)
-        .then(res => {
-          if (res.data.code == 0) {
-            let ret = res.data.data
-            this.teachBuildData = ret.records
-            this.total = ret.total
-          } else {
-            this.$message.error(res.data.message)
-          }
-        })
-        .catch(error => {
-          console.log("查询教学楼失败")
-        });
+    async allTeachBuilding() {
+      try {
+        const response = await fetchLegacyTeachbuildPage(this.page, this.pageSize)
+        let ret = response.data || {}
+        this.teachBuildData = ret.records || []
+        this.total = ret.total || 0
+      } catch (error) {
+        console.log("查询教学楼失败")
+      }
     },
 
     /**
      * 根据ID删除教学楼
      */
-    deleteTeachBuildingById(id) {
-      this.$axios
-        .delete("http://localhost:8080/teachbuildinfo/delete/" + id)
-        .then(res => {
-          if (res.data.code == 0) {
-            this.allTeachBuilding()
-            this.$message({message:'删除成功', type: 'success'})
-          } else {
-            this.$message.error(res.data.message)
-          }
-        })
-        .catch(error => {
-          this.$message.error("删除失败")
-        });
+    async deleteTeachBuildingById(id) {
+      try {
+        await deleteLegacyTeachbuild(id)
+        this.allTeachBuilding()
+        this.$message({message:'删除成功', type: 'success'})
+      } catch (error) {
+        this.$message.error("删除失败")
+      }
     }
   }
 };

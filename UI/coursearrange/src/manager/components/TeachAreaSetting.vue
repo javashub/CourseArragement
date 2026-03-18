@@ -72,6 +72,13 @@
 </template>
 
 <script>
+import {
+  createLegacyTeachArea,
+  deleteLegacyTeachArea,
+  fetchLegacyLocationPage,
+  fetchLegacyTeachbuildList
+} from "@/api/modules/base";
+
 export default {
   name: "TeachAreaSetting",
   data() {
@@ -118,22 +125,16 @@ export default {
       if (this.addForm.value1 == "" || this.addForm.value2 == "") {
         alert("请选择再提交");
       } else {
-        this.$axios
-          .post("http://localhost:8080/setteacharea", {
+        createLegacyTeachArea({
             teachBuildNo: this.addForm.value2,
             gradeNo: this.addForm.value1
           })
           .then(res => {
-            if (res.data.code == 0) {
-              this.$message({ message: "添加成功", type: "success" });
-              this.addForm.value1 = "";
-              this.addForm.value2 = "";
-              this.allLocation();
-              this.visible = false;
-            } else {
-              this.$message.error(res.data.message);
-              this.visible = false;
-            }
+            this.$message({ message: "添加成功", type: "success" });
+            this.addForm.value1 = "";
+            this.addForm.value2 = "";
+            this.allLocation();
+            this.visible = false;
           })
           .catch(error => {});
       }
@@ -153,35 +154,27 @@ export default {
     },
     // 所有区域安排
     allLocation() {
-      this.$axios
-        .get("http://localhost:8080/locations/" + this.page)
+      fetchLegacyLocationPage(this.page, this.pageSize)
         .then(res => {
-          if (res.data.code == 0) {
-            let ret = res.data.data;
-            this.total = ret.total;
-            this.locationData = ret.records;
-          }
+          let ret = res.data || {};
+          this.total = ret.total || 0;
+          this.locationData = ret.records || [];
         })
         .catch(error => {});
     },
 
     // 获取教学楼信息
     queryTeachbuild() {
-      this.$axios
-        .get("http://localhost:8080/teachbuildinfo/list")
+      fetchLegacyTeachbuildList()
         .then(res => {
-          if (res.data.code == 0) {
-            let ret = res.data.data;
-            this.teachbuild.splice(0, this.teachbuild.length);
-            ret.map(v => {
-              this.teachbuild.push({
-                value: v.teachBuildNo,
-                label: v.teachBuildName
-              });
+          let ret = res.data || [];
+          this.teachbuild.splice(0, this.teachbuild.length);
+          ret.forEach(v => {
+            this.teachbuild.push({
+              value: v.teachBuildNo,
+              label: v.teachBuildName
             });
-          } else {
-            alert(res.data.message);
-          }
+          });
         })
         .catch(error => {});
     },
@@ -194,14 +187,9 @@ export default {
     },
 
     deleteById(index, row) {
-      this.$axios
-        .delete("http://localhost:8080/location/delete/" + row.id)
+      deleteLegacyTeachArea(row.id)
         .then(res => {
-          if (res.data.code == 0) {
-            this.allLocation();
-          } else {
-            alert(res.data.message);
-          }
+          this.allLocation();
         })
         .catch(error => {});
     },

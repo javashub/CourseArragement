@@ -81,6 +81,30 @@ function normalizeCoursePageResponse(response) {
   };
 }
 
+function normalizeClassroomRecord(record = {}) {
+  return {
+    ...record,
+    classroomNo: record.classroomNo ?? record.classroomCode ?? '',
+    classroomCode: record.classroomCode ?? record.classroomNo ?? '',
+    teachbuildNo: record.teachbuildNo ?? record.buildingCode ?? '',
+    buildingCode: record.buildingCode ?? record.teachbuildNo ?? '',
+    teachbuildName: record.teachbuildName ?? record.buildingName ?? '',
+    buildingName: record.buildingName ?? record.teachbuildName ?? '',
+    capacity: record.capacity ?? record.seatCount ?? 0,
+    seatCount: record.seatCount ?? record.capacity ?? 0
+  };
+}
+
+function normalizeClassroomPageResponse(response) {
+  return {
+    ...response,
+    data: {
+      ...(response.data || {}),
+      records: (response.data?.records || []).map(normalizeClassroomRecord)
+    }
+  };
+}
+
 function buildTeacherPayload(payload = {}) {
   return {
     id: payload.id,
@@ -239,19 +263,31 @@ export function fetchNextCourseNo() {
 export function fetchClassroomPage(page = 1, limit = 10, params = {}) {
   return request.get('/resources/classrooms/page', {
     params: { pageNum: page, pageSize: limit, ...params }
-  });
+  }).then(normalizeClassroomPageResponse);
 }
 
 export function fetchClassroomDetail(id) {
-  return request.get(`/resources/classrooms/${id}`);
+  return request.get(`/resources/classrooms/${id}`).then((response) => ({
+    ...response,
+    data: normalizeClassroomRecord(response.data)
+  }));
 }
 
 export function createClassroom(payload) {
-  return request.post('/resources/classrooms', payload);
+  return request.post('/resources/classrooms', {
+    id: payload.id,
+    classroomCode: payload.classroomCode ?? payload.classroomNo ?? '',
+    classroomName: payload.classroomName ?? '',
+    buildingCode: payload.buildingCode ?? payload.teachbuildNo ?? '',
+    seatCount: Number(payload.seatCount ?? payload.capacity ?? 0) || 0,
+    roomType: payload.roomType ?? 'NORMAL',
+    status: payload.status ?? 1,
+    remark: payload.remark ?? ''
+  });
 }
 
 export function updateClassroom(payload) {
-  return request.post('/resources/classrooms', payload);
+  return createClassroom(payload);
 }
 
 export function deleteClassroom(id) {
@@ -276,6 +312,42 @@ export function fetchStudentsByClassPage(page = 1, classNo, limit = 10) {
 
 export function fetchTeachbuildList() {
   return request.get('/resources/buildings/options');
+}
+
+export function fetchLegacyTeachbuildPage(page = 1, limit = 10) {
+  return request.get(`/teachbuildinfo/list/${page}`, {
+    params: { limit }
+  });
+}
+
+export function createLegacyTeachbuild(payload) {
+  return request.post('/teachbuildinfo/add', payload);
+}
+
+export function updateLegacyTeachbuild(id, payload) {
+  return request.post(`/teachbuildinfo/modify/${id}`, payload);
+}
+
+export function deleteLegacyTeachbuild(id) {
+  return request.delete(`/teachbuildinfo/delete/${id}`);
+}
+
+export function fetchLegacyTeachbuildList() {
+  return request.get('/teachbuildinfo/list');
+}
+
+export function fetchLegacyLocationPage(page = 1, limit = 10) {
+  return request.get(`/locations/${page}`, {
+    params: { limit }
+  });
+}
+
+export function createLegacyTeachArea(payload) {
+  return request.post('/setteacharea', payload);
+}
+
+export function deleteLegacyTeachArea(id) {
+  return request.delete(`/location/delete/${id}`);
 }
 
 async function downloadExcel(url, fileName) {

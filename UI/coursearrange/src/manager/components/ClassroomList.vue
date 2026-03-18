@@ -61,6 +61,13 @@
 </template>
 
 <script>
+import {
+  createClassroom,
+  deleteClassroom,
+  fetchClassroomPage,
+  updateClassroom
+} from "@/api/modules/base";
+
 export default {
   name: "ClassroomList",
   data() {
@@ -135,78 +142,54 @@ export default {
     /**
      * 添加教室
      */
-    addClassroom(modifyData) {
-      this.$axios
-        .post("http://localhost:8080/classroom/add", modifyData)
-        .then(res => {
-          if (res.data.code == 0) {
-            this.$message({ message: "添加成功", type: "success" })
-            this.allClassroom()
-            this.visibleForm = false
-          } else {
-            this.$message.error(res.data.message)
-          }
-          
-        })
-        .catch(error => {
-          this.$message.error("更新失败")
-        });
+    async addClassroom(modifyData) {
+      try {
+        await createClassroom(modifyData)
+        this.$message({ message: "添加成功", type: "success" })
+        this.allClassroom()
+        this.visibleForm = false
+      } catch (error) {
+        this.$message.error("更新失败")
+      }
     },
 
     /**
      * 根据ID更新教室
      */
-    modifyClassroom(modifyData) {
-      this.$axios
-        .post("http://localhost:8080/modify", modifyData)
-        .then(res => {
-          if (res.data.code == 0) {
-            this.$message({ message: "更新成功", type: "success" })
-            this.allClassroom()
-            this.visibleForm = false
-          } else {
-            this.$message.error(res.data.message)
-          }
-        })
-        .catch(error => {
-          this.$message.error("更新失败")
-        });
+    async modifyClassroom(modifyData) {
+      try {
+        await updateClassroom(modifyData)
+        this.$message({ message: "更新成功", type: "success" })
+        this.allClassroom()
+        this.visibleForm = false
+      } catch (error) {
+        this.$message.error("更新失败")
+      }
     },
 
     /**
      * 根据ID删除教室
      */
-    deleteClassroomById(id) {
-      this.$axios
-        .delete("http://localhost:8080/classroom/delete/" + id)
-        .then(res => {
-          if (res.data.code == 0) {
-            this.allClassroom();
-            this.$message({message:'删除成功', type: 'success'})
-          } else {
-            this.$message.error(res.data.message)
-          }
-        })
-        .catch(error => {
-          this.$message.error("删除失败");
-        });
+    async deleteClassroomById(id) {
+      try {
+        await deleteClassroom(id)
+        this.allClassroom();
+        this.$message({message:'删除成功', type: 'success'})
+      } catch (error) {
+        this.$message.error("删除失败");
+      }
     },
 
     // 获取所有教室，带分页
-    allClassroom() {
-      this.$axios
-        .get("http://localhost:8080/classroom/" + this.page)
-        .then(res => {
-          console.log(res)
-          if (res.data.code == 0) {
-            let ret = res.data.data;
-            this.classroomData = ret.records;
-            this.total = ret.total;
-          }
-        })
-        .catch(error => {
-          console.log("查询教室失败");
-        });
+    async allClassroom() {
+      try {
+        const response = await fetchClassroomPage(this.page, this.pageSize)
+        let ret = response.data || {};
+        this.classroomData = ret.records || [];
+        this.total = ret.total || 0;
+      } catch (error) {
+        console.log("查询教室失败");
+      }
     }
   }
 };
