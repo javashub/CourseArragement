@@ -81,6 +81,15 @@
         </div>
       </div>
     </div>
+    <el-alert
+      v-if="arrangeResult.message"
+      :title="arrangeResult.message"
+      :type="arrangeResult.type"
+      :closable="true"
+      @close="clearArrangeResult"
+      show-icon
+      class="arrange-alert"
+    />
     <!-- 开课任务，等待排课的课程 -->
     <el-table
       class="ckasstask-table"
@@ -280,6 +289,10 @@ export default {
       // 当前选择的学期
       semester: "2019-2020-1",
       fileList: [],
+      arrangeResult: {
+        message: "",
+        type: "success",
+      },
       addClassTaskRules: {
         semester: [{ required: true, message: "请输入学期", trigger: "blur" }],
         gradeNo: [
@@ -340,6 +353,13 @@ export default {
       });
     },
 
+    clearArrangeResult() {
+      this.arrangeResult = {
+        message: "",
+        type: "success",
+      };
+    },
+
     // 提交添加
     async commit() {
       try {
@@ -362,9 +382,17 @@ export default {
       try {
         const response = await arrangeClassTask(this.semester);
         this.allClassTask();
+        const degraded = response?.data?.legacyCoursePlanSaved === false;
+        this.arrangeResult = {
+          message: response?.message || "排课成功",
+          type: degraded ? "warning" : "success",
+        };
         this.showRequestSuccess(response, "排课成功");
-        this.$router.push("/coursetable");
+        if (!degraded) {
+          this.$router.push("/coursetable");
+        }
       } catch (error) {
+        this.clearArrangeResult();
         this.showRequestError(error, "排课失败");
       }
     },
@@ -411,6 +439,7 @@ export default {
     handleSelectChange(val) {
       // 这里的V就是选择的学期了
       this.semester = val;
+      this.clearArrangeResult();
       this.allClassTask();
     },
 
@@ -453,6 +482,7 @@ export default {
       if (!this.semester) {
         this.classTaskData = [];
         this.total = 0;
+        this.clearArrangeResult();
         return;
       }
       try {
@@ -496,6 +526,10 @@ export default {
 .semester-select {
   float: left;
   margin-bottom: 10px;
+}
+
+.arrange-alert {
+  margin: 12px 0;
 }
 
 .tips {

@@ -49,7 +49,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     @Resource
     private ClassInfoDao classInfoDao;
     @Resource
-    private CoursePlanDao coursePlanDao;
+    private CoursePlanLegacySupport coursePlanLegacySupport;
     @Resource
     private ScheduleExecuteLogService scheduleExecuteLogService;
     @Resource
@@ -123,17 +123,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     }
 
     boolean replaceLegacyCoursePlans(String semester, List<CoursePlan> coursePlanList) {
-        try {
-            coursePlanDao.deleteBySemester(semester);
-            for (CoursePlan coursePlan : coursePlanList) {
-                coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
-                        coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
-            }
-            return true;
-        } catch (Exception exception) {
-            logLegacyCoursePlanAccessFailure("写入 legacy 课表副本失败，后续将仅使用标准课表结果", semester, exception);
-            return false;
-        }
+        return coursePlanLegacySupport.replaceCoursePlans(semester, coursePlanList);
     }
 
     private String buildSchedulingSuccessMessage(long duration, boolean legacyCoursePlanSaved) {
@@ -240,27 +230,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private boolean isMissingLegacyTaskTable(Exception exception) {
         String message = exception == null ? null : exception.getMessage();
         return message != null && message.contains("tb_class_task") && message.contains("doesn't exist");
-    }
-
-    private void logLegacyCoursePlanAccessFailure(String message, String semester, Exception exception) {
-        if (isMissingLegacyCoursePlanTable(exception)) {
-            if (semester == null || semester.isBlank()) {
-                log.warn("{}, tb_course_plan 已不存在，将继续使用标准课表链路", message);
-            } else {
-                log.warn("{}, semester={}, tb_course_plan 已不存在，将继续使用标准课表链路", message, semester);
-            }
-            return;
-        }
-        if (semester == null || semester.isBlank()) {
-            log.warn(message, exception);
-        } else {
-            log.warn(message + "，semester={}", semester, exception);
-        }
-    }
-
-    private boolean isMissingLegacyCoursePlanTable(Exception exception) {
-        String message = exception == null ? null : exception.getMessage();
-        return message != null && message.contains("tb_course_plan") && message.contains("doesn't exist");
     }
 
     @Override
