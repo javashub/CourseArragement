@@ -5,7 +5,7 @@
         <div class="eyebrow">Timetable Observer</div>
         <h1 class="hero-title">课表管理</h1>
         <p class="hero-description">
-          当前先接通按班级查看课表结果，并把课表按时间片整理成易读表格。后续教师课表、学生课表、拖拽调课会继续挂到这里。
+          当前页面只展示标准课表结果，并把课表按时间片整理成易读表格。legacy tb_course_plan 不再作为这里的查询回退来源。
         </p>
       </div>
       <div class="hero-actions">
@@ -85,7 +85,7 @@
         <div class="card-head">
           <div>
             <div class="card-title">{{ viewMode === 'class' ? '班级课表' : '教师课表' }}</div>
-            <div class="card-caption">当前先按旧排课算法的 01-25 时间片规则，映射成周一到周五、每天五节课的课表视图。</div>
+            <div class="card-caption">当前按标准课表结果的 01-25 时间片规则，映射成周一到周五、每天五节课的课表视图。</div>
           </div>
           <div class="header-tags">
             <el-tag v-if="canDragAdjust" type="warning" effect="plain">管理员可拖拽调课</el-tag>
@@ -105,7 +105,7 @@
       />
 
       <el-empty v-if="!currentTarget && !loading" :description="viewMode === 'class' ? '请先选择班级，再查看课表' : '请先选择教师，再查看课表'" />
-      <el-empty v-else-if="currentTarget && !planList.length && !loading" :description="viewMode === 'class' ? '当前班级还没有生成课表' : '当前教师还没有生成课表'" />
+      <el-empty v-else-if="currentTarget && !planList.length && !loading" :description="viewMode === 'class' ? '当前班级还没有生成标准课表' : '当前教师还没有生成标准课表'" />
 
       <div v-else class="timetable-grid">
         <div class="grid-head time-head">节次</div>

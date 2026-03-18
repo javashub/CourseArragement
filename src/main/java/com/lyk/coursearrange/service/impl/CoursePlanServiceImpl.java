@@ -5,11 +5,8 @@ import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.entity.CourseInfo;
 import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.CoursePlan;
-import com.lyk.coursearrange.dao.CoursePlanDao;
-import com.lyk.coursearrange.entity.Teacher;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.lyk.coursearrange.entity.response.CoursePlanVo;
 import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
@@ -17,23 +14,22 @@ import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchScheduleResultService;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.service.CoursePlanAdjustLogService;
-import com.lyk.coursearrange.service.CourseInfoService;
 import com.lyk.coursearrange.service.CoursePlanService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.lyk.coursearrange.service.TeacherService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
+import com.lyk.coursearrange.resource.entity.ResClassroom;
+import com.lyk.coursearrange.resource.service.ResClassroomService;
 import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -43,14 +39,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan> implements CoursePlanService {
+public class CoursePlanServiceImpl implements CoursePlanService {
 
-    @Resource
-    private CourseInfoService courseInfoService;
-    @Resource
-    private TeacherService teacherService;
-    @Resource
-    private CoursePlanDao coursePlanDao;
     @Resource
     private CoursePlanAdjustLogService coursePlanAdjustLogService;
     @Resource
@@ -61,6 +51,10 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
     private SchScheduleResultService schScheduleResultService;
     @Resource
     private SchTaskService schTaskService;
+    @Resource
+    private ResClassroomService resClassroomService;
+    @Resource
+    private CoursePlanLegacySupport coursePlanLegacySupport;
 
     /**
      * 根据班级编号查询课表
@@ -72,9 +66,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         if (!standardPlans.isEmpty()) {
             return ServerResponse.ofSuccess(standardPlans);
         }
-        List<CoursePlan> coursePlanList = listLegacyPlansByClassNo(classNo, semester);
-
-        return buildCoursePlanResponse(coursePlanList, "该班级没有课表");
+        return ServerResponse.ofError("该班级没有课表");
     }
 
     @Override
@@ -83,9 +75,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         if (!standardPlans.isEmpty()) {
             return ServerResponse.ofSuccess(standardPlans);
         }
-        List<CoursePlan> coursePlanList = listLegacyPlansByTeacherNo(teacherNo, semester);
-
-        return buildCoursePlanResponse(coursePlanList, "该教师没有课表");
+        return ServerResponse.ofError("该教师没有课表");
     }
 
     @Override
@@ -93,14 +83,14 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         if (request.getStandardResultId() != null) {
             return adjustStandardCoursePlan(request);
         }
-        CoursePlan coursePlan = getLegacyPlanById(request.getId());
-        if (coursePlan == null && request.getId() != null) {
+        if (request.getId() != null) {
             SchScheduleResult standardResult = schScheduleResultService.getById(request.getId().longValue());
             if (standardResult != null) {
                 request.setStandardResultId(standardResult.getId());
                 return adjustStandardCoursePlan(request);
             }
         }
+        CoursePlan coursePlan = coursePlanLegacySupport.getById(request.getId());
         if (coursePlan == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "课表记录不存在");
         }
@@ -119,7 +109,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         }
         coursePlan.setClassTime(targetClassTime);
         coursePlan.setClassroomNo(targetClassroomNo);
-        boolean updated = updateLegacyPlanById(coursePlan);
+        boolean updated = coursePlanLegacySupport.updateById(coursePlan);
         if (updated) {
             scheduleLogMirrorService.syncAdjustedPlan(coursePlan, beforeClassTime);
             saveAdjustLog(coursePlan, beforeClassTime, beforeClassroomNo, targetClassTime, targetClassroomNo);
@@ -170,7 +160,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
             if (request.getClassroomNo() != null && !request.getClassroomNo().isBlank()) {
                 legacyPlan.setClassroomNo(request.getClassroomNo());
             }
-            updateLegacyPlanById(legacyPlan);
+            coursePlanLegacySupport.updateById(legacyPlan);
         }
         saveAdjustLog(result, taskMeta, beforeWeekdayNo, beforePeriodNo, afterWeekdayNo, afterPeriodNo, legacyPlan);
         return ServerResponse.ofSuccess("调课成功");
@@ -179,20 +169,20 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
     private String validateAdjustConflict(CoursePlan currentPlan, String targetClassTime, String targetClassroomNo) {
         LambdaQueryWrapper<CoursePlan> classWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
                 .eq(CoursePlan::getClassNo, currentPlan.getClassNo());
-        if (countLegacyPlans(classWrapper) > 0) {
+        if (coursePlanLegacySupport.count(classWrapper) > 0) {
             return "目标时间片已存在同班级课程，不能调课";
         }
 
         LambdaQueryWrapper<CoursePlan> teacherWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
                 .eq(CoursePlan::getTeacherNo, currentPlan.getTeacherNo());
-        if (countLegacyPlans(teacherWrapper) > 0) {
+        if (coursePlanLegacySupport.count(teacherWrapper) > 0) {
             return "目标时间片教师已有其他课程，不能调课";
         }
 
         if (targetClassroomNo != null && !targetClassroomNo.isBlank()) {
             LambdaQueryWrapper<CoursePlan> classroomWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
                     .eq(CoursePlan::getClassroomNo, targetClassroomNo);
-            if (countLegacyPlans(classroomWrapper) > 0) {
+            if (coursePlanLegacySupport.count(classroomWrapper) > 0) {
                 return "目标时间片教室已被占用，不能调课";
             }
         }
@@ -209,6 +199,37 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
                 .orderByDesc(CoursePlanAdjustLog::getCreateTime)
                 .last("limit " + (limit == null || limit <= 0 ? 10 : limit));
         return coursePlanAdjustLogService.list(wrapper);
+    }
+
+    @Override
+    public List<String> listOccupiedClassroomNos(String teachbuildNo) {
+        try {
+            List<SchScheduleResult> standardResults = schScheduleResultService.list(new LambdaQueryWrapper<SchScheduleResult>()
+                    .eq(SchScheduleResult::getDeleted, 0)
+                    .isNotNull(SchScheduleResult::getClassroomId));
+            if (!standardResults.isEmpty()) {
+                List<Long> classroomIds = standardResults.stream()
+                        .map(SchScheduleResult::getClassroomId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
+                if (classroomIds.isEmpty()) {
+                    return List.of();
+                }
+                return resClassroomService.listByIds(classroomIds).stream()
+                        .map(ResClassroom::getClassroomCode)
+                        .filter(code -> code != null && code.startsWith(teachbuildNo))
+                        .distinct()
+                        .toList();
+            }
+        } catch (Exception exception) {
+            log.warn("查询标准课表占用教室失败，将回退 legacy 副本，teachbuildNo={}", teachbuildNo, exception);
+        }
+        return coursePlanLegacySupport.listAll().stream()
+                .map(CoursePlan::getClassroomNo)
+                .filter(code -> code != null && code.startsWith(teachbuildNo))
+                .distinct()
+                .toList();
     }
 
     private LambdaQueryWrapper<CoursePlan> buildAdjustConflictWrapper(CoursePlan currentPlan, String targetClassTime) {
@@ -336,38 +357,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
                 .eq(CoursePlan::getTeacherNo, taskMeta.getOrDefault("teacherNo", ""))
                 .eq(beforeWeekdayNo != null && beforePeriodNo != null, CoursePlan::getClassTime, toLegacyClassTime(beforeWeekdayNo, beforePeriodNo))
                 .last("limit 1");
-        return getLegacyPlan(wrapper);
-    }
-
-    private ServerResponse buildCoursePlanResponse(List<CoursePlan> coursePlanList, String emptyMessage) {
-
-        if (null == coursePlanList || coursePlanList.isEmpty()) {
-            return ServerResponse.ofError(emptyMessage);
-        }
-
-        // 过滤出教师编号
-        List<String> teacherNos = coursePlanList.stream().map(CoursePlan::getTeacherNo).distinct().collect(Collectors.toList());
-        // 过滤出课程编号
-        List<String> courseNos = coursePlanList.stream().map(CoursePlan::getCourseNo).distinct().collect(Collectors.toList());
-
-        // 查询教师信息
-        List<Teacher> teachers = teacherService.list(new LambdaQueryWrapper<Teacher>().in(Teacher::getTeacherNo, teacherNos));
-        // 查询课程信息
-        List<CourseInfo> courseInfos = courseInfoService.list(new LambdaQueryWrapper<CourseInfo>().in(CourseInfo::getCourseNo, courseNos));
-
-        List<CoursePlanVo> coursePlanVos = new LinkedList<>();
-        coursePlanList.forEach(v -> {
-            // v 转换成 CoursePlanVo 对象
-            CoursePlanVo coursePlanVo = new CoursePlanVo();
-            BeanUtils.copyProperties(v, coursePlanVo);
-
-            // 根据教师编号找到教师名称
-            teachers.stream().filter(t -> t.getTeacherNo().equals(v.getTeacherNo())).findFirst().ifPresent(t -> coursePlanVo.setRealname(t.getRealname()));
-            courseInfos.stream().filter(c -> c.getCourseNo().equals(v.getCourseNo())).findFirst().ifPresent(c -> coursePlanVo.setCourseName(c.getCourseName()));
-            coursePlanVos.add(coursePlanVo);
-        });
-
-        return ServerResponse.ofSuccess(coursePlanVos);
+        return coursePlanLegacySupport.getOne(wrapper);
     }
 
     private List<CoursePlanVo> listStandardPlans(String semester, String classNo, String teacherNo) {
@@ -393,15 +383,29 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         for (SchTask task : tasks) {
             taskMap.put(task.getId(), task);
         }
+        Map<Long, String> classroomCodeMap = buildClassroomCodeMap(results);
         return results.stream()
-                .map(item -> buildStandardPlanVo(item, taskMap.get(item.getTaskId())))
+                .map(item -> buildStandardPlanVo(item, taskMap.get(item.getTaskId()), classroomCodeMap))
                 .filter(item -> item != null)
                 .filter(item -> classNo == null || classNo.isBlank() || classNo.equals(item.getClassNo()))
                 .filter(item -> teacherNo == null || teacherNo.isBlank() || teacherNo.equals(item.getTeacherNo()))
                 .toList();
     }
 
-    private CoursePlanVo buildStandardPlanVo(SchScheduleResult result, SchTask task) {
+    private Map<Long, String> buildClassroomCodeMap(List<SchScheduleResult> results) {
+        List<Long> classroomIds = results.stream()
+                .map(SchScheduleResult::getClassroomId)
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+        if (classroomIds.isEmpty()) {
+            return Map.of();
+        }
+        return resClassroomService.listByIds(classroomIds).stream()
+                .collect(Collectors.toMap(ResClassroom::getId, ResClassroom::getClassroomCode, (left, right) -> left));
+    }
+
+    private CoursePlanVo buildStandardPlanVo(SchScheduleResult result, SchTask task, Map<Long, String> classroomCodeMap) {
         if (task == null) {
             return null;
         }
@@ -421,7 +425,7 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         vo.setCourseName(courseName);
         vo.setRealname(teacherName);
         vo.setGradeNo(taskMeta.getOrDefault("gradeNo", ""));
-        vo.setClassroomNo(result.getClassroomId() == null || result.getClassroomId() == 0 ? "" : String.valueOf(result.getClassroomId()));
+        vo.setClassroomNo(classroomCodeMap.getOrDefault(result.getClassroomId(), ""));
         vo.setClassTime(toLegacyClassTime(result.getWeekdayNo(), result.getPeriodNo()));
         return vo;
     }
@@ -445,71 +449,4 @@ public class CoursePlanServiceImpl extends ServiceImpl<CoursePlanDao, CoursePlan
         return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
     }
 
-    private List<CoursePlan> listLegacyPlansByClassNo(String classNo, String semester) {
-        try {
-            LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<CoursePlan>()
-                    .eq(CoursePlan::getClassNo, classNo)
-                    .orderByAsc(CoursePlan::getClassTime);
-            wrapper.eq(semester != null && !semester.isBlank(), CoursePlan::getSemester, semester);
-            return coursePlanDao.selectList(wrapper);
-        } catch (Exception exception) {
-            log.warn("查询 legacy 班级课表失败，将返回标准课表结果或空数据，classNo={}, semester={}", classNo, semester, exception);
-            return List.of();
-        }
-    }
-
-    private List<CoursePlan> listLegacyPlansByTeacherNo(String teacherNo, String semester) {
-        try {
-            LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<CoursePlan>()
-                    .eq(CoursePlan::getTeacherNo, teacherNo)
-                    .orderByAsc(CoursePlan::getClassTime);
-            wrapper.eq(semester != null && !semester.isBlank(), CoursePlan::getSemester, semester);
-            return coursePlanDao.selectList(wrapper);
-        } catch (Exception exception) {
-            log.warn("查询 legacy 教师课表失败，将返回标准课表结果或空数据，teacherNo={}, semester={}", teacherNo, semester, exception);
-            return List.of();
-        }
-    }
-
-    private CoursePlan getLegacyPlanById(Integer id) {
-        if (id == null) {
-            return null;
-        }
-        try {
-            return getById(id);
-        } catch (Exception exception) {
-            log.warn("查询 legacy 课表记录失败，id={}", id, exception);
-            return null;
-        }
-    }
-
-    private boolean updateLegacyPlanById(CoursePlan plan) {
-        if (plan == null) {
-            return false;
-        }
-        try {
-            return updateById(plan);
-        } catch (Exception exception) {
-            log.warn("更新 legacy 课表副本失败，id={}", plan.getId(), exception);
-            return false;
-        }
-    }
-
-    private long countLegacyPlans(LambdaQueryWrapper<CoursePlan> wrapper) {
-        try {
-            return count(wrapper);
-        } catch (Exception exception) {
-            log.warn("统计 legacy 课表冲突失败，将忽略 legacy 冲突检测", exception);
-            return 0;
-        }
-    }
-
-    private CoursePlan getLegacyPlan(LambdaQueryWrapper<CoursePlan> wrapper) {
-        try {
-            return getOne(wrapper, false);
-        } catch (Exception exception) {
-            log.warn("查询 legacy 课表副本失败", exception);
-            return null;
-        }
-    }
 }
