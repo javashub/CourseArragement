@@ -246,6 +246,7 @@ import {
   fetchSemesterList,
   uploadClassTaskExcel
 } from "@/api/modules/course";
+import { getErrorMessage } from "@/utils/http";
 
 export default {
   name: "ClassTaskList",
@@ -327,6 +328,10 @@ export default {
   },
 
   methods: {
+    showRequestError(error, fallback) {
+      this.$message.error(getErrorMessage(error, fallback));
+    },
+
     // 提交添加
     async commit() {
       try {
@@ -334,7 +339,9 @@ export default {
         this.allClassTask();
         this.visible = false;
         this.$message({ message: "添加课程任务成功！", type: "success" });
-      } catch (error) {}
+      } catch (error) {
+        this.showRequestError(error, "添加课程任务失败");
+      }
     },
 
     // 手动添加课程任务
@@ -350,7 +357,7 @@ export default {
         this.$message({ message: "排课成功", type: "success" });
         this.$router.push("/coursetable");
       } catch (error) {
-        this.$message.error("排课失败");
+        this.showRequestError(error, "排课失败");
       }
     },
 
@@ -359,7 +366,7 @@ export default {
       try {
         await downloadClassTaskTemplate();
       } catch (error) {
-        this.$message.error("模板下载失败");
+        this.showRequestError(error, "模板下载失败");
       }
     },
 
@@ -374,7 +381,7 @@ export default {
 
     handleError(error, file, fileList) {
       this.loading = false;
-      alert("文件上传失败" + error);
+      this.showRequestError(error, "文件上传失败");
     },
 
     async handleUploadRequest(option) {
@@ -427,7 +434,7 @@ export default {
           this.allClassTask();
         }
       } catch (error) {
-        console.log("查询学期失败");
+        this.showRequestError(error, "查询学期失败");
       }
     },
 
@@ -449,7 +456,7 @@ export default {
           this.$message({ message: "查询不到开课任务", type: "success" });
         }
       } catch (error) {
-        this.$message.error("查询开课任务失败");
+        this.showRequestError(error, "查询开课任务失败");
       }
     },
 
@@ -466,7 +473,7 @@ export default {
         this.allClassTask();
         this.$message({ message: "删除成功", type: "success" });
       } catch (error) {
-        this.$message.error("删除失败");
+        this.showRequestError(error, "删除失败");
       }
     },
   },

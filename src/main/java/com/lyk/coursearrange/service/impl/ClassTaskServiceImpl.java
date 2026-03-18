@@ -126,7 +126,13 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         if (semester == null || semester.isBlank()) {
             return;
         }
-        long legacyCount = count(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
+        long legacyCount;
+        try {
+            legacyCount = count(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
+        } catch (Exception exception) {
+            logLegacyTaskAccessFailure("检查 legacy 排课任务失败，后续仅使用标准任务执行", semester, exception);
+            return;
+        }
         if (legacyCount > 0) {
             return;
         }
@@ -149,7 +155,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             saveBatch(legacyTasks);
             log.info("标准排课任务已回填到旧任务表，semester={}, count={}", semester, legacyTasks.size());
         } catch (Exception exception) {
-            log.warn("回填 legacy 排课任务失败，后续仅使用标准任务执行，semester={}", semester, exception);
+            logLegacyTaskAccessFailure("回填 legacy 排课任务失败，后续仅使用标准任务执行", semester, exception);
         }
     }
 
@@ -174,7 +180,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         try {
             return classTaskDao.selectList(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
         } catch (Exception exception) {
-            log.warn("查询 legacy 排课任务失败，将仅使用标准任务，semester={}", semester, exception);
+            logLegacyTaskAccessFailure("查询 legacy 排课任务失败，将仅使用标准任务", semester, exception);
             return List.of();
         }
     }
@@ -188,9 +194,30 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         try {
             return count();
         } catch (Exception exception) {
-            log.warn("统计 legacy 排课任务失败，将返回标准任务统计结果 0", exception);
+            logLegacyTaskAccessFailure("统计 legacy 排课任务失败，将返回标准任务统计结果 0", null, exception);
             return 0;
         }
+    }
+
+    private void logLegacyTaskAccessFailure(String message, String semester, Exception exception) {
+        if (isMissingLegacyTaskTable(exception)) {
+            if (semester == null || semester.isBlank()) {
+                log.warn("{}, tb_class_task 已不存在，将继续使用标准任务链路", message);
+            } else {
+                log.warn("{}, semester={}, tb_class_task 已不存在，将继续使用标准任务链路", message, semester);
+            }
+            return;
+        }
+        if (semester == null || semester.isBlank()) {
+            log.warn(message, exception);
+        } else {
+            log.warn(message + "，semester={}", semester, exception);
+        }
+    }
+
+    private boolean isMissingLegacyTaskTable(Exception exception) {
+        String message = exception == null ? null : exception.getMessage();
+        return message != null && message.contains("tb_class_task") && message.contains("doesn't exist");
     }
 
     @Override
