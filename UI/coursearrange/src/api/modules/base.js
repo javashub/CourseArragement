@@ -258,6 +258,22 @@ export function deleteClassroom(id) {
   return request.delete(`/resources/classrooms/${id}`);
 }
 
+export function fetchLegacyClassInfoPage(page = 1, limit = 10, gradeNo = '') {
+  return request.get(`/queryclassinfo/${page}`, {
+    params: { limit, gradeNo }
+  });
+}
+
+export function createLegacyClassInfo(payload) {
+  return request.post('/addclassinfo', payload);
+}
+
+export function fetchStudentsByClassPage(page = 1, classNo, limit = 10) {
+  return request.get(`/student-class/${page}/${classNo}`, {
+    params: { limit }
+  }).then(normalizeStudentPageResponse);
+}
+
 export function fetchTeachbuildList() {
   return request.get('/resources/buildings/options');
 }

@@ -96,6 +96,15 @@
 </template>
 
 <script>
+import {
+  deleteStudent,
+  fetchStudentPage,
+  fetchStudentsByClassPage,
+  searchStudentPage,
+  updateStudent
+} from "@/api/modules/base";
+import { fetchClassOptions } from "@/api/modules/course";
+
 export default {
   name: "StudentList",
   data() {
@@ -156,46 +165,34 @@ export default {
 
     // 清空班级回到查询所有班级
     classListener() {
-
+      this.value2 = ''
+      this.allStudent()
     },
 
     // 查询班级信息
-    queryClass() {
-      this.$axios
-        .get("http://localhost:8080/class-grade/" + this.value1)
-        .then(res => {
-          let ret = res.data.data
-          this.classNo.splice(0, this.classNo.length)
-          this.value2 = ""
-          ret.map(v => {
-            this.classNo.push({
-              value: v.classNo,
-              label: v.className
-            });
+    async queryClass() {
+      try {
+        const response = await fetchClassOptions(this.value1)
+        let ret = response.data || []
+        this.classNo.splice(0, this.classNo.length)
+        this.value2 = ""
+        ret.forEach(v => {
+          this.classNo.push({
+            value: v.classNo,
+            label: v.className || v.classNo
           });
-        })
-        .catch(error => {
-          
         });
+      } catch (error) {}
     },
 
     // 根据班级查询学生信息
-    queryStudentByClass() {
-      this.$axios
-        .get(
-          "http://localhost:8080/student-class/" + this.page + "/" + this.value2
-        )
-        .then(res => {
-          console.log(res)
-          if (res.data.code == 0) {
-            let ret = res.data.data
-            this.studentData = ret.records
-            this.total = ret.total
-          }
-        })
-        .catch(error => {
-
-        });
+    async queryStudentByClass() {
+      try {
+        const response = await fetchStudentsByClassPage(this.page, this.value2, this.pageSize)
+        let ret = response.data || {}
+        this.studentData = ret.records || []
+        this.total = ret.total || 0
+      } catch (error) {}
     },
 
     /***
@@ -212,35 +209,30 @@ export default {
     /**
      * 查询所有学生
      */
-    allStudent() {
-      this.$axios
-        .get("http://localhost:8080/student/students/" + this.page)
-        .then(res => {
-          let ret = res.data.data
-          this.studentData = ret.records
-          this.total = ret.total
-          // this.$message({message:'查询成功', type: 'success'})
-        })
-        .catch(error => {
-          this.$message.error("查询学生列表失败")
-        });
+    async allStudent() {
+      try {
+        const response = await fetchStudentPage(this.page, this.pageSize)
+        let ret = response.data || {}
+        this.studentData = ret.records || []
+        this.total = ret.total || 0
+      } catch (error) {
+        this.$message.error("查询学生列表失败")
+      }
     },
 
     /**
      * 关键字查询学生
      */
-    searchStudent() {
-      this.$axios
-        .get("http://localhost:8080/student/search/" + this.keyword)
-        .then(res => {
-          let ret = res.data.data
-          this.studentData = ret.records
-          this.total = ret.total
-          this.$message({ message: "查询成功", type: "success" })
-        })
-        .catch(error => {
-          this.$message.error("查询失败")
-        });
+    async searchStudent() {
+      try {
+        const response = await searchStudentPage(this.keyword, this.page, this.pageSize)
+        let ret = response.data || {}
+        this.studentData = ret.records || []
+        this.total = ret.total || 0
+        this.$message({ message: "查询成功", type: "success" })
+      } catch (error) {
+        this.$message.error("查询失败")
+      }
     },
 
     /**
@@ -250,16 +242,14 @@ export default {
       this.deleteStudentById(row.id)
     },
 
-    deleteStudentById(id) {
-      this.$axios
-        .delete("http://localhost:8080/student/delete/" + id)
-        .then(res => {
-          this.$message({ message: "删除成功", type: "success" })
-          this.allStudent()
-        })
-        .catch(error => {
-          this.$message.error("删除失败")
-        });
+    async deleteStudentById(id) {
+      try {
+        await deleteStudent(id)
+        this.$message({ message: "删除成功", type: "success" })
+        this.allStudent()
+      } catch (error) {
+        this.$message.error("删除失败")
+      }
     },
 
     /**
@@ -274,17 +264,15 @@ export default {
     /**
      * 更新学生
      */
-    modifyStudent(modifyData) {
-      this.$axios
-        .post("http://localhost:8080/student/modify/" + this.editFormData.id, modifyData)
-        .then(res => {
-          this.$message({ message: "更新成功", type: "success" })
-          this.allStudent()
-          this.visibleForm = false
-        })
-        .catch(error => {
-          this.$message.error("更新失败")
-        });
+    async modifyStudent(modifyData) {
+      try {
+        await updateStudent(this.editFormData.id, modifyData)
+        this.$message({ message: "更新成功", type: "success" })
+        this.allStudent()
+        this.visibleForm = false
+      } catch (error) {
+        this.$message.error("更新失败")
+      }
     },
 
     handleSizeChange() {},

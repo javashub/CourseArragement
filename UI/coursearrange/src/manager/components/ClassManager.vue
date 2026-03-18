@@ -85,6 +85,8 @@
 </template>
 
 <script>
+import { fetchTeacherPage, createLegacyClassInfo, fetchLegacyClassInfoPage } from "@/api/modules/base";
+
 export default {
   name: "ClassManager",
   data() {
@@ -131,21 +133,20 @@ export default {
   },
   methods: {
     // 提交添加班级
-    commit() {
-      this.$axios.post("http://localhost:8080/addclassinfo", this.addClassData)
-      .then(res => {
-        if (res.data.code == 0) {
-          this.allClassInfo()
-          this.$message({message: "添加班级成功", type: "success"})
-          this.visible = false
-          this.addClassData = []
-        } else {
-          alert(res.data.message)
+    async commit() {
+      try {
+        await createLegacyClassInfo(this.addClassData)
+        this.allClassInfo()
+        this.$message({message: "添加班级成功", type: "success"})
+        this.visible = false
+        this.addClassData = {
+          gradeNo: '',
+          num: 0,
+          id: ''
         }
-      })
-      .catch(error => {
+      } catch (error) {
         this.$message.error("添加班级失败")
-      })
+      }
     },
 
     addClass() {
@@ -154,25 +155,19 @@ export default {
     },
 
     // 查询所有讲师
-    allTeacher() {
-      this.$axios.get("http://localhost:8080/teacher/all")
-      .then(res => {
-        console.log(res)
-        if (res.data.code == 0) {
-          let ret = res.data.data
-          this.teacher.splice(0, this.teacher.length)
-          this.value2 = ''
-          ret.map(v => {
-            this.teacher.push({
-              value: v.id,
-              label: v.realname
-            })
+    async allTeacher() {
+      try {
+        const response = await fetchTeacherPage(1, 100)
+        let ret = response.data?.records || []
+        this.teacher.splice(0, this.teacher.length)
+        this.value2 = ''
+        ret.forEach(v => {
+          this.teacher.push({
+            value: v.id,
+            label: v.realname
           })
-        } else {
-          this.$message.error(res.data.message)
-        }
-      })
-      .catch(error => {})
+        })
+      } catch (error) {}
     },
 
     handleSizeChange() {},
@@ -183,36 +178,23 @@ export default {
     },
 
     // 根据年级查询班级
-    queryClassByGrade() {
-      this.$axios
-        .get(
-          "http://localhost:8080/queryclassinfo/" +
-            this.page +
-            "?gradeNo=" +
-            this.value1
-        )
-        .then(res => {
-          if (res.data.code == 0) {
-            let ret = res.data.data;
-            this.classInfoData = ret.records;
-            this.total = ret.total;
-          }
-        })
-        .catch(error => {});
+    async queryClassByGrade() {
+      try {
+        const response = await fetchLegacyClassInfoPage(this.page, this.pageSize, this.value1)
+        let ret = response.data || {};
+        this.classInfoData = ret.records || [];
+        this.total = ret.total || 0;
+      } catch (error) {}
     },
 
     // 分页查询所有班级
-    allClassInfo() {
-      this.$axios
-        .get("http://localhost:8080/queryclassinfo/" + this.page)
-        .then(res => {
-          if (res.data.code == 0) {
-            let ret = res.data.data;
-            this.classInfoData = ret.records;
-            this.total = ret.total;
-          }
-        })
-        .catch(error => {});
+    async allClassInfo() {
+      try {
+        const response = await fetchLegacyClassInfoPage(this.page, this.pageSize)
+        let ret = response.data || {};
+        this.classInfoData = ret.records || [];
+        this.total = ret.total || 0;
+      } catch (error) {}
     },
 
     // 清除年级后重新查询所有班级
