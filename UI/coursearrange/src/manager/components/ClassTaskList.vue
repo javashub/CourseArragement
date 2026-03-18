@@ -332,13 +332,20 @@ export default {
       this.$message.error(getErrorMessage(error, fallback));
     },
 
+    showRequestSuccess(response, fallback) {
+      this.$message({
+        message: response?.message || fallback,
+        type: "success",
+      });
+    },
+
     // 提交添加
     async commit() {
       try {
-        await createClassTask(this.addClassTaskForm);
+        const response = await createClassTask(this.addClassTaskForm);
         this.allClassTask();
         this.visible = false;
-        this.$message({ message: "添加课程任务成功！", type: "success" });
+        this.showRequestSuccess(response, "添加课程任务成功！");
       } catch (error) {
         this.showRequestError(error, "添加课程任务失败");
       }
@@ -352,9 +359,9 @@ export default {
     // 点击开始提交学期到系统后台排课
     async arrangeCourse() {
       try {
-        await arrangeClassTask(this.semester);
+        const response = await arrangeClassTask(this.semester);
         this.allClassTask();
-        this.$message({ message: "排课成功", type: "success" });
+        this.showRequestSuccess(response, "排课成功");
         this.$router.push("/coursetable");
       } catch (error) {
         this.showRequestError(error, "排课失败");
@@ -374,7 +381,7 @@ export default {
     uploadSuccess(response, file, fileList) {
       this.loading = false;
       this.allClassTask();
-      this.$message({ message: "上传成功", type: "success" });
+      this.showRequestSuccess(response, "上传成功");
     },
 
     handleRemove(file, fileList) {},
@@ -471,7 +478,7 @@ export default {
           await deleteClassTask(row.id);
         }
         this.allClassTask();
-        this.$message({ message: "删除成功", type: "success" });
+        this.showRequestSuccess(null, "删除成功");
       } catch (error) {
         this.showRequestError(error, "删除失败");
       }

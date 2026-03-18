@@ -99,26 +99,39 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             // 8、优先写入标准课表结果，旧 tb_course_plan 仅作为兼容副本保留
             scheduleLogMirrorService.replaceScheduleResults(semester, classTaskList, coursePlanList);
             // 9、写入 tb_course_plan 兼容旧查询与旧接口。后续删除旧表后，这里允许降级失败。
-            try {
-                coursePlanDao.deleteBySemester(semester);
-                for (CoursePlan coursePlan : coursePlanList) {
-                    coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
-                            coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
-                }
-            } catch (Exception exception) {
-                log.warn("写入 legacy 课表副本失败，后续将仅使用标准课表结果，semester={}", semester, exception);
-            }
+            boolean legacyCoursePlanSaved = replaceLegacyCoursePlans(semester, coursePlanList);
             long duration = System.currentTimeMillis() - start;
             log.info("完成排课,耗时：{}", duration);
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
                     String.format("排课成功，生成 %s 条课表记录", coursePlanList.size()));
-            return ServerResponse.ofSuccess(String.format("排课成功，耗时：%sms", duration));
+            return ServerResponse.ofSuccess(buildSchedulingSuccessMessage(duration, legacyCoursePlanSaved));
         } catch (BusinessException exception) {
             throw exception;
         } catch (Exception e) {
             log.error("排课失败： {}", e.getMessage(), e);
             throw buildSchedulingException(start, semester, taskCount, buildExecuteErrorMessage(e), ResultCode.BUSINESS_ERROR);
         }
+    }
+
+    boolean replaceLegacyCoursePlans(String semester, List<CoursePlan> coursePlanList) {
+        try {
+            coursePlanDao.deleteBySemester(semester);
+            for (CoursePlan coursePlan : coursePlanList) {
+                coursePlanDao.insertCoursePlan(coursePlan.getGradeNo(), coursePlan.getClassNo(), coursePlan.getCourseNo(),
+                        coursePlan.getTeacherNo(), coursePlan.getClassroomNo(), coursePlan.getClassTime(), semester);
+            }
+            return true;
+        } catch (Exception exception) {
+            logLegacyCoursePlanAccessFailure("写入 legacy 课表副本失败，后续将仅使用标准课表结果", semester, exception);
+            return false;
+        }
+    }
+
+    private String buildSchedulingSuccessMessage(long duration, boolean legacyCoursePlanSaved) {
+        if (legacyCoursePlanSaved) {
+            return String.format("排课成功，耗时：%sms", duration);
+        }
+        return String.format("排课成功，标准课表已生成，legacy 课表副本未写入，耗时：%sms", duration);
     }
 
     @Override
@@ -218,6 +231,27 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     private boolean isMissingLegacyTaskTable(Exception exception) {
         String message = exception == null ? null : exception.getMessage();
         return message != null && message.contains("tb_class_task") && message.contains("doesn't exist");
+    }
+
+    private void logLegacyCoursePlanAccessFailure(String message, String semester, Exception exception) {
+        if (isMissingLegacyCoursePlanTable(exception)) {
+            if (semester == null || semester.isBlank()) {
+                log.warn("{}, tb_course_plan 已不存在，将继续使用标准课表链路", message);
+            } else {
+                log.warn("{}, semester={}, tb_course_plan 已不存在，将继续使用标准课表链路", message, semester);
+            }
+            return;
+        }
+        if (semester == null || semester.isBlank()) {
+            log.warn(message, exception);
+        } else {
+            log.warn(message + "，semester={}", semester, exception);
+        }
+    }
+
+    private boolean isMissingLegacyCoursePlanTable(Exception exception) {
+        String message = exception == null ? null : exception.getMessage();
+        return message != null && message.contains("tb_course_plan") && message.contains("doesn't exist");
     }
 
     @Override
