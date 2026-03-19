@@ -1,9 +1,12 @@
 <template>
   <div class="layout-wrapper">
     <aside class="layout-sider">
+      <div class="sider-glow"></div>
       <div class="brand">
+        <div class="brand-kicker">Academic Control Ledger</div>
         <div class="brand-title">课程排课系统</div>
-        <div class="brand-subtitle">RBAC3 + 多校区 + 多学段</div>
+        <div class="brand-subtitle">排课、权限、组织与配置已经进入统一主链</div>
+        <div class="brand-badge">RBAC3 + 多校区 + 多学段</div>
       </div>
       <el-menu :default-active="activeMenu" router class="layout-menu" background-color="transparent" text-color="#d0d9e8" active-text-color="#ffffff">
         <template v-for="menu in visibleMenus" :key="menu.id || menu.menuCode">
@@ -30,13 +33,17 @@
     </aside>
     <div class="layout-main">
       <header class="layout-header">
+        <div class="header-ribbon">Course Arrange Rebuild</div>
         <div class="header-user">
           <div class="header-name">{{ authStore.displayName }}</div>
           <div class="header-subtitle">
             {{ authStore.user?.userType || 'GUEST' }} · 已接入后端菜单与权限上下文
           </div>
         </div>
-        <el-button type="primary" plain @click="handleLogout">退出登录</el-button>
+        <div class="header-actions">
+          <div class="header-chip">Live Permission Context</div>
+          <el-button type="primary" plain @click="handleLogout">退出登录</el-button>
+        </div>
       </header>
       <main class="layout-content">
         <router-view />
@@ -116,54 +123,117 @@ function sortMenus(a, b) {
 }
 
 .layout-sider {
+  position: relative;
   width: 240px;
   background:
-    radial-gradient(circle at top, rgb(54 84 135 / 45%), transparent 35%),
-    linear-gradient(180deg, #0f172a 0%, #132238 56%, #182c49 100%);
+    radial-gradient(circle at top, rgb(232 211 181 / 0.14), transparent 32%),
+    linear-gradient(180deg, #102636 0%, #17384d 48%, #1d3143 100%);
   color: #fff;
+  box-shadow: 24px 0 50px rgb(16 24 40 / 0.18);
+}
+
+.sider-glow {
+  position: absolute;
+  inset: 18px 18px auto;
+  height: 120px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgb(184 135 70 / 0.32), rgb(184 135 70 / 0));
+  filter: blur(12px);
+  pointer-events: none;
 }
 
 .brand {
-  padding: 28px 24px 20px;
+  position: relative;
+  padding: 34px 24px 24px;
+}
+
+.brand-kicker {
+  color: rgb(232 211 181 / 0.84);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
 }
 
 .brand-title {
-  font-size: 20px;
+  margin-top: 10px;
+  font-family: 'Iowan Old Style', 'Baskerville', 'Songti SC', serif;
+  font-size: 28px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
 }
 
 .brand-subtitle {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #94a3b8;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: rgb(214 224 232 / 0.8);
+}
+
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 16px;
+  padding: 8px 12px;
+  border: 1px solid rgb(232 211 181 / 0.18);
+  border-radius: 999px;
+  color: rgb(244 230 205 / 0.88);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgb(255 255 255 / 0.04);
 }
 
 .layout-menu {
+  padding: 8px 12px 18px;
   border-right: none;
   background: transparent;
 }
 
+.layout-menu :deep(.el-menu) {
+  border-right: none;
+}
+
+.layout-menu :deep(.el-menu-item),
+.layout-menu :deep(.el-sub-menu__title) {
+  height: 46px;
+  margin-bottom: 6px;
+  border-radius: 14px;
+}
+
+.layout-menu :deep(.el-menu-item.is-active),
+.layout-menu :deep(.el-sub-menu .el-menu-item.is-active) {
+  background: linear-gradient(90deg, rgb(184 135 70 / 0.26), rgb(184 135 70 / 0.08)) !important;
+  box-shadow: inset 0 0 0 1px rgb(232 211 181 / 0.14);
+}
+
+.layout-menu :deep(.el-menu-item:hover),
+.layout-menu :deep(.el-sub-menu__title:hover) {
+  background: rgb(255 255 255 / 0.06) !important;
+}
+
 .menu-title {
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 .menu-leaf {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding-left: 14px;
+  padding-left: 16px;
+  letter-spacing: 0.03em;
 }
 
 .menu-leaf::before {
   position: absolute;
   left: 0;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   content: '';
   border-radius: 999px;
-  background: rgb(148 163 184 / 72%);
+  background: rgb(232 211 181 / 0.8);
+  box-shadow: 0 0 0 4px rgb(232 211 181 / 0.08);
 }
 
 .layout-main {
@@ -173,35 +243,100 @@ function sortMenus(a, b) {
 }
 
 .layout-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   height: var(--app-header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
   padding: 0 28px;
-  background: rgb(255 255 255 / 88%);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgb(226 232 240 / 88%);
+  background: linear-gradient(180deg, rgb(255 251 245 / 0.9), rgb(248 241 230 / 0.7));
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgb(116 91 61 / 0.12);
+}
+
+.header-ribbon {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid rgb(184 135 70 / 0.18);
+  border-radius: 999px;
+  color: #805a25;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: rgb(255 255 255 / 0.42);
 }
 
 .header-user {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .header-name {
-  font-size: 18px;
+  color: var(--app-primary-strong);
+  font-family: 'Iowan Old Style', 'Baskerville', 'Songti SC', serif;
+  font-size: 24px;
   font-weight: 700;
 }
 
 .header-subtitle {
-  color: #98a2b3;
+  color: #72665b;
   font-size: 13px;
+  letter-spacing: 0.03em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-chip {
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgb(31 77 107 / 0.08);
+  color: var(--app-primary);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .layout-content {
   flex: 1;
   padding: 28px;
   background:
-    linear-gradient(180deg, rgb(247 250 252 / 92%) 0%, #eef4ff 100%);
+    radial-gradient(circle at top right, rgb(184 135 70 / 0.12), transparent 20%),
+    linear-gradient(180deg, rgb(250 246 238 / 0.78) 0%, rgb(241 234 221 / 0.56) 100%);
+}
+
+@media (max-width: 1024px) {
+  .layout-wrapper {
+    flex-direction: column;
+  }
+
+  .layout-sider {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-header {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 16px 18px;
+  }
+
+  .layout-content {
+    padding: 16px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 </style>
