@@ -66,19 +66,19 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         int taskCount = 0;
         try {
             log.info("开始排课,时间：{}", start);
-            // 1、优先从标准任务构造排课输入，旧 tb_class_task 仅作兼容兜底
-            List<ClassTask> classTaskList = listSchedulingTasks(semester);
-            if (null == classTaskList || classTaskList.isEmpty()) {
+            // 1、优先从标准任务构造排课输入
+            List<ClassTask> schedulingTasks = listSchedulingTasks(semester);
+            if (null == schedulingTasks || schedulingTasks.isEmpty()) {
                 throw buildSchedulingException(start, semester, taskCount,
                         "排课失败，查询不到排课任务！请导入排课任务再进行排课~", ResultCode.BUSINESS_ERROR);
             }
-            taskCount = classTaskList.size();
+            taskCount = schedulingTasks.size();
 
             // 校验学时是否超过课表的容纳值
-            checkWeeksNumber(classTaskList);
+            checkWeeksNumber(schedulingTasks);
 
             // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间
-            Map<String, List<String>> geneMap = coding(classTaskList);
+            Map<String, List<String>> geneMap = coding(schedulingTasks);
             // 3、给初始基因编码随机分配时间，得到同班上课时间不冲突的编码
             List<String> resultGeneList = codingTime(geneMap);
             // 4、将分配好时间的基因编码以班级分类成为以班级的个体，得到班级的不冲突时间初始编码
@@ -93,8 +93,8 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             List<String> resultList = finalResult(individualMap);
             // 7、解码
             List<CoursePlan> coursePlanList = decoding(resultList);
-            // 8、只写标准课表结果，legacy tb_course_plan 已停用
-            scheduleLogMirrorService.replaceScheduleResults(semester, classTaskList, coursePlanList);
+            // 8、只写标准课表结果
+            scheduleLogMirrorService.replaceScheduleResults(semester, schedulingTasks, coursePlanList);
             long duration = System.currentTimeMillis() - start;
             log.info("完成排课,耗时：{}", duration);
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
@@ -117,8 +117,8 @@ public class ClassTaskServiceImpl implements ClassTaskService {
 
     /**
      * 步骤说明：
-     * 1. 排课算法当前仍然使用 legacy ClassTask 结构作为内存输入。
-     * 2. 但任务来源优先切到 sch_task，再转成 legacy 对象，不再强依赖 tb_class_task。
+     * 1. 排课算法当前仍然使用 ClassTask 作为内存输入对象。
+     * 2. 任务来源优先切到 sch_task，再转成算法输入对象。
      * 3. 排课执行本身只使用标准任务；缺失标准任务时直接返回空。
      */
     List<ClassTask> listSchedulingTasks(String semester) {
@@ -128,7 +128,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 .orderByAsc(SchTask::getId));
         if (!standardTasks.isEmpty()) {
             return standardTasks.stream()
-                    .map(this::convertStandardTaskToLegacy)
+                    .map(this::convertStandardTaskToSchedulingTask)
                     .filter(Objects::nonNull)
                     .toList();
         }
@@ -201,7 +201,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         return new BusinessException(resultCode, message);
     }
 
-    private ClassTask convertStandardTaskToLegacy(SchTask standardTask) {
+    private ClassTask convertStandardTaskToSchedulingTask(SchTask standardTask) {
         Map<String, String> meta = ScheduleTaskMetaUtils.parseTaskRemark(standardTask.getRemark());
         String semester = meta.get("semester");
         String classNo = meta.get("classNo");

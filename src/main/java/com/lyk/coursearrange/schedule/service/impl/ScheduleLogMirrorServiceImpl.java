@@ -52,30 +52,30 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     @Override
-    public void replaceScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans) {
+    public void replaceScheduleResults(String semester, List<ClassTask> schedulingTasks, List<CoursePlan> coursePlans) {
         Map<String, Long> taskIdMap = new HashMap<>();
-        for (ClassTask legacyTask : legacyTasks) {
-            SchTask schTask = getOrCreateTask(legacyTask);
-            taskIdMap.put(buildTaskKey(legacyTask.getClassNo(), legacyTask.getCourseNo(), legacyTask.getTeacherNo()), schTask.getId());
+        for (ClassTask schedulingTask : schedulingTasks) {
+            SchTask schTask = getOrCreateTask(schedulingTask);
+            taskIdMap.put(buildTaskKey(schedulingTask.getClassNo(), schedulingTask.getCourseNo(), schedulingTask.getTeacherNo()), schTask.getId());
         }
 
         LambdaQueryWrapper<SchScheduleResult> removeWrapper = new LambdaQueryWrapper<>();
         removeWrapper.eq(SchScheduleResult::getRemark, semester);
         resultService.remove(removeWrapper);
 
-        for (CoursePlan legacyPlan : legacyPlans) {
+        for (CoursePlan coursePlan : coursePlans) {
             SchScheduleResult result = new SchScheduleResult();
             result.setRunLogId(null);
             result.setTaskId(taskIdMap.getOrDefault(
-                    buildTaskKey(legacyPlan.getClassNo(), legacyPlan.getCourseNo(), legacyPlan.getTeacherNo()), 0L));
+                    buildTaskKey(coursePlan.getClassNo(), coursePlan.getCourseNo(), coursePlan.getTeacherNo()), 0L));
             result.setSchoolYearId(0L);
             result.setTermId(0L);
             result.setStageId(0L);
             result.setCourseId(0L);
             result.setTeacherId(0L);
             result.setClassroomId(0L);
-            result.setWeekdayNo(resolveWeekdayNo(legacyPlan.getClassTime()));
-            result.setPeriodNo(resolvePeriodNo(legacyPlan.getClassTime()));
+            result.setWeekdayNo(resolveWeekdayNo(coursePlan.getClassTime()));
+            result.setPeriodNo(resolvePeriodNo(coursePlan.getClassTime()));
             result.setWeekRangeType("ALL");
             result.setIsLocked(0);
             result.setSourceType("AUTO");

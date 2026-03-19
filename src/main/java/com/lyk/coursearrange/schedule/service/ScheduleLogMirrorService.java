@@ -12,7 +12,7 @@ import java.util.List;
  */
 public interface ScheduleLogMirrorService {
 
-    void replaceScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans);
+    void replaceScheduleResults(String semester, List<ClassTask> schedulingTasks, List<CoursePlan> coursePlans);
 
     void syncAdjustedPlan(CoursePlan legacyPlan, String beforeClassTime);
 

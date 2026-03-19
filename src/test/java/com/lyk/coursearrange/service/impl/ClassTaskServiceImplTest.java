@@ -53,6 +53,40 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
+    void listSchedulingTasks_shouldMapStandardTaskToAlgorithmInput() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+
+        SchTask standardTask = new SchTask();
+        standardTask.setStudentCount(45);
+        standardTask.setWeekHours(4);
+        standardTask.setTotalHours(64);
+        standardTask.setNeedFixedTime(1);
+        standardTask.setFixedWeekdayNo(2);
+        standardTask.setFixedPeriodNo(3);
+        standardTask.setRemark("semester=2025-2026-1,classNo=2501,courseNo=10001,teacherNo=T2026001,gradeNo=2025,courseName=高等数学,courseAttr=必修,teacherName=张老师");
+
+        when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
+                .thenReturn(List.of(standardTask));
+
+        List<ClassTask> tasks = service.listSchedulingTasks("2025-2026-1");
+
+        assertEquals(1, tasks.size());
+        ClassTask task = tasks.get(0);
+        assertEquals("2025-2026-1", task.getSemester());
+        assertEquals("2501", task.getClassNo());
+        assertEquals("10001", task.getCourseNo());
+        assertEquals("T2026001", task.getTeacherNo());
+        assertEquals("高等数学", task.getCourseName());
+        assertEquals("必修", task.getCourseAttr());
+        assertEquals(45, task.getStudentNum());
+        assertEquals(4, task.getWeeksNumber());
+        assertEquals(16, task.getWeeksSum());
+        assertEquals("1", task.getIsFix());
+        assertEquals("08", task.getClassTime());
+    }
+
+    @Test
     void countScheduleTasks_shouldReturnStandardCountOnly() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
