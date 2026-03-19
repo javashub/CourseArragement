@@ -174,10 +174,17 @@
       </el-table-column>
     </el-table>
 
-    <!-- 弹出表单添加讲师 -->
-    <el-dialog title="添加任务(参照模板填写)" :visible.sync="visible">
+    <el-dialog
+      :title="dialogMode === 'edit' ? '编辑标准排课任务' : '新增标准排课任务'"
+      :visible.sync="visible"
+      class="task-editor-dialog"
+    >
+      <div class="dialog-description">
+        {{ dialogMode === 'edit' ? '当前只修改标准 sch_task 主链，不会回写旧任务副本。' : '请按当前标准任务字段录入，提交后直接进入标准排课任务链。' }}
+      </div>
       <el-form
         :model="addClassTaskForm"
+        ref="taskForm"
         label-position="left"
         label-width="80px"
         :rules="addClassTaskRules"
@@ -262,7 +269,7 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="visible = false">取 消</el-button>
+        <el-button @click="closeTaskDialog">取 消</el-button>
         <el-button type="primary" @click="commit()">提 交</el-button>
       </div>
     </el-dialog>
@@ -290,9 +297,28 @@ import {
   downloadClassTaskTemplate,
   fetchClassTaskPage,
   fetchSemesterList,
+  updateClassTask,
   uploadClassTaskExcel
 } from "@/api/modules/course";
 import { getErrorMessage } from "@/utils/http";
+
+function createEmptyTaskForm() {
+  return {
+    semester: "",
+    gradeNo: "",
+    classNo: "",
+    courseNo: "",
+    courseName: "",
+    teacherNo: "",
+    realname: "",
+    courseAttr: "",
+    studentNum: "",
+    weeksNumber: "",
+    weeksSum: "",
+    isFix: "",
+    classTime: "",
+  };
+}
 
 export default {
   name: "ClassTaskList",
@@ -302,22 +328,10 @@ export default {
       loading: false,
       classTaskData: [],
       semesterData: [],
-      addClassTaskForm: {
-        semester: "",
-        gradeNo: "",
-        classNo: "",
-        courseNo: "",
-        courseName: "",
-        teacherNo: "",
-        realname: "",
-        courseAttr: "",
-        studentNum: "",
-        weeksNumber: "",
-        weeksSum: "",
-        isFix: "",
-        classTime: "",
-      },
+      addClassTaskForm: createEmptyTaskForm(),
       visible: false,
+      dialogMode: "create",
+      editingTaskId: null,
       page: 1,
       total: 0,
       pageSize: 10,
@@ -403,19 +417,38 @@ export default {
 
     // 提交添加
     async commit() {
+      const isEdit = this.dialogMode === "edit" && Boolean(this.editingTaskId);
       try {
-        const response = await createClassTask(this.addClassTaskForm);
+        const response = isEdit
+          ? await updateClassTask(this.editingTaskId, this.addClassTaskForm)
+          : await createClassTask(this.addClassTaskForm);
         this.allClassTask();
-        this.visible = false;
-        this.showRequestSuccess(response, "添加课程任务成功！");
+        this.closeTaskDialog();
+        this.showRequestSuccess(response, isEdit ? "修改课程任务成功！" : "添加课程任务成功！");
       } catch (error) {
-        this.showRequestError(error, "添加课程任务失败");
+        this.showRequestError(error, isEdit ? "修改课程任务失败" : "添加课程任务失败");
       }
     },
 
     // 手动添加课程任务
     addClassTask() {
+      this.dialogMode = "create";
+      this.editingTaskId = null;
+      this.addClassTaskForm = {
+        ...createEmptyTaskForm(),
+        semester: this.semester || "",
+      };
       this.visible = true;
+    },
+
+    closeTaskDialog() {
+      this.visible = false;
+      this.dialogMode = "create";
+      this.editingTaskId = null;
+      this.addClassTaskForm = createEmptyTaskForm();
+      if (this.$refs.taskForm) {
+        this.$refs.taskForm.clearValidate();
+      }
     },
 
     // 点击开始提交学期到系统后台排课
@@ -501,7 +534,26 @@ export default {
       this.deleteClassTaskById(row);
     },
 
-    editById(index, row) {},
+    editById(index, row) {
+      this.dialogMode = "edit";
+      this.editingTaskId = row.standardId || row.id;
+      this.addClassTaskForm = {
+        semester: row.semester || this.semester || "",
+        gradeNo: row.gradeNo || "",
+        classNo: row.classNo || "",
+        courseNo: row.courseNo || "",
+        courseName: row.courseName || "",
+        teacherNo: row.teacherNo || "",
+        realname: row.realname || "",
+        courseAttr: row.courseAttr || "",
+        studentNum: row.studentNum ?? "",
+        weeksNumber: row.weeksNumber ?? "",
+        weeksSum: row.weeksSum ?? "",
+        isFix: row.isFix || "0",
+        classTime: row.classTime || "",
+      };
+      this.visible = true;
+    },
 
     handleSizeChange() {},
 
@@ -604,5 +656,15 @@ export default {
   float: left;
   width: 160px;
   margin-left: 15px;
+}
+
+.dialog-description {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgb(31 77 107 / 0.08);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgb(255 250 242 / 0.92), rgb(243 233 214 / 0.82));
+  color: #5f6e79;
+  line-height: 1.7;
 }
 </style>

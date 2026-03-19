@@ -146,6 +146,41 @@ class ClassTaskControllerTest {
     }
 
     @Test
+    void modifyClassTask_shouldUpdateStandardTask() {
+        ClassTaskController controller = new ClassTaskController();
+        ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
+        ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
+
+        ClassTaskDTO request = new ClassTaskDTO();
+        request.setSemester("2025-2026-1");
+        request.setGradeNo("G2");
+        request.setClassNo("C2");
+        request.setCourseNo("K2");
+        request.setCourseName("英语");
+        request.setTeacherNo("T2");
+        request.setRealname("李老师");
+        request.setCourseAttr("选修");
+        request.setStudentNum(45);
+        request.setWeeksNumber(2);
+        request.setWeeksSum(18);
+        request.setIsFix("1");
+        request.setClassTime("03");
+
+        SchTask task = new SchTask();
+        task.setId(101L);
+        task.setDeleted(0);
+        task.setRemark("semester=2025-2026-1,classNo=C1,courseNo=K1,teacherNo=T1,gradeNo=G1,courseName=数学,teacherName=张老师");
+
+        when(schTaskService.getById(101L)).thenReturn(task);
+        when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
+        when(schTaskService.updateById(org.mockito.ArgumentMatchers.any(SchTask.class))).thenReturn(true);
+
+        ServerResponse response = controller.modifyClassTask(101, request);
+
+        assertTrue(response.isSuccess());
+    }
+
+    @Test
     void deleteClassTask_shouldOnlyDeleteStandardTask() {
         ClassTaskController controller = new ClassTaskController();
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);

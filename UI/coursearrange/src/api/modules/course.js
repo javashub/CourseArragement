@@ -30,6 +30,10 @@ export function createClassTask(payload) {
   return request.post('/schedule/tasks', payload);
 }
 
+export function updateClassTask(id, payload) {
+  return request.put(`/schedule/tasks/${id}`, payload);
+}
+
 export function deleteClassTask(id) {
   return request.delete(`/schedule/tasks/${id}`);
 }

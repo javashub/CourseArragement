@@ -60,14 +60,31 @@ public class ClassTaskController {
      */
     @PostMapping("/addclasstask")
     public ServerResponse addClassTask(@RequestBody ClassTaskDTO c) {
-        validateTaskDuplicate(c);
-        SchTask standardTask = buildStandardTask(c);
+        validateTaskDuplicate(c, null);
+        SchTask standardTask = buildStandardTask(c, new SchTask());
         if (!schTaskService.save(standardTask)) {
             return throwBusiness(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
         }
         log.info("新增课程任务，semester={}, courseNo={}, classNo={}",
                 c.getSemester(), c.getCourseNo(), c.getClassNo());
         return ServerResponse.ofSuccess("添加课程任务成功");
+    }
+
+    @PostMapping("/modifyclasstask/{id}")
+    public ServerResponse modifyClassTask(@PathVariable("id") Integer id, @RequestBody ClassTaskDTO request) {
+        SchTask existingTask = schTaskService.getById(id.longValue());
+        if (existingTask == null || existingTask.getDeleted() != null && existingTask.getDeleted() == 1) {
+            return throwBusiness(ResultCode.NOT_FOUND, "开课任务不存在");
+        }
+        validateTaskDuplicate(request, id.longValue());
+        SchTask standardTask = buildStandardTask(request, existingTask);
+        standardTask.setId(id.longValue());
+        if (!schTaskService.updateById(standardTask)) {
+            return throwBusiness(ResultCode.SYSTEM_ERROR, "修改课程任务失败");
+        }
+        log.info("修改课程任务，id={}, semester={}, courseNo={}, classNo={}",
+                id, request.getSemester(), request.getCourseNo(), request.getClassNo());
+        return ServerResponse.ofSuccess("修改课程任务成功");
     }
 
 
@@ -206,19 +223,19 @@ public class ClassTaskController {
         return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
     }
 
-    private void validateTaskDuplicate(ClassTaskDTO request) {
+    private void validateTaskDuplicate(ClassTaskDTO request, Long currentTaskId) {
         String taskCode = ScheduleTaskMetaUtils.buildTaskCode(request);
         LambdaQueryWrapper<SchTask> wrapper = new LambdaQueryWrapper<SchTask>()
                 .eq(SchTask::getTaskCode, taskCode)
                 .eq(SchTask::getDeleted, 0)
+                .ne(currentTaskId != null, SchTask::getId, currentTaskId)
                 .last("limit 1");
         if (schTaskService.getOne(wrapper, false) != null) {
             throw new BusinessException(ResultCode.BUSINESS_ERROR, "相同班级、课程、教师、学期的任务已存在");
         }
     }
 
-    private SchTask buildStandardTask(ClassTaskDTO request) {
-        SchTask task = new SchTask();
+    private SchTask buildStandardTask(ClassTaskDTO request, SchTask task) {
         task.setTaskCode(ScheduleTaskMetaUtils.buildTaskCode(request));
         task.setSchoolYearId(0L);
         task.setTermId(0L);

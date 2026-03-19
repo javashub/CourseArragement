@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -65,14 +66,32 @@ public class ScheduleTaskController {
     @PostMapping
     @Transactional(rollbackFor = Exception.class)
     public ServerResponse<?> save(@RequestBody ClassTaskDTO request) {
-        validateTaskDuplicate(request);
-        SchTask standardTask = buildStandardTask(request);
+        validateTaskDuplicate(request, null);
+        SchTask standardTask = buildStandardTask(request, new SchTask());
         if (!schTaskService.save(standardTask)) {
             throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
         }
         log.info("新增标准排课任务，semester={}, courseNo={}, classNo={}",
                 request.getSemester(), request.getCourseNo(), request.getClassNo());
         return ServerResponse.ofSuccess("添加课程任务成功");
+    }
+
+    @PutMapping("/{id}")
+    @Transactional(rollbackFor = Exception.class)
+    public ServerResponse<?> update(@PathVariable("id") Long id, @RequestBody ClassTaskDTO request) {
+        SchTask existingTask = schTaskService.getById(id);
+        if (existingTask == null || existingTask.getDeleted() != null && existingTask.getDeleted() == 1) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "标准排课任务不存在");
+        }
+        validateTaskDuplicate(request, id);
+        SchTask standardTask = buildStandardTask(request, existingTask);
+        standardTask.setId(id);
+        if (!schTaskService.updateById(standardTask)) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR, "修改课程任务失败");
+        }
+        log.info("修改标准排课任务，id={}, semester={}, courseNo={}, classNo={}",
+                id, request.getSemester(), request.getCourseNo(), request.getClassNo());
+        return ServerResponse.ofSuccess("修改课程任务成功");
     }
 
     @DeleteMapping("/{id}")
@@ -210,19 +229,19 @@ public class ScheduleTaskController {
         return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
     }
 
-    private void validateTaskDuplicate(ClassTaskDTO request) {
+    private void validateTaskDuplicate(ClassTaskDTO request, Long currentTaskId) {
         String taskCode = ScheduleTaskMetaUtils.buildTaskCode(request);
         LambdaQueryWrapper<SchTask> wrapper = new LambdaQueryWrapper<SchTask>()
                 .eq(SchTask::getTaskCode, taskCode)
                 .eq(SchTask::getDeleted, 0)
+                .ne(currentTaskId != null, SchTask::getId, currentTaskId)
                 .last("limit 1");
         if (schTaskService.getOne(wrapper, false) != null) {
             throw new BusinessException(ResultCode.BUSINESS_ERROR, "相同班级、课程、教师、学期的任务已存在");
         }
     }
 
-    private SchTask buildStandardTask(ClassTaskDTO request) {
-        SchTask task = new SchTask();
+    private SchTask buildStandardTask(ClassTaskDTO request, SchTask task) {
         task.setTaskCode(ScheduleTaskMetaUtils.buildTaskCode(request));
         task.setSchoolYearId(0L);
         task.setTermId(0L);
