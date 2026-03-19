@@ -25,6 +25,37 @@
       </div>
     </div>
 
+    <el-card shadow="never" class="plan-card config-card">
+      <div class="config-headline">
+        <div>
+          <div class="card-title">当前生效排课规则</div>
+          <div class="card-subtitle">
+            自动排课现在会优先读取系统配置中的时间片模板，并排除“不可上课 / 固定休息”的时间片。
+          </div>
+        </div>
+        <el-tag :type="runtimeConfig.configApplied ? 'success' : 'info'" effect="light" round>
+          {{ runtimeConfig.configApplied ? '已应用系统配置' : '回退默认 25 格时间片' }}
+        </el-tag>
+      </div>
+      <div class="config-strip">
+        <div class="config-pill">
+          <span class="config-label">规则名称</span>
+          <strong>{{ runtimeConfig.ruleName || '未配置默认规则' }}</strong>
+        </div>
+        <div class="config-pill">
+          <span class="config-label">可用时间片</span>
+          <strong>{{ runtimeConfig.effectiveTimeSlotCount }}</strong>
+        </div>
+        <div class="config-pill">
+          <span class="config-label">教学时间片总数</span>
+          <strong>{{ runtimeConfig.rawTeachingTimeSlotCount }}</strong>
+        </div>
+      </div>
+      <p class="config-note">
+        当前遗传排课算法仍运行在 legacy 25 格编码窗口内，因此只会消费工作日 1-5、节次 1-5 范围内的可教学时间片。
+      </p>
+    </el-card>
+
     <el-card v-if="latestArrangeSummary" shadow="never" class="plan-card summary-card">
       <div class="summary-header">
         <div>
@@ -404,6 +435,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { fetchCoursePage, fetchTeacherPage } from '@/api/modules/base';
 import { getErrorMessage } from '@/utils/http';
+import { fetchScheduleConfig } from '@/api/modules/system';
 import {
   arrangeClassTask,
   createClassTask,
@@ -431,6 +463,12 @@ const taskLoadError = ref('');
 const executionLogError = ref('');
 const executionLogLimit = 8;
 const latestArrangeSummary = ref(null);
+const runtimeConfig = reactive({
+  ruleName: '',
+  effectiveTimeSlotCount: 25,
+  rawTeachingTimeSlotCount: 0,
+  configApplied: false
+});
 
 const taskState = reactive({
   loading: false,
@@ -589,7 +627,10 @@ function normalizeArrangeSummary(payload) {
     unscheduledTaskCount: Number(payload.unscheduledTaskCount || 0),
     conflictTaskCount: Number(payload.conflictTaskCount || 0),
     successRate: Number(payload.successRate || 0),
-    unscheduledTasks: Array.isArray(payload.unscheduledTasks) ? payload.unscheduledTasks : []
+    unscheduledTasks: Array.isArray(payload.unscheduledTasks) ? payload.unscheduledTasks : [],
+    effectiveScheduleRuleName: payload.effectiveScheduleRuleName || '',
+    effectiveTimeSlotCount: Number(payload.effectiveTimeSlotCount || 0),
+    timeSlotConfigApplied: Boolean(payload.timeSlotConfigApplied)
   };
 }
 
@@ -651,6 +692,34 @@ async function loadCourseOptions() {
 async function loadTeacherOptions() {
   const response = await fetchTeacherPage(1, 200);
   teacherOptions.value = (response.data?.records || []).filter((item) => item.status === 0);
+}
+
+function normalizeEffectiveTimeSlots(timeSlots = []) {
+  return (timeSlots || [])
+    .filter((item) => Number(item?.isTeaching || 0) === 1)
+    .filter((item) => Number(item?.isFixedBreak || 0) === 0)
+    .filter((item) => Number(item?.weekdayNo || 0) >= 1 && Number(item?.weekdayNo || 0) <= 5)
+    .filter((item) => Number(item?.periodNo || 0) >= 1 && Number(item?.periodNo || 0) <= 5);
+}
+
+async function loadRuntimeConfig() {
+  try {
+    const response = await fetchScheduleConfig();
+    const payload = response.data || {};
+    const effectiveTimeSlots = normalizeEffectiveTimeSlots(payload.timeSlots || []);
+    const rawTeachingTimeSlots = (payload.timeSlots || [])
+      .filter((item) => Number(item?.isTeaching || 0) === 1)
+      .filter((item) => Number(item?.isFixedBreak || 0) === 0);
+    runtimeConfig.ruleName = payload.scheduleRule?.ruleName || '默认 25 格时间片';
+    runtimeConfig.effectiveTimeSlotCount = effectiveTimeSlots.length || 25;
+    runtimeConfig.rawTeachingTimeSlotCount = rawTeachingTimeSlots.length;
+    runtimeConfig.configApplied = effectiveTimeSlots.length > 0;
+  } catch (error) {
+    runtimeConfig.ruleName = '默认 25 格时间片';
+    runtimeConfig.effectiveTimeSlotCount = 25;
+    runtimeConfig.rawTeachingTimeSlotCount = 0;
+    runtimeConfig.configApplied = false;
+  }
 }
 
 async function loadClassTasks(resetPage = false) {
@@ -904,6 +973,11 @@ async function handleArrange() {
   try {
     const response = await arrangeClassTask(selectedSemester.value);
     latestArrangeSummary.value = normalizeArrangeSummary(response.data);
+    if (latestArrangeSummary.value) {
+      runtimeConfig.ruleName = latestArrangeSummary.value.effectiveScheduleRuleName || runtimeConfig.ruleName;
+      runtimeConfig.effectiveTimeSlotCount = latestArrangeSummary.value.effectiveTimeSlotCount || runtimeConfig.effectiveTimeSlotCount;
+      runtimeConfig.configApplied = latestArrangeSummary.value.timeSlotConfigApplied;
+    }
     ElMessage({
       type: latestArrangeSummary.value?.unscheduledTaskCount > 0 ? 'warning' : 'success',
       message: response.message || '排课执行完成'
@@ -915,7 +989,7 @@ async function handleArrange() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadSemesters(), loadClassOptions(), loadCourseOptions(), loadTeacherOptions()]);
+  await Promise.all([loadSemesters(), loadClassOptions(), loadCourseOptions(), loadTeacherOptions(), loadRuntimeConfig()]);
   await handleSemesterChange();
 });
 </script>
@@ -1071,6 +1145,50 @@ onMounted(async () => {
   overflow: hidden;
   background:
     linear-gradient(135deg, rgb(248 244 234 / 90%) 0%, rgb(255 255 255 / 96%) 44%, rgb(240 247 255 / 96%) 100%);
+}
+
+.config-card {
+  background:
+    radial-gradient(circle at top right, rgb(214 229 255 / 45%), transparent 30%),
+    linear-gradient(135deg, rgb(249 251 255 / 96%) 0%, rgb(255 252 245 / 96%) 100%);
+}
+
+.config-headline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.config-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.config-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  border: 1px solid #d7e1ef;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 82%);
+}
+
+.config-label {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7b8aa0;
+}
+
+.config-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #61748d;
 }
 
 .summary-header {
@@ -1277,6 +1395,7 @@ onMounted(async () => {
   .constraint-grid,
   .form-grid,
   .compact-grid,
+  .config-strip,
   .summary-metrics,
   .reason-list {
     grid-template-columns: 1fr;

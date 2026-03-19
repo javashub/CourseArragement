@@ -2,10 +2,15 @@ package com.lyk.coursearrange.service.impl;
 
 import com.lyk.coursearrange.common.ServerResponse;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
+import com.lyk.coursearrange.system.config.entity.CfgScheduleRule;
+import com.lyk.coursearrange.system.config.entity.CfgTimeSlot;
+import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
+import com.lyk.coursearrange.system.config.vo.ScheduleConfigVO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -17,6 +22,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -29,6 +35,8 @@ class ClassTaskServiceImplTest {
 
     @Mock
     private SchTaskService schTaskService;
+    @Mock
+    private ScheduleConfigFacadeService scheduleConfigFacadeService;
 
     @Test
     void buildSchedulingSuccessResponse_shouldExposeStandardOnlyStatus() {
@@ -137,5 +145,91 @@ class ClassTaskServiceImplTest {
         String firstReason = String.valueOf(unscheduledTasks.get(0));
         assertTrue(firstReason.contains("2502"));
         assertTrue(firstReason.contains("大学英语"));
+    }
+
+    @Test
+    void resolveSchedulingRuntimeContext_shouldUseTeachingTimeSlotsFromActiveRule() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+
+        CfgScheduleRule rule = new CfgScheduleRule();
+        rule.setRuleName("全局默认规则");
+
+        CfgTimeSlot slot1 = buildTimeSlot(1, 1, 1, 0);
+        CfgTimeSlot slot2 = buildTimeSlot(1, 2, 0, 0);
+        CfgTimeSlot slot3 = buildTimeSlot(2, 1, 1, 1);
+        CfgTimeSlot slot4 = buildTimeSlot(2, 2, 1, 0);
+        CfgTimeSlot slot5 = buildTimeSlot(6, 1, 1, 0);
+
+        when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(ScheduleConfigVO.builder()
+                .scheduleRule(rule)
+                .timeSlots(List.of(slot1, slot2, slot3, slot4, slot5))
+                .featureToggles(List.of())
+                .build());
+
+        ClassTaskServiceImpl.SchedulingRuntimeContext context = service.resolveSchedulingRuntimeContext();
+
+        assertEquals("全局默认规则", context.scheduleRuleName());
+        assertTrue(context.configApplied());
+        assertEquals(List.of("01", "07"), context.availableClassTimes());
+    }
+
+    @Test
+    void coding_shouldRejectFixedClassTimeOutsideConfiguredSlots() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        SchedulingTaskInput fixedTask = new SchedulingTaskInput();
+        fixedTask.setIsFix("1");
+        fixedTask.setGradeNo("25");
+        fixedTask.setClassNo("25010001");
+        fixedTask.setTeacherNo("T0001");
+        fixedTask.setCourseNo("100001");
+        fixedTask.setCourseAttr("01");
+        fixedTask.setWeeksNumber(2);
+        fixedTask.setClassTime("06");
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> service.coding(List.of(fixedTask), List.of("01", "02", "03")));
+
+        assertTrue(exception.getMessage().contains("固定时间编码"));
+    }
+
+    @Test
+    void coding_shouldNormalizeStandardTaskFixFlags() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+
+        SchedulingTaskInput unfixedTask = new SchedulingTaskInput();
+        unfixedTask.setIsFix("0");
+        unfixedTask.setGradeNo("25");
+        unfixedTask.setClassNo("25010001");
+        unfixedTask.setTeacherNo("T0001");
+        unfixedTask.setCourseNo("100001");
+        unfixedTask.setCourseAttr("01");
+        unfixedTask.setWeeksNumber(2);
+
+        SchedulingTaskInput fixedTask = new SchedulingTaskInput();
+        fixedTask.setIsFix("1");
+        fixedTask.setGradeNo("25");
+        fixedTask.setClassNo("25010002");
+        fixedTask.setTeacherNo("T0002");
+        fixedTask.setCourseNo("100002");
+        fixedTask.setCourseAttr("01");
+        fixedTask.setWeeksNumber(2);
+        fixedTask.setClassTime("01");
+
+        Map<String, List<String>> geneMap = service.coding(List.of(unfixedTask, fixedTask), List.of("01", "02", "03"));
+
+        assertEquals(1, geneMap.get("unFixedTime").size());
+        assertEquals(1, geneMap.get("isFixedTime").size());
+        assertTrue(geneMap.get("unFixedTime").get(0).startsWith("1"));
+        assertTrue(geneMap.get("isFixedTime").get(0).startsWith("2"));
+    }
+
+    private CfgTimeSlot buildTimeSlot(int weekdayNo, int periodNo, int isTeaching, int isFixedBreak) {
+        CfgTimeSlot timeSlot = new CfgTimeSlot();
+        timeSlot.setWeekdayNo(weekdayNo);
+        timeSlot.setPeriodNo(periodNo);
+        timeSlot.setIsTeaching(isTeaching);
+        timeSlot.setIsFixedBreak(isFixedBreak);
+        return timeSlot;
     }
 }

@@ -21,6 +21,10 @@ import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.service.ScheduleExecuteLogService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
+import com.lyk.coursearrange.system.config.entity.CfgTimeSlot;
+import com.lyk.coursearrange.system.config.query.ConfigScopeQuery;
+import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
+import com.lyk.coursearrange.system.config.vo.ScheduleConfigVO;
 import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
 import com.lyk.coursearrange.util.ClassUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +62,8 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     private ScheduleLogMirrorService scheduleLogMirrorService;
     @Resource
     private SchTaskService schTaskService;
+    @Resource
+    private ScheduleConfigFacadeService scheduleConfigFacadeService;
 
     /**
      * 排课算法入口
@@ -76,18 +82,19 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                         "排课失败，查询不到排课任务！请导入排课任务再进行排课~", ResultCode.BUSINESS_ERROR);
             }
             taskCount = schedulingTasks.size();
+            SchedulingRuntimeContext runtimeContext = resolveSchedulingRuntimeContext();
 
             // 校验学时是否超过课表的容纳值
-            checkWeeksNumber(schedulingTasks);
+            checkWeeksNumber(schedulingTasks, runtimeContext.availableClassTimes());
 
             // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间
-            Map<String, List<String>> geneMap = coding(schedulingTasks);
+            Map<String, List<String>> geneMap = coding(schedulingTasks, runtimeContext.availableClassTimes());
             // 3、给初始基因编码随机分配时间，得到同班上课时间不冲突的编码
-            List<String> resultGeneList = codingTime(geneMap);
+            List<String> resultGeneList = codingTime(geneMap, runtimeContext.availableClassTimes());
             // 4、将分配好时间的基因编码以班级分类成为以班级的个体，得到班级的不冲突时间初始编码
             Map<String, List<String>> individualMap = transformIndividual(resultGeneList);
             // 5、遗传进化(这里面这里已经处理完上课时间)
-            individualMap = geneticEvolution(individualMap);
+            individualMap = geneticEvolution(individualMap, runtimeContext.availableClassTimes());
 
             // 检测时间冲突
 //            checkConflict(individualMap);
@@ -100,6 +107,9 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             scheduleLogMirrorService.replaceScheduleResults(semester, schedulingTasks, coursePlanList);
             long duration = System.currentTimeMillis() - start;
             Map<String, Object> schedulingSummary = buildSchedulingSummary(schedulingTasks, coursePlanList);
+            schedulingSummary.put("effectiveScheduleRuleName", runtimeContext.scheduleRuleName());
+            schedulingSummary.put("effectiveTimeSlotCount", runtimeContext.availableClassTimes().size());
+            schedulingSummary.put("timeSlotConfigApplied", runtimeContext.configApplied());
             log.info("完成排课,耗时：{}", duration);
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
                     buildSchedulingSummaryMessage(schedulingSummary, coursePlanList.size()));
@@ -183,6 +193,30 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         }
         log.warn("标准排课任务为空，排课流程不会再回退读取 tb_class_task，semester={}", semester);
         return List.of();
+    }
+
+    SchedulingRuntimeContext resolveSchedulingRuntimeContext() {
+        ScheduleConfigVO scheduleConfig = scheduleConfigFacadeService == null
+                ? null
+                : scheduleConfigFacadeService.getScheduleConfig(new ConfigScopeQuery());
+        List<String> availableClassTimes = scheduleConfig == null
+                ? defaultAvailableClassTimes()
+                : scheduleConfig.getTimeSlots().stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getIsTeaching() != null && item.getIsTeaching() == 1)
+                .filter(item -> item.getIsFixedBreak() == null || item.getIsFixedBreak() == 0)
+                .map(this::toLegacyClassTime)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        if (availableClassTimes.isEmpty()) {
+            return new SchedulingRuntimeContext("默认 25 格时间片", defaultAvailableClassTimes(), false);
+        }
+        String ruleName = scheduleConfig != null && scheduleConfig.getScheduleRule() != null
+                ? scheduleConfig.getScheduleRule().getRuleName()
+                : "默认排课规则";
+        return new SchedulingRuntimeContext(ruleName, availableClassTimes, true);
     }
 
     @Override
@@ -346,10 +380,15 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     }
 
     private void checkWeeksNumber(List<SchedulingTaskInput> classTaskList) {
+        checkWeeksNumber(classTaskList, defaultAvailableClassTimes());
+    }
+
+    void checkWeeksNumber(List<SchedulingTaskInput> classTaskList, List<String> availableClassTimes) {
+        int maxWeeklyHours = Math.max(availableClassTimes.size(), 1) * 2;
         classTaskList.stream().collect(Collectors.groupingBy(SchedulingTaskInput::getClassNo)).forEach((k, v) -> {
             int sum = v.stream().mapToInt(SchedulingTaskInput::getWeeksNumber).sum();
-            if (sum > ClassUtil.MAX_CLASS_TIME * 2) {
-                throw new CourseArrangeException(String.format("班级：%s 的学时超过 %s，不能排课！", k, ClassUtil.MAX_CLASS_TIME * 2));
+            if (sum > maxWeeklyHours) {
+                throw new CourseArrangeException(String.format("班级：%s 的学时超过 %s，不能排课！", k, maxWeeklyHours));
             }
         });
     }
@@ -568,14 +607,14 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      *
      * @param individualMap 按班级分的基因编码
      */
-    private Map<String, List<String>> geneticEvolution(Map<String, List<String>> individualMap) {
+    private Map<String, List<String>> geneticEvolution(Map<String, List<String>> individualMap, List<String> availableClassTimes) {
         List<String> resultGeneList;
 
         for (int i = 0; i < ConstantInfo.GENERATION; ++i) {
             hybridization(individualMap);
             List<String> allIndividual = collectGene(individualMap);
-            resultGeneList = geneMutation(allIndividual);
-            List<String> list = conflictResolution(resultGeneList);
+            resultGeneList = geneMutation(allIndividual, availableClassTimes);
+            List<String> list = conflictResolution(resultGeneList, availableClassTimes);
             individualMap.clear();
             individualMap = transformIndividual(list);
         }
@@ -591,7 +630,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      *
      * @param resultGeneList 所有个体集合 （大种群）
      */
-    private List<String> conflictResolution(List<String> resultGeneList) {
+    private List<String> conflictResolution(List<String> resultGeneList, List<String> availableClassTimes) {
         int conflictTimes = 0;
         exit:
         for (int i = 0; i < resultGeneList.size(); i++) {
@@ -609,14 +648,14 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 if (classTime.equals(tempClassTime) && classNo.equals(tempClassNo)) {
                     log.error("一个班级在同一时间上上多门课 {}", conflictTimes++);
 
-                    String newClassTime = ClassUtil.randomTimeForClassConflict(gene, resultGeneList, classNo, teacherNo, classTime);
+                    String newClassTime = ClassUtil.randomTimeForClassConflict(gene, resultGeneList, classNo, teacherNo, classTime, availableClassTimes);
 
                     replaceConflictTime(resultGeneList, tempGene, newClassTime);
 
                     continue exit;
                 } else if (classTime.equals(tempClassTime) && teacherNo.equals(tempTeacherNo)) {
                     log.error("同一个老师在同一时间上上多门课 {}", conflictTimes++);
-                    String newClassTime = ClassUtil.randomTimeForTeacherConflict(gene, resultGeneList, teacherNo, classNo);
+                    String newClassTime = ClassUtil.randomTimeForTeacherConflict(gene, resultGeneList, teacherNo, classNo, availableClassTimes);
                     replaceConflictTime(resultGeneList, tempGene, newClassTime);
                     continue exit;
                 }
@@ -689,7 +728,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     /**
      * 基因变异
      */
-    private List<String> geneMutation(List<String> resultGeneList) {
+    private List<String> geneMutation(List<String> resultGeneList, List<String> availableClassTimes) {
         final double mutationRate = 0.005;
         int mutationNumber = (int) (resultGeneList.size() * mutationRate);
 
@@ -704,7 +743,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 log.debug("固定时间的不会发生变异！！{} {}", ClassUtil.cutGene(gene, ConstantInfo.COURSE_NO), ClassUtil.cutGene(gene, ConstantInfo.CLASS_TIME));
                 break;
             } else {
-                String newClassTime = ClassUtil.randomTime();
+                String newClassTime = ClassUtil.randomTime(availableClassTimes);
                 gene = gene.substring(0, 24) + newClassTime;
                 resultGeneList.remove(randomIndex);
                 resultGeneList.add(randomIndex, gene);
@@ -781,29 +820,37 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间
      */
     private Map<String, List<String>> coding(List<SchedulingTaskInput> classTaskList) {
+        return coding(classTaskList, defaultAvailableClassTimes());
+    }
+
+    Map<String, List<String>> coding(List<SchedulingTaskInput> classTaskList, List<String> availableClassTimes) {
         Map<String, List<String>> geneMap = new HashMap<>();
         List<String> unFixedTimeGeneList = new ArrayList<>();
         List<String> fixedTimeGeneList = new ArrayList<>();
 
         for (SchedulingTaskInput classTask : classTaskList) {
             // 1，不固定上课时间，默认默认不再填充 00
-            if (classTask.getIsFix().equals(ConstantInfo.UN_FIX_TIME_FLAG)) {
+            if (isUnfixedTask(classTask)) {
                 // 得到每周上课的节数，因为设定2学时为一节课
                 int size = classTask.getWeeksNumber() / 2;
                 for (int i = 0; i < size; i++) {
-                    String gene = classTask.getIsFix() + classTask.getGradeNo() + classTask.getClassNo()
+                    String gene = ConstantInfo.UN_FIX_TIME_FLAG + classTask.getGradeNo() + classTask.getClassNo()
                             + classTask.getTeacherNo() + classTask.getCourseNo() + classTask.getCourseAttr();
 
                     unFixedTimeGeneList.add(gene);
                 }
             }
             // 2,固定上课时间
-            if (classTask.getIsFix().equals(ConstantInfo.FIX_TIME_FLAG)) {
+            if (isFixedTask(classTask)) {
                 int size = classTask.getWeeksNumber() / 2;
                 for (int i = 0; i < size; i++) {
                     // 获得设定的固定时间：04 07
                     String classTime = classTask.getClassTime().substring(i * 2, (i + 1) * 2);
-                    String gene = classTask.getIsFix() + classTask.getGradeNo() + classTask.getClassNo()
+                    if (!availableClassTimes.contains(classTime)) {
+                        throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                                String.format("固定时间编码 %s 不在当前排课规则允许的时间片内", classTime));
+                    }
+                    String gene = ConstantInfo.FIX_TIME_FLAG + classTask.getGradeNo() + classTask.getClassNo()
                             + classTask.getTeacherNo() + classTask.getCourseNo() + classTask.getCourseAttr() + classTime;
                     fixedTimeGeneList.add(gene);
                 }
@@ -820,14 +867,14 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      *
      * @param geneMap 固定时间与不固定时间的编码集合
      */
-    private List<String> codingTime(Map<String, List<String>> geneMap) {
+    private List<String> codingTime(Map<String, List<String>> geneMap, List<String> availableClassTimes) {
 
         List<String> fixedTimeGeneList = geneMap.get(ConstantInfo.IS_FIX_TIME);
         List<String> unFixedTimeGeneList = geneMap.get(ConstantInfo.UN_FIXED_TIME);
         List<String> resultGeneList = new ArrayList<>(fixedTimeGeneList);
 
         for (String gene : unFixedTimeGeneList) {
-            String classTime = ClassUtil.randomTime();
+            String classTime = ClassUtil.randomTime(availableClassTimes);
             gene = gene + classTime;
             resultGeneList.add(gene);
         }
@@ -896,5 +943,32 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             coursePlanList.add(coursePlan);
         }
         return coursePlanList;
+    }
+
+    private List<String> defaultAvailableClassTimes() {
+        return java.util.stream.IntStream.rangeClosed(1, ClassUtil.MAX_CLASS_TIME)
+                .mapToObj(i -> i < 10 ? ("0" + i) : String.valueOf(i))
+                .toList();
+    }
+
+    private boolean isFixedTask(SchedulingTaskInput classTask) {
+        return "1".equals(classTask.getIsFix()) || ConstantInfo.FIX_TIME_FLAG.equals(classTask.getIsFix());
+    }
+
+    private boolean isUnfixedTask(SchedulingTaskInput classTask) {
+        return "0".equals(classTask.getIsFix());
+    }
+
+    private String toLegacyClassTime(CfgTimeSlot timeSlot) {
+        if (timeSlot.getWeekdayNo() == null || timeSlot.getPeriodNo() == null) {
+            return null;
+        }
+        if (timeSlot.getWeekdayNo() < 1 || timeSlot.getWeekdayNo() > 5 || timeSlot.getPeriodNo() < 1 || timeSlot.getPeriodNo() > 5) {
+            return null;
+        }
+        return String.format("%02d", (timeSlot.getWeekdayNo() - 1) * 5 + timeSlot.getPeriodNo());
+    }
+
+    static record SchedulingRuntimeContext(String scheduleRuleName, List<String> availableClassTimes, boolean configApplied) {
     }
 }

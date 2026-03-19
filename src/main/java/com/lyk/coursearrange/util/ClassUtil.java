@@ -85,6 +85,14 @@ public class ClassUtil {
         return temp < 10 ? ("0" + temp) : String.valueOf(temp);
     }
 
+    public static String randomTime(List<String> availableTimeSlots) {
+        if (availableTimeSlots == null || availableTimeSlots.isEmpty()) {
+            return randomTime();
+        }
+        int randomIndex = RANDOM.nextInt(availableTimeSlots.size());
+        return availableTimeSlots.get(randomIndex);
+    }
+
 
     /**
      * @author lyk
@@ -108,6 +116,15 @@ public class ClassUtil {
      * @return -> java.lang.String
      **/
     public static String randomTimeForClassConflict(String gene, List<String> geneList, String classNo, String teacherNo, String classTime) {
+        return randomTimeForClassConflict(gene, geneList, classNo, teacherNo, classTime, getAllTime());
+    }
+
+    public static String randomTimeForClassConflict(String gene,
+                                                    List<String> geneList,
+                                                    String classNo,
+                                                    String teacherNo,
+                                                    String classTime,
+                                                    List<String> availableTimeSlots) {
 
         // 找出当前班级在 01-25 时间之间还未使用的时间
         Set<String> usedTimeList =
@@ -116,10 +133,18 @@ public class ClassUtil {
 
         log.debug("{} 班级 剩余空闲上课时间 {}", classNo, usedTimeList);
 
-        return getFreeTime(usedTimeList);
+        return getFreeTime(usedTimeList, availableTimeSlots);
     }
 
     public static String randomTimeForTeacherConflict(String gene, List<String> geneList, String teacherNo, String classNo) {
+        return randomTimeForTeacherConflict(gene, geneList, teacherNo, classNo, getAllTime());
+    }
+
+    public static String randomTimeForTeacherConflict(String gene,
+                                                      List<String> geneList,
+                                                      String teacherNo,
+                                                      String classNo,
+                                                      List<String> availableTimeSlots) {
 
         // 找出当前教师在 01-25 时间之间还未使用的时间
         Set<String> usedTimeList =
@@ -128,7 +153,7 @@ public class ClassUtil {
 
         log.debug("{} 讲师 已经用的上课时间 {}", teacherNo, usedTimeList);
 
-        return getFreeTime(usedTimeList);
+        return getFreeTime(usedTimeList, availableTimeSlots);
     }
 
     /**
@@ -137,7 +162,13 @@ public class ClassUtil {
      * @return -> java.lang.String
      **/
     private static String getFreeTime(Set<String> usedTimeList) {
-        List<String> allTime = getAllTime();
+        return getFreeTime(usedTimeList, getAllTime());
+    }
+
+    private static String getFreeTime(Set<String> usedTimeList, List<String> availableTimeSlots) {
+        List<String> allTime = availableTimeSlots == null || availableTimeSlots.isEmpty()
+                ? getAllTime()
+                : new ArrayList<>(availableTimeSlots);
 
         boolean isRemoveSuccess = allTime.removeAll(usedTimeList);
 
@@ -146,7 +177,7 @@ public class ClassUtil {
             return allTime.get(randomIndex);
         }
 
-        return randomTime();
+        return randomTime(availableTimeSlots);
     }
 
 
