@@ -88,7 +88,7 @@
             <div class="card-caption">当前按标准课表结果的 01-25 时间片规则，映射成周一到周五、每天五节课的课表视图。</div>
           </div>
           <div class="header-tags">
-            <el-tag v-if="canDragAdjust" type="warning" effect="plain">管理员可拖拽标准课表</el-tag>
+            <el-tag v-if="canDragAdjust" type="warning" effect="plain">管理员仅可拖拽标准课表</el-tag>
             <el-tag type="info" effect="plain">{{ viewMode === 'class' ? '班级视角' : '教师视角' }}</el-tag>
           </div>
         </div>

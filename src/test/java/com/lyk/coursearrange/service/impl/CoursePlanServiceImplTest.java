@@ -3,6 +3,8 @@ package com.lyk.coursearrange.service.impl;
 import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
@@ -27,6 +29,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -195,6 +198,21 @@ class CoursePlanServiceImplTest {
         assertTrue(response.isSuccess());
         assertEquals(Long.valueOf(101L), request.getStandardResultId());
         verify(coursePlanLegacySupport, never()).getById(101);
+    }
+
+    @Test
+    void adjustCoursePlan_shouldNotFallbackToLegacyPlanWhenStandardResultMissing() {
+        CoursePlanAdjustRequest request = new CoursePlanAdjustRequest();
+        request.setId(999);
+        request.setClassTime("09");
+
+        when(schScheduleResultService.getById(999L)).thenReturn(null);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.adjustCoursePlan(request));
+
+        assertEquals(ResultCode.NOT_FOUND.getCode(), exception.getCode());
+        assertEquals("标准课表记录不存在", exception.getMessage());
+        verify(coursePlanLegacySupport, never()).getById(999);
     }
 
     @Test

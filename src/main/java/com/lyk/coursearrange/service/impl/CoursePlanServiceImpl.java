@@ -90,32 +90,7 @@ public class CoursePlanServiceImpl implements CoursePlanService {
                 return adjustStandardCoursePlan(request);
             }
         }
-        CoursePlan coursePlan = coursePlanLegacySupport.getById(request.getId());
-        if (coursePlan == null) {
-            throw new BusinessException(ResultCode.NOT_FOUND, "课表记录不存在");
-        }
-        if (request.getClassTime() == null || request.getClassTime().isBlank()) {
-            throw new BusinessException(ResultCode.BAD_REQUEST, "目标时间片不能为空");
-        }
-        String targetClassTime = request.getClassTime();
-        String targetClassroomNo = request.getClassroomNo() != null && !request.getClassroomNo().isBlank()
-                ? request.getClassroomNo()
-                : coursePlan.getClassroomNo();
-        String beforeClassTime = coursePlan.getClassTime();
-        String beforeClassroomNo = coursePlan.getClassroomNo();
-        String conflictMessage = validateAdjustConflict(coursePlan, targetClassTime, targetClassroomNo);
-        if (conflictMessage != null) {
-            throw new BusinessException(ResultCode.BUSINESS_ERROR, conflictMessage);
-        }
-        coursePlan.setClassTime(targetClassTime);
-        coursePlan.setClassroomNo(targetClassroomNo);
-        boolean updated = coursePlanLegacySupport.updateById(coursePlan);
-        if (updated) {
-            scheduleLogMirrorService.syncAdjustedPlan(coursePlan, beforeClassTime);
-            saveAdjustLog(coursePlan, beforeClassTime, beforeClassroomNo, targetClassTime, targetClassroomNo);
-            return ServerResponse.ofSuccess("调课成功", coursePlan);
-        }
-        throw new BusinessException(ResultCode.SYSTEM_ERROR, "调课失败，请稍后重试");
+        throw new BusinessException(ResultCode.NOT_FOUND, "标准课表记录不存在");
     }
 
     private ServerResponse adjustStandardCoursePlan(CoursePlanAdjustRequest request) {
