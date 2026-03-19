@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
@@ -20,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -60,5 +63,33 @@ class ScheduleTaskControllerTest {
         assertEquals(Long.valueOf(101L), vo.getStandardId());
         assertEquals("C1", vo.getClassNo());
         assertEquals("数学", vo.getCourseName());
+    }
+
+    @Test
+    void save_shouldOnlyPersistStandardTask() {
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleLogMirrorService);
+
+        ClassTaskDTO request = new ClassTaskDTO();
+        request.setSemester("2025-2026-1");
+        request.setGradeNo("G1");
+        request.setClassNo("C1");
+        request.setCourseNo("K1");
+        request.setCourseName("数学");
+        request.setTeacherNo("T1");
+        request.setRealname("张老师");
+        request.setCourseAttr("必修");
+        request.setStudentNum(40);
+        request.setWeeksNumber(4);
+        request.setWeeksSum(16);
+        request.setIsFix("0");
+        request.setClassTime("");
+
+        when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
+        when(schTaskService.save(org.mockito.ArgumentMatchers.any(SchTask.class))).thenReturn(true);
+
+        ServerResponse<?> response = controller.save(request);
+
+        assertTrue(response.isSuccess());
+        verify(classTaskService, never()).saveLegacyTask(org.mockito.ArgumentMatchers.any());
     }
 }

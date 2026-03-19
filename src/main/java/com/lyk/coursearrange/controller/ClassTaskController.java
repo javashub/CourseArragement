@@ -16,7 +16,6 @@ import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -74,24 +73,8 @@ public class ClassTaskController {
         if (!schTaskService.save(standardTask)) {
             return throwBusiness(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
         }
-        ClassTask classTask = new ClassTask();
-        BeanUtils.copyProperties(c, classTask);
         log.info("新增课程任务，semester={}, courseNo={}, classNo={}",
-                classTask.getSemester(), classTask.getCourseNo(), classTask.getClassNo());
-        try {
-            if (!classTaskService.saveLegacyTask(classTask)) {
-                log.warn("legacy 排课任务副本写入失败，semester={}, classNo={}", classTask.getSemester(), classTask.getClassNo());
-            }
-        } catch (Exception exception) {
-            log.warn("写入 legacy 排课任务副本失败，semester={}, classNo={}",
-                    classTask.getSemester(), classTask.getClassNo(), exception);
-        }
-        try {
-            standardTask.setRemark(ScheduleTaskMetaUtils.buildTaskRemark(classTask));
-            schTaskService.updateById(standardTask);
-        } catch (Exception exception) {
-            log.warn("回写标准排课任务 legacyId 失败，standardId={}", standardTask.getId(), exception);
-        }
+                c.getSemester(), c.getCourseNo(), c.getClassNo());
         return ServerResponse.ofSuccess("添加课程任务成功");
     }
 
