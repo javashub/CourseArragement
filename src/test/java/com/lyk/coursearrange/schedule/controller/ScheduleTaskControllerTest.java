@@ -187,4 +187,26 @@ class ScheduleTaskControllerTest {
         assertTrue(response.isSuccess());
     }
 
+    @Test
+    void createExecution_shouldDelegateToSchedulingService() {
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService);
+        ServerResponse<?> expected = ServerResponse.ofSuccess("排课成功");
+        when(classTaskService.classScheduling("2025-2026-1")).thenReturn(expected);
+
+        ServerResponse<?> response = controller.createExecution("2025-2026-1");
+
+        assertEquals(expected, response);
+    }
+
+    @Test
+    void listExecutions_shouldReturnRecentArrangeLogs() {
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService);
+        when(classTaskService.listRecentExecuteLogs("2025-2026-1", 8)).thenReturn(List.of());
+
+        ServerResponse<?> response = controller.listExecutions("2025-2026-1", 8);
+
+        assertTrue(response.isSuccess());
+        assertEquals(List.of(), response.getData());
+    }
+
 }

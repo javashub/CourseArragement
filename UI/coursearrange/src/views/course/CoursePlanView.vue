@@ -25,6 +25,35 @@
       </div>
     </div>
 
+    <el-card v-if="latestArrangeSummary" shadow="never" class="plan-card summary-card">
+      <div class="summary-header">
+        <div>
+          <div class="card-title">排课结果摘要</div>
+          <div class="card-subtitle">
+            当前仅展示本次会话中最近一次标准排课执行结果，摘要口径按任务维度统计。
+          </div>
+        </div>
+        <el-tag :type="latestArrangeSummary.unscheduledTaskCount > 0 ? 'warning' : 'success'" effect="light" round>
+          {{ latestArrangeSummary.unscheduledTaskCount > 0 ? '存在未排成功任务' : '任务已全部生成课表' }}
+        </el-tag>
+      </div>
+      <div class="summary-metrics">
+        <article v-for="item in arrangeSummaryCards" :key="item.label" class="metric-tile">
+          <span class="metric-label">{{ item.label }}</span>
+          <strong class="metric-value">{{ item.value }}</strong>
+          <span class="metric-note">{{ item.note }}</span>
+        </article>
+      </div>
+      <div v-if="latestArrangeSummary.unscheduledTasks.length" class="reason-board">
+        <div class="reason-title">未排成功任务与原因</div>
+        <div class="reason-list">
+          <div v-for="item in latestArrangeSummary.unscheduledTasks" :key="item" class="reason-item">
+            {{ item }}
+          </div>
+        </div>
+      </div>
+    </el-card>
+
     <el-card shadow="never" class="plan-card">
       <div class="toolbar-row">
         <div class="summary-group">
@@ -401,6 +430,7 @@ const executionLogsLoading = ref(false);
 const taskLoadError = ref('');
 const executionLogError = ref('');
 const executionLogLimit = 8;
+const latestArrangeSummary = ref(null);
 
 const taskState = reactive({
   loading: false,
@@ -419,11 +449,53 @@ const taskState = reactive({
 const taskForm = ref(createTaskForm());
 
 const latestExecutionSummary = computed(() => {
+  if (latestArrangeSummary.value) {
+    return `成功率 ${formatSuccessRate(latestArrangeSummary.value.successRate)}`;
+  }
   if (!executionLogs.value.length) {
     return '暂无记录';
   }
   const latest = executionLogs.value[0];
   return latest.status === 1 ? '最近一次成功' : '最近一次失败';
+});
+
+const arrangeSummaryCards = computed(() => {
+  if (!latestArrangeSummary.value) {
+    return [];
+  }
+  const summary = latestArrangeSummary.value;
+  return [
+    {
+      label: '任务总数',
+      value: summary.taskCount,
+      note: '本次排课接收的标准任务数'
+    },
+    {
+      label: '成功任务',
+      value: summary.scheduledTaskCount,
+      note: '至少生成一条标准课表记录的任务'
+    },
+    {
+      label: '未成功任务',
+      value: summary.unscheduledTaskCount,
+      note: '未生成标准课表记录的任务'
+    },
+    {
+      label: '冲突任务',
+      value: summary.conflictTaskCount,
+      note: '当前按未成功任务口径统计'
+    },
+    {
+      label: '生成课表',
+      value: summary.generatedPlanCount,
+      note: '标准课表结果记录总数'
+    },
+    {
+      label: '成功率',
+      value: formatSuccessRate(summary.successRate),
+      note: '成功任务数 / 任务总数'
+    }
+  ];
 });
 
 const formValidation = computed(() => {
@@ -503,6 +575,26 @@ function buildImportSummary(payload) {
   const successCount = result.successCount ?? 0;
   const failedCount = result.failedCount ?? 0;
   return `课程任务导入完成，合计 ${totalCount} 条，成功 ${successCount} 条，失败 ${failedCount} 条`;
+}
+
+function normalizeArrangeSummary(payload) {
+  if (!payload) {
+    return null;
+  }
+  return {
+    durationMs: Number(payload.durationMs || 0),
+    generatedPlanCount: Number(payload.generatedPlanCount || 0),
+    taskCount: Number(payload.taskCount || 0),
+    scheduledTaskCount: Number(payload.scheduledTaskCount || 0),
+    unscheduledTaskCount: Number(payload.unscheduledTaskCount || 0),
+    conflictTaskCount: Number(payload.conflictTaskCount || 0),
+    successRate: Number(payload.successRate || 0),
+    unscheduledTasks: Array.isArray(payload.unscheduledTasks) ? payload.unscheduledTasks : []
+  };
+}
+
+function formatSuccessRate(value) {
+  return `${Number(value || 0).toFixed(2)}%`;
 }
 
 async function showImportErrors(payload) {
@@ -639,6 +731,7 @@ function handleTaskPageChange(page) {
 }
 
 async function handleSemesterChange() {
+  latestArrangeSummary.value = null;
   await Promise.all([loadClassTasks(true), loadExecutionLogs()]);
 }
 
@@ -810,7 +903,11 @@ async function handleArrange() {
   arranging.value = true;
   try {
     const response = await arrangeClassTask(selectedSemester.value);
-    ElMessage.success(response.message || '排课执行完成');
+    latestArrangeSummary.value = normalizeArrangeSummary(response.data);
+    ElMessage({
+      type: latestArrangeSummary.value?.unscheduledTaskCount > 0 ? 'warning' : 'success',
+      message: response.message || '排课执行完成'
+    });
     await Promise.all([loadClassTasks(true), loadExecutionLogs()]);
   } finally {
     arranging.value = false;
@@ -970,6 +1067,100 @@ onMounted(async () => {
   gap: 16px;
 }
 
+.summary-card {
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgb(248 244 234 / 90%) 0%, rgb(255 255 255 / 96%) 44%, rgb(240 247 255 / 96%) 100%);
+}
+
+.summary-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metric-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 148px;
+  padding: 18px;
+  border: 1px solid rgb(179 154 102 / 22%);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 88%) 0%, rgb(252 249 242 / 95%) 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 75%);
+}
+
+.metric-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8c6c2b 0%, #d3b36a 100%);
+}
+
+.metric-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7a6846;
+}
+
+.metric-value {
+  font-size: 28px;
+  line-height: 1;
+  color: #17263d;
+}
+
+.metric-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #6f7f95;
+}
+
+.reason-board {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: 1px solid #eadfbe;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgb(255 251 242 / 95%) 0%, rgb(255 247 231 / 92%) 100%);
+}
+
+.reason-title {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #694f18;
+}
+
+.reason-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reason-item {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 75%);
+  color: #6b5d40;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
 .tips-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1070,7 +1261,8 @@ onMounted(async () => {
 @media (max-width: 960px) {
   .hero-panel,
   .toolbar-row,
-  .log-header {
+  .log-header,
+  .summary-header {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -1084,7 +1276,9 @@ onMounted(async () => {
   .tips-grid,
   .constraint-grid,
   .form-grid,
-  .compact-grid {
+  .compact-grid,
+  .summary-metrics,
+  .reason-list {
     grid-template-columns: 1fr;
   }
 }

@@ -121,16 +121,27 @@ public class ScheduleTaskController {
         return ServerResponse.ofSuccess(listStandardSemesters());
     }
 
-    @PostMapping("/arrange")
-    public ServerResponse<?> arrange(@RequestParam String semester) {
+    @PostMapping("/executions")
+    public ServerResponse<?> createExecution(@RequestParam String semester) {
         log.info("开始执行标准排课任务，semester={}", semester);
         return classTaskService.classScheduling(semester);
+    }
+
+    @GetMapping("/executions")
+    public ServerResponse<?> listExecutions(@RequestParam(required = false) String semester,
+                                            @RequestParam(defaultValue = "10") Integer limit) {
+        return ServerResponse.ofSuccess(classTaskService.listRecentExecuteLogs(semester, limit));
+    }
+
+    @PostMapping("/arrange")
+    public ServerResponse<?> arrange(@RequestParam String semester) {
+        return createExecution(semester);
     }
 
     @GetMapping("/logs")
     public ServerResponse<?> logs(@RequestParam(required = false) String semester,
                                   @RequestParam(defaultValue = "10") Integer limit) {
-        return ServerResponse.ofSuccess(classTaskService.listRecentExecuteLogs(semester, limit));
+        return listExecutions(semester, limit);
     }
 
     /**

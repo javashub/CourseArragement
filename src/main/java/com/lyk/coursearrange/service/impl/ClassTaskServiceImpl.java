@@ -28,6 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -97,10 +99,11 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             // 8、只写标准课表结果
             scheduleLogMirrorService.replaceScheduleResults(semester, schedulingTasks, coursePlanList);
             long duration = System.currentTimeMillis() - start;
+            Map<String, Object> schedulingSummary = buildSchedulingSummary(schedulingTasks, coursePlanList);
             log.info("完成排课,耗时：{}", duration);
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
-                    String.format("排课成功，生成 %s 条课表记录", coursePlanList.size()));
-            return buildSchedulingSuccessResponse(duration, coursePlanList.size());
+                    buildSchedulingSummaryMessage(schedulingSummary, coursePlanList.size()));
+            return buildSchedulingSuccessResponse(duration, coursePlanList.size(), schedulingSummary);
         } catch (BusinessException exception) {
             throw exception;
         } catch (Exception e) {
@@ -114,6 +117,51 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         data.put("durationMs", duration);
         data.put("generatedPlanCount", generatedPlanCount);
         return ServerResponse.ofSuccess(String.format("排课成功，标准课表已生成，耗时：%sms", duration), data);
+    }
+
+    ServerResponse<Map<String, Object>> buildSchedulingSuccessResponse(long duration,
+                                                                      int generatedPlanCount,
+                                                                      Map<String, Object> schedulingSummary) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("durationMs", duration);
+        data.put("generatedPlanCount", generatedPlanCount);
+        data.putAll(schedulingSummary);
+        int unscheduledTaskCount = asInt(schedulingSummary.get("unscheduledTaskCount"));
+        String message = unscheduledTaskCount > 0
+                ? String.format("排课完成，但仍有 %s 个任务未生成标准课表，耗时：%sms", unscheduledTaskCount, duration)
+                : String.format("排课成功，标准课表已生成，耗时：%sms", duration);
+        return ServerResponse.ofSuccess(message, data);
+    }
+
+    Map<String, Object> buildSchedulingSummary(List<SchedulingTaskInput> schedulingTasks, List<CoursePlan> coursePlanList) {
+        Set<String> scheduledTaskKeys = coursePlanList.stream()
+                .map(this::buildTaskKey)
+                .filter(item -> item != null && !item.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<String> unscheduledTasks = schedulingTasks.stream()
+                .filter(Objects::nonNull)
+                .filter(task -> !scheduledTaskKeys.contains(buildTaskKey(task)))
+                .map(this::buildUnscheduledTaskReason)
+                .toList();
+
+        int taskCount = schedulingTasks.size();
+        int unscheduledTaskCount = unscheduledTasks.size();
+        int scheduledTaskCount = Math.max(taskCount - unscheduledTaskCount, 0);
+        double successRate = taskCount <= 0
+                ? 0D
+                : BigDecimal.valueOf((double) scheduledTaskCount * 100 / taskCount)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("taskCount", taskCount);
+        summary.put("scheduledTaskCount", scheduledTaskCount);
+        summary.put("unscheduledTaskCount", unscheduledTaskCount);
+        summary.put("conflictTaskCount", unscheduledTaskCount);
+        summary.put("successRate", successRate);
+        summary.put("unscheduledTasks", unscheduledTasks);
+        return summary;
     }
 
     /**
@@ -237,6 +285,57 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             return 0;
         }
         return standardTask.getTotalHours() / standardTask.getWeekHours();
+    }
+
+    private String buildSchedulingSummaryMessage(Map<String, Object> schedulingSummary, int generatedPlanCount) {
+        int taskCount = asInt(schedulingSummary.get("taskCount"));
+        int scheduledTaskCount = asInt(schedulingSummary.get("scheduledTaskCount"));
+        int unscheduledTaskCount = asInt(schedulingSummary.get("unscheduledTaskCount"));
+        if (unscheduledTaskCount > 0) {
+            return String.format("排课完成，生成 %s 条课表记录，成功 %s/%s 个任务，未完成 %s 个任务",
+                    generatedPlanCount, scheduledTaskCount, taskCount, unscheduledTaskCount);
+        }
+        return String.format("排课成功，生成 %s 条课表记录，成功覆盖 %s 个任务",
+                generatedPlanCount, scheduledTaskCount);
+    }
+
+    private int asInt(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return 0;
+    }
+
+    private String buildTaskKey(SchedulingTaskInput task) {
+        if (task == null) {
+            return "";
+        }
+        return buildTaskKey(task.getClassNo(), task.getCourseNo(), task.getTeacherNo());
+    }
+
+    private String buildTaskKey(CoursePlan coursePlan) {
+        if (coursePlan == null) {
+            return "";
+        }
+        return buildTaskKey(coursePlan.getClassNo(), coursePlan.getCourseNo(), coursePlan.getTeacherNo());
+    }
+
+    private String buildTaskKey(String classNo, String courseNo, String teacherNo) {
+        if (classNo == null || courseNo == null || teacherNo == null) {
+            return "";
+        }
+        return String.join("::", classNo, courseNo, teacherNo);
+    }
+
+    private String buildUnscheduledTaskReason(SchedulingTaskInput task) {
+        String courseName = task.getCourseName() == null || task.getCourseName().isBlank()
+                ? task.getCourseNo()
+                : task.getCourseName();
+        String teacherName = task.getRealname() == null || task.getRealname().isBlank()
+                ? task.getTeacherNo()
+                : task.getRealname();
+        return String.format("%s / %s / %s：未生成对应课表记录，请检查固定时间、教师冲突与教室容量约束",
+                task.getClassNo(), courseName, teacherName);
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {

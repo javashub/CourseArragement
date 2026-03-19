@@ -2,6 +2,7 @@ package com.lyk.coursearrange.service.impl;
 
 import com.lyk.coursearrange.common.ServerResponse;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -95,5 +97,45 @@ class ClassTaskServiceImplTest {
         long count = service.countScheduleTasks();
 
         assertEquals(0L, count);
+    }
+
+    @Test
+    void buildSchedulingSummary_shouldAggregateScheduledAndUnscheduledTasks() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+
+        SchedulingTaskInput scheduledTask = new SchedulingTaskInput();
+        scheduledTask.setSemester("2025-2026-1");
+        scheduledTask.setClassNo("2501");
+        scheduledTask.setCourseNo("10001");
+        scheduledTask.setCourseName("高等数学");
+        scheduledTask.setTeacherNo("T2026001");
+        scheduledTask.setRealname("张老师");
+
+        SchedulingTaskInput unscheduledTask = new SchedulingTaskInput();
+        unscheduledTask.setSemester("2025-2026-1");
+        unscheduledTask.setClassNo("2502");
+        unscheduledTask.setCourseNo("10002");
+        unscheduledTask.setCourseName("大学英语");
+        unscheduledTask.setTeacherNo("T2026002");
+        unscheduledTask.setRealname("李老师");
+
+        CoursePlan plan = new CoursePlan();
+        plan.setClassNo("2501");
+        plan.setCourseNo("10001");
+        plan.setTeacherNo("T2026001");
+
+        Map<String, Object> summary = service.buildSchedulingSummary(List.of(scheduledTask, unscheduledTask), List.of(plan));
+
+        assertEquals(2, summary.get("taskCount"));
+        assertEquals(1, summary.get("scheduledTaskCount"));
+        assertEquals(1, summary.get("unscheduledTaskCount"));
+        assertEquals(1, summary.get("conflictTaskCount"));
+        assertEquals(50.0d, summary.get("successRate"));
+        assertInstanceOf(List.class, summary.get("unscheduledTasks"));
+        List<?> unscheduledTasks = (List<?>) summary.get("unscheduledTasks");
+        assertEquals(1, unscheduledTasks.size());
+        String firstReason = String.valueOf(unscheduledTasks.get(0));
+        assertTrue(firstReason.contains("2502"));
+        assertTrue(firstReason.contains("大学英语"));
     }
 }

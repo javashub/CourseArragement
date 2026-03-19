@@ -43,7 +43,7 @@ export function deleteStandardClassTask(id) {
 }
 
 export function arrangeClassTask(semester) {
-  return request.post('/schedule/tasks/arrange', null, {
+  return request.post('/schedule/tasks/executions', null, {
     params: { semester }
   });
 }
@@ -79,7 +79,7 @@ export async function downloadClassTaskTemplate() {
 }
 
 export function fetchArrangeLogs(params = {}) {
-  return request.get('/schedule/tasks/logs', { params });
+  return request.get('/schedule/tasks/executions', { params });
 }
 
 export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
