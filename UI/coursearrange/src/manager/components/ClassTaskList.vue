@@ -353,12 +353,9 @@ export default {
     },
 
     showRequestSuccess(response, fallback) {
-      const legacyDisabled = response?.data?.legacyCoursePlanEnabled === false;
-      const degraded =
-        response?.data?.legacyCoursePlanSaved === false && !legacyDisabled;
       this.$message({
         message: response?.message || fallback,
-        type: degraded ? "warning" : legacyDisabled ? "info" : "success",
+        type: "success",
       });
     },
 
@@ -391,17 +388,12 @@ export default {
       try {
         const response = await arrangeClassTask(this.semester);
         this.allClassTask();
-        const legacyDisabled = response?.data?.legacyCoursePlanEnabled === false;
-        const degraded =
-          response?.data?.legacyCoursePlanSaved === false && !legacyDisabled;
         this.arrangeResult = {
           message: response?.message || "排课成功",
-          type: degraded ? "warning" : legacyDisabled ? "info" : "success",
+          type: "success",
         };
         this.showRequestSuccess(response, "排课成功");
-        if (!degraded) {
-          this.$router.push("/coursetable");
-        }
+        this.$router.push("/coursetable");
       } catch (error) {
         this.clearArrangeResult();
         this.showRequestError(error, "排课失败");

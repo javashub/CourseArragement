@@ -49,8 +49,6 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     @Resource
     private ClassInfoDao classInfoDao;
     @Resource
-    private CoursePlanLegacySupport coursePlanLegacySupport;
-    @Resource
     private ScheduleExecuteLogService scheduleExecuteLogService;
     @Resource
     private AuthFacadeService authFacadeService;
@@ -96,16 +94,13 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             List<String> resultList = finalResult(individualMap);
             // 7、解码
             List<CoursePlan> coursePlanList = decoding(resultList);
-            // 8、优先写入标准课表结果，旧 tb_course_plan 仅作为兼容副本保留
+            // 8、只写标准课表结果，legacy tb_course_plan 已停用
             scheduleLogMirrorService.replaceScheduleResults(semester, classTaskList, coursePlanList);
-            // 9、写入 tb_course_plan 兼容旧查询与旧接口。后续删除旧表后，这里允许降级失败。
-            boolean legacyCoursePlanEnabled = isLegacyCoursePlanMirrorEnabled();
-            boolean legacyCoursePlanSaved = replaceLegacyCoursePlans(semester, coursePlanList);
             long duration = System.currentTimeMillis() - start;
             log.info("完成排课,耗时：{}", duration);
             saveExecuteLog(semester, taskCount, coursePlanList.size(), 1, duration,
                     String.format("排课成功，生成 %s 条课表记录", coursePlanList.size()));
-            return buildSchedulingSuccessResponse(duration, coursePlanList.size(), legacyCoursePlanEnabled, legacyCoursePlanSaved);
+            return buildSchedulingSuccessResponse(duration, coursePlanList.size());
         } catch (BusinessException exception) {
             throw exception;
         } catch (Exception e) {
@@ -114,37 +109,11 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         }
     }
 
-    ServerResponse<Map<String, Object>> buildSchedulingSuccessResponse(long duration, int generatedPlanCount,
-                                                                       boolean legacyCoursePlanEnabled,
-                                                                       boolean legacyCoursePlanSaved) {
+    ServerResponse<Map<String, Object>> buildSchedulingSuccessResponse(long duration, int generatedPlanCount) {
         Map<String, Object> data = new HashMap<>();
         data.put("durationMs", duration);
         data.put("generatedPlanCount", generatedPlanCount);
-        data.put("legacyCoursePlanEnabled", legacyCoursePlanEnabled);
-        data.put("legacyCoursePlanSaved", legacyCoursePlanSaved);
-        return ServerResponse.ofSuccess(buildSchedulingSuccessMessage(duration, legacyCoursePlanEnabled, legacyCoursePlanSaved), data);
-    }
-
-    boolean replaceLegacyCoursePlans(String semester, List<CoursePlan> coursePlanList) {
-        if (!isLegacyCoursePlanMirrorEnabled()) {
-            log.info("已停用 legacy 课表副本写入，semester={}", semester);
-            return false;
-        }
-        return coursePlanLegacySupport.replaceCoursePlans(semester, coursePlanList);
-    }
-
-    boolean isLegacyCoursePlanMirrorEnabled() {
-        return false;
-    }
-
-    private String buildSchedulingSuccessMessage(long duration, boolean legacyCoursePlanEnabled, boolean legacyCoursePlanSaved) {
-        if (!legacyCoursePlanEnabled) {
-            return String.format("排课成功，标准课表已生成，legacy 课表副本已停用，耗时：%sms", duration);
-        }
-        if (legacyCoursePlanSaved) {
-            return String.format("排课成功，耗时：%sms", duration);
-        }
-        return String.format("排课成功，标准课表已生成，legacy 课表副本未写入，耗时：%sms", duration);
+        return ServerResponse.ofSuccess(String.format("排课成功，标准课表已生成，耗时：%sms", duration), data);
     }
 
     @Override

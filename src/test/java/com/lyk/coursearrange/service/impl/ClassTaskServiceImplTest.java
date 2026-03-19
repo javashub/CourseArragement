@@ -3,7 +3,6 @@ package com.lyk.coursearrange.service.impl;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.ClassTask;
-import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import org.junit.jupiter.api.Test;
@@ -34,8 +33,6 @@ class ClassTaskServiceImplTest {
     private SchTaskService schTaskService;
     @Mock
     private ClassTaskDao classTaskDao;
-    @Mock
-    private CoursePlanLegacySupport coursePlanLegacySupport;
 
     @Test
     void ensureLegacyTasksForSemester_shouldIgnoreMissingLegacyTaskTable() {
@@ -51,29 +48,15 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
-    void buildSchedulingSuccessResponse_shouldExposeLegacyMirrorDisabledStatus() {
+    void buildSchedulingSuccessResponse_shouldExposeStandardOnlyStatus() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
 
-        ServerResponse<Map<String, Object>> response = service.buildSchedulingSuccessResponse(123L, 8, false, false);
+        ServerResponse<Map<String, Object>> response = service.buildSchedulingSuccessResponse(123L, 8);
 
         assertTrue(response.isSuccess());
-        assertEquals("排课成功，标准课表已生成，legacy 课表副本已停用，耗时：123ms", response.getMessage());
-        assertEquals(Boolean.FALSE, response.getData().get("legacyCoursePlanEnabled"));
-        assertEquals(Boolean.FALSE, response.getData().get("legacyCoursePlanSaved"));
+        assertEquals("排课成功，标准课表已生成，耗时：123ms", response.getMessage());
         assertEquals(8, response.getData().get("generatedPlanCount"));
         assertEquals(123L, response.getData().get("durationMs"));
-    }
-
-    @Test
-    void replaceLegacyCoursePlans_shouldSkipWhenLegacyMirrorDisabled() {
-        ClassTaskServiceImpl service = spy(new ClassTaskServiceImpl());
-        ReflectionTestUtils.setField(service, "coursePlanLegacySupport", coursePlanLegacySupport);
-
-        boolean saved = service.replaceLegacyCoursePlans("2025-2026-1", List.of(new CoursePlan()));
-
-        assertEquals(false, saved);
-        verify(service).isLegacyCoursePlanMirrorEnabled();
-        verifyNoInteractions(coursePlanLegacySupport);
     }
 
     @Test
