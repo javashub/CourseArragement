@@ -506,11 +506,7 @@ export default {
      */
     async deleteClassTaskById(row) {
       try {
-        if (row.standardId) {
-          await deleteStandardClassTask(row.standardId);
-        } else {
-          await deleteClassTask(row.id);
-        }
+        await deleteStandardClassTask(row.standardId || row.id);
         this.allClassTask();
         this.showRequestSuccess(null, "删除成功");
       } catch (error) {

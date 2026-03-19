@@ -98,4 +98,26 @@ class ClassTaskControllerTest {
         verify(classTaskService, never()).saveLegacyTask(org.mockito.ArgumentMatchers.any());
     }
 
+    @Test
+    void deleteClassTask_shouldOnlyDeleteStandardTask() {
+        ClassTaskController controller = new ClassTaskController();
+        ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
+        ReflectionTestUtils.setField(controller, "scheduleLogMirrorService", scheduleLogMirrorService);
+        ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
+
+        SchTask task = new SchTask();
+        task.setId(101L);
+        task.setDeleted(0);
+
+        when(schTaskService.getById(101L)).thenReturn(task);
+        when(schTaskService.removeById(101L)).thenReturn(true);
+
+        ServerResponse response = controller.deleteClassTask(101);
+
+        assertTrue(response.isSuccess());
+        verify(classTaskService, never()).getLegacyTaskById(101);
+        verify(classTaskService, never()).removeLegacyTaskById(101);
+        verify(scheduleLogMirrorService, never()).removeTaskMirror(org.mockito.ArgumentMatchers.any());
+    }
+
 }

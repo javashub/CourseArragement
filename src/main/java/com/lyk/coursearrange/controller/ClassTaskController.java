@@ -85,15 +85,6 @@ public class ClassTaskController {
      */
     @DeleteMapping("/deleteclasstask/{id}")
     public ServerResponse deleteClassTask(@PathVariable("id") Integer id) {
-        try {
-            ClassTask classTask = classTaskService.getLegacyTaskById(id);
-            if (classTask != null && classTaskService.removeLegacyTaskById(id)) {
-                scheduleLogMirrorService.removeTaskMirror(classTask);
-                return ServerResponse.ofSuccess("删除成功");
-            }
-        } catch (Exception exception) {
-            logLegacyTaskAccessFailure("删除 legacy 排课任务失败，将尝试按标准任务删除，id=" + id, null, exception);
-        }
         SchTask standardTask = schTaskService.getById(id.longValue());
         if (standardTask != null && (standardTask.getDeleted() == null || standardTask.getDeleted() == 0)
                 && schTaskService.removeById(standardTask.getId())) {
@@ -138,12 +129,6 @@ public class ClassTaskController {
                                            @RequestParam(defaultValue = "10") Integer limit) {
         List<?> logs = classTaskService.listRecentExecuteLogs(semester, limit);
         return ServerResponse.ofSuccess(logs);
-    }
-
-    private void requireClassTaskExists(Integer id) {
-        if (id == null || classTaskService.getLegacyTaskById(id) == null) {
-            throw new BusinessException(ResultCode.NOT_FOUND, "开课任务不存在");
-        }
     }
 
     private ServerResponse throwBusiness(ResultCode resultCode, String message) {

@@ -86,23 +86,12 @@ public class ScheduleTaskController {
 
     @DeleteMapping("/{id}")
     public ServerResponse<?> delete(@PathVariable Integer id) {
-        try {
-            requireClassTaskExists(id);
-            ClassTask classTask = classTaskService.getLegacyTaskById(id);
-            if (classTaskService.removeLegacyTaskById(id)) {
-                scheduleLogMirrorService.removeTaskMirror(classTask);
-                return ServerResponse.ofSuccess("删除成功");
-            }
-        } catch (Exception exception) {
-            logLegacyTaskAccessFailure("删除 legacy 排课任务失败，将尝试按标准任务删除，id=" + id, null, exception);
-            SchTask standardTask = schTaskService.getById(id.longValue());
-            if (standardTask != null && (standardTask.getDeleted() == null || standardTask.getDeleted() == 0)
-                    && schTaskService.removeById(standardTask.getId())) {
-                removeMatchedLegacyTask(ScheduleTaskMetaUtils.parseTaskRemark(standardTask.getRemark()));
-                return ServerResponse.ofSuccess("删除成功");
-            }
+        SchTask standardTask = schTaskService.getById(id.longValue());
+        if (standardTask != null && (standardTask.getDeleted() == null || standardTask.getDeleted() == 0)
+                && schTaskService.removeById(standardTask.getId())) {
+            return ServerResponse.ofSuccess("删除成功");
         }
-        throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除失败");
+        throw new BusinessException(ResultCode.NOT_FOUND, "标准排课任务不存在");
     }
 
     @DeleteMapping("/standard/{id}")
@@ -111,9 +100,7 @@ public class ScheduleTaskController {
         if (task == null || task.getDeleted() != null && task.getDeleted() == 1) {
             throw new BusinessException(ResultCode.NOT_FOUND, "标准排课任务不存在");
         }
-        Map<String, String> meta = ScheduleTaskMetaUtils.parseTaskRemark(task.getRemark());
         if (schTaskService.removeById(id)) {
-            removeMatchedLegacyTask(meta);
             return ServerResponse.ofSuccess("删除成功");
         }
         throw new BusinessException(ResultCode.SYSTEM_ERROR, "删除失败");
@@ -144,12 +131,6 @@ public class ScheduleTaskController {
     public ServerResponse<?> logs(@RequestParam(required = false) String semester,
                                   @RequestParam(defaultValue = "10") Integer limit) {
         return ServerResponse.ofSuccess(classTaskService.listRecentExecuteLogs(semester, limit));
-    }
-
-    private void requireClassTaskExists(Integer id) {
-        if (id == null || classTaskService.getLegacyTaskById(id) == null) {
-            throw new BusinessException(ResultCode.NOT_FOUND, "开课任务不存在");
-        }
     }
 
     /**
@@ -266,36 +247,6 @@ public class ScheduleTaskController {
                 classNo == null ? "" : classNo,
                 courseNo == null ? "" : courseNo,
                 teacherNo == null ? "" : teacherNo);
-    }
-
-    private void removeMatchedLegacyTask(Map<String, String> meta) {
-        String semester = meta.getOrDefault("semester", "");
-        String classNo = meta.getOrDefault("classNo", "");
-        String courseNo = meta.getOrDefault("courseNo", "");
-        String teacherNo = meta.getOrDefault("teacherNo", "");
-        if (semester.isBlank() || classNo.isBlank() || courseNo.isBlank() || teacherNo.isBlank()) {
-            return;
-        }
-        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
-                .eq(ClassTask::getSemester, semester)
-                .eq(ClassTask::getClassNo, classNo)
-                .eq(ClassTask::getCourseNo, courseNo)
-                .eq(ClassTask::getTeacherNo, teacherNo)
-                .last("limit 1");
-        try {
-            ClassTask legacyTask = classTaskService.getLegacyTask(wrapper, false);
-            if (legacyTask != null) {
-                classTaskService.removeLegacyTaskById(legacyTask.getId());
-            }
-        } catch (Exception exception) {
-            if (isMissingLegacyTaskTable(exception)) {
-                log.warn("删除 legacy 排课任务副本失败，tb_class_task 已不存在，semester={}, classNo={}, courseNo={}, teacherNo={}",
-                        semester, classNo, courseNo, teacherNo);
-                return;
-            }
-            log.warn("删除 legacy 排课任务副本失败，semester={}, classNo={}, courseNo={}, teacherNo={}",
-                    semester, classNo, courseNo, teacherNo, exception);
-        }
     }
 
     private void logLegacyTaskAccessFailure(String message, String semester, Exception exception) {
