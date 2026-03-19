@@ -5,7 +5,7 @@
         <div class="eyebrow">Timetable Observer</div>
         <h1 class="hero-title">课表管理</h1>
         <p class="hero-description">
-          当前页面只展示标准课表结果，并把课表按时间片整理成易读表格。legacy tb_course_plan 不再作为这里的查询回退来源。
+          当前页面只展示和调度标准课表结果。legacy tb_course_plan 不再作为这里的查询或调课回退来源。
         </p>
       </div>
       <div class="hero-actions">

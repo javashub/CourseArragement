@@ -133,29 +133,6 @@ public class CoursePlanServiceImpl implements CoursePlanService {
         return ServerResponse.ofSuccess("调课成功");
     }
 
-    private String validateAdjustConflict(CoursePlan currentPlan, String targetClassTime, String targetClassroomNo) {
-        LambdaQueryWrapper<CoursePlan> classWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
-                .eq(CoursePlan::getClassNo, currentPlan.getClassNo());
-        if (coursePlanLegacySupport.count(classWrapper) > 0) {
-            return "目标时间片已存在同班级课程，不能调课";
-        }
-
-        LambdaQueryWrapper<CoursePlan> teacherWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
-                .eq(CoursePlan::getTeacherNo, currentPlan.getTeacherNo());
-        if (coursePlanLegacySupport.count(teacherWrapper) > 0) {
-            return "目标时间片教师已有其他课程，不能调课";
-        }
-
-        if (targetClassroomNo != null && !targetClassroomNo.isBlank()) {
-            LambdaQueryWrapper<CoursePlan> classroomWrapper = buildAdjustConflictWrapper(currentPlan, targetClassTime)
-                    .eq(CoursePlan::getClassroomNo, targetClassroomNo);
-            if (coursePlanLegacySupport.count(classroomWrapper) > 0) {
-                return "目标时间片教室已被占用，不能调课";
-            }
-        }
-        return null;
-    }
-
     @Override
     public List<CoursePlanAdjustLog> listRecentAdjustLogs(String semester, String classNo, String teacherNo, Integer limit) {
         LambdaQueryWrapper<CoursePlanAdjustLog> wrapper = new LambdaQueryWrapper<>();
@@ -197,46 +174,6 @@ public class CoursePlanServiceImpl implements CoursePlanService {
                 .filter(code -> code != null && code.startsWith(teachbuildNo))
                 .distinct()
                 .toList();
-    }
-
-    private LambdaQueryWrapper<CoursePlan> buildAdjustConflictWrapper(CoursePlan currentPlan, String targetClassTime) {
-        LambdaQueryWrapper<CoursePlan> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CoursePlan::getSemester, currentPlan.getSemester())
-                .eq(CoursePlan::getClassTime, targetClassTime)
-                .ne(CoursePlan::getId, currentPlan.getId())
-                .eq(CoursePlan::getDeleted, 0);
-        return wrapper;
-    }
-
-    private void saveAdjustLog(CoursePlan coursePlan,
-                               String beforeClassTime,
-                               String beforeClassroomNo,
-                               String targetClassTime,
-                               String targetClassroomNo) {
-        CoursePlanAdjustLog logEntity = new CoursePlanAdjustLog();
-        logEntity.setCoursePlanId(coursePlan.getId());
-        logEntity.setSemester(coursePlan.getSemester());
-        logEntity.setGradeNo(coursePlan.getGradeNo());
-        logEntity.setClassNo(coursePlan.getClassNo());
-        logEntity.setCourseNo(coursePlan.getCourseNo());
-        logEntity.setTeacherNo(coursePlan.getTeacherNo());
-        logEntity.setBeforeClassTime(beforeClassTime);
-        logEntity.setAfterClassTime(targetClassTime);
-        logEntity.setBeforeClassroomNo(beforeClassroomNo);
-        logEntity.setAfterClassroomNo(targetClassroomNo);
-        logEntity.setRemark("拖拽调课");
-        try {
-            CurrentUserVO currentUser = authFacadeService.getCurrentUserView();
-            if (currentUser != null) {
-                logEntity.setOperatorUserId(currentUser.getUserId());
-                logEntity.setOperatorName(currentUser.getDisplayName());
-                logEntity.setOperatorType(currentUser.getUserType());
-            }
-        } catch (Exception exception) {
-            log.warn("记录调课日志时获取当前用户失败，planId={}", coursePlan.getId(), exception);
-        }
-        coursePlanAdjustLogService.save(logEntity);
-        scheduleLogMirrorService.mirrorAdjustLog(logEntity);
     }
 
     private void saveAdjustLog(SchScheduleResult result,
