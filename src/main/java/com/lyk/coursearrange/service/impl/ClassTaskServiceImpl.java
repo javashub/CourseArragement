@@ -3,7 +3,6 @@ package com.lyk.coursearrange.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.exceptions.CourseArrangeException;
@@ -40,7 +39,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
-public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> implements ClassTaskService {
+public class ClassTaskServiceImpl implements ClassTaskService {
 
     @Resource
     private ClassTaskDao classTaskDao;
@@ -125,7 +124,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
         }
         long legacyCount;
         try {
-            legacyCount = count(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
+            legacyCount = classTaskDao.selectCount(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
         } catch (Exception exception) {
             logLegacyTaskAccessFailure("检查 legacy 排课任务失败，后续仅使用标准任务执行", semester, exception);
             return;
@@ -149,7 +148,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             return;
         }
         try {
-            saveBatch(legacyTasks);
+            saveLegacyTasksBatch(legacyTasks);
             log.info("标准排课任务已回填到旧任务表，semester={}, count={}", semester, legacyTasks.size());
         } catch (Exception exception) {
             logLegacyTaskAccessFailure("回填 legacy 排课任务失败，后续仅使用标准任务执行", semester, exception);
@@ -184,7 +183,7 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             return standardCount;
         }
         try {
-            return count();
+            return classTaskDao.selectCount(new LambdaQueryWrapper<>());
         } catch (Exception exception) {
             logLegacyTaskAccessFailure("统计 legacy 排课任务失败，将返回标准任务统计结果 0", null, exception);
             return 0;
@@ -195,44 +194,49 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
     public IPage<ClassTask> pageLegacyTasks(int pageNum, int pageSize, String semester) {
         LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
                 .eq(ClassTask::getSemester, semester);
-        return page(new Page<>(pageNum, pageSize), wrapper);
+        Page<ClassTask> page = new Page<>(pageNum, pageSize);
+        return classTaskDao.selectPage(page, wrapper);
     }
 
     @Override
     public List<ClassTask> listLegacyTasks(String semester) {
         LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(semester != null && !semester.isBlank(), ClassTask::getSemester, semester);
-        return list(wrapper);
+        return classTaskDao.selectList(wrapper);
     }
 
     @Override
     public boolean saveLegacyTask(ClassTask classTask) {
-        return save(classTask);
+        return classTaskDao.insert(classTask) > 0;
     }
 
     @Override
     public ClassTask getLegacyTaskById(Integer id) {
-        return getById(id);
+        return id == null ? null : classTaskDao.selectById(id);
     }
 
     @Override
     public ClassTask getLegacyTask(LambdaQueryWrapper<ClassTask> wrapper, boolean throwEx) {
-        return getOne(wrapper, throwEx);
+        return classTaskDao.selectOne(wrapper);
     }
 
     @Override
     public boolean removeLegacyTaskById(Integer id) {
-        return removeById(id);
+        return id != null && classTaskDao.deleteById(id) > 0;
     }
 
     @Override
     public boolean removeLegacyTasks(LambdaQueryWrapper<ClassTask> wrapper) {
-        return remove(wrapper);
+        return classTaskDao.delete(wrapper) >= 0;
     }
 
     @Override
     public boolean saveLegacyTasksBatch(List<ClassTask> classTasks) {
-        return saveBatch(classTasks);
+        boolean saved = true;
+        for (ClassTask classTask : classTasks) {
+            saved &= classTaskDao.insert(classTask) > 0;
+        }
+        return saved;
     }
 
     private void logLegacyTaskAccessFailure(String message, String semester, Exception exception) {

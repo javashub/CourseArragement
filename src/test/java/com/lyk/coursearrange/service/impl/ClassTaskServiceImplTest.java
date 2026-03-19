@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.lyk.coursearrange.common.ServerResponse;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.schedule.entity.SchTask;
@@ -22,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -38,9 +40,9 @@ class ClassTaskServiceImplTest {
     void ensureLegacyTasksForSemester_shouldIgnoreMissingLegacyTaskTable() {
         ClassTaskServiceImpl service = spy(new ClassTaskServiceImpl());
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
-        doThrow(new RuntimeException("Table 'course_arrange_v2.tb_class_task' doesn't exist"))
-                .when(service)
-                .count(any());
+        ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
+        when(classTaskDao.selectCount(any(Wrapper.class)))
+                .thenThrow(new RuntimeException("Table 'course_arrange_v2.tb_class_task' doesn't exist"));
 
         assertDoesNotThrow(() -> service.ensureLegacyTasksForSemester("2025-2026-1"));
 
@@ -72,5 +74,17 @@ class ClassTaskServiceImplTest {
         assertTrue(tasks.isEmpty());
         verify(service, never()).ensureLegacyTasksForSemester(anyString());
         verify(classTaskDao, never()).selectList(any());
+    }
+
+    @Test
+    void saveLegacyTasksBatch_shouldInsertEachTaskViaDao() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
+        when(classTaskDao.insert(any(ClassTask.class))).thenReturn(1);
+
+        boolean saved = service.saveLegacyTasksBatch(List.of(new ClassTask(), new ClassTask()));
+
+        assertTrue(saved);
+        verify(classTaskDao, times(2)).insert(any(ClassTask.class));
     }
 }
