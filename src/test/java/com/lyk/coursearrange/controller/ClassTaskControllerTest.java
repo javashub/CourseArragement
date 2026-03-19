@@ -36,7 +36,7 @@ class ClassTaskControllerTest {
     private SchTaskService schTaskService;
 
     @Test
-    void queryClassTask_shouldReturnStandardTasksWhenLegacyTaskTableMissing() {
+    void queryClassTask_shouldReturnStandardTasksWithoutReadingLegacyTaskTable() {
         ClassTaskController controller = new ClassTaskController();
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
         ReflectionTestUtils.setField(controller, "scheduleLogMirrorService", scheduleLogMirrorService);
@@ -54,7 +54,6 @@ class ClassTaskControllerTest {
         taskPage.setRecords(List.of(task));
 
         when(schTaskService.page(org.mockito.ArgumentMatchers.any(Page.class), org.mockito.ArgumentMatchers.any(Wrapper.class))).thenReturn(taskPage);
-        when(classTaskService.listLegacyTasks(anyString())).thenThrow(new RuntimeException("Table 'course_arrange_v2.tb_class_task' doesn't exist"));
 
         ServerResponse response = controller.queryClassTask(1, "2025-2026-1", 10);
 
@@ -65,6 +64,27 @@ class ClassTaskControllerTest {
         ScheduleTaskPageVO vo = (ScheduleTaskPageVO) page.getRecords().get(0);
         assertEquals(Long.valueOf(101L), vo.getStandardId());
         assertEquals("C1", vo.getClassNo());
+        verify(classTaskService, never()).listLegacyTasks("2025-2026-1");
+    }
+
+    @Test
+    void queryClassTask_shouldReturnEmptyPageWhenStandardTasksMissing() {
+        ClassTaskController controller = new ClassTaskController();
+        ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
+        ReflectionTestUtils.setField(controller, "scheduleLogMirrorService", scheduleLogMirrorService);
+        ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
+
+        Page<SchTask> taskPage = new Page<>(1, 10, 0);
+        taskPage.setRecords(List.of());
+        when(schTaskService.page(org.mockito.ArgumentMatchers.any(Page.class), org.mockito.ArgumentMatchers.any(Wrapper.class))).thenReturn(taskPage);
+
+        ServerResponse response = controller.queryClassTask(1, "2025-2026-1", 10);
+
+        assertTrue(response.isSuccess());
+        assertInstanceOf(IPage.class, response.getData());
+        IPage<?> page = (IPage<?>) response.getData();
+        assertEquals(0, page.getTotal());
+        verify(classTaskService, never()).pageLegacyTasks(1, 10, "2025-2026-1");
     }
 
     @Test

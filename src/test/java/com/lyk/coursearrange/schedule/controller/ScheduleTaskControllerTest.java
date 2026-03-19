@@ -36,7 +36,7 @@ class ScheduleTaskControllerTest {
     private ScheduleLogMirrorService scheduleLogMirrorService;
 
     @Test
-    void page_shouldReturnStandardTasksWhenLegacyTaskTableMissing() {
+    void page_shouldReturnStandardTasksWithoutReadingLegacyTaskTable() {
         ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleLogMirrorService);
 
         SchTask task = new SchTask();
@@ -51,7 +51,6 @@ class ScheduleTaskControllerTest {
         taskPage.setRecords(List.of(task));
 
         when(schTaskService.page(org.mockito.ArgumentMatchers.any(Page.class), org.mockito.ArgumentMatchers.any(Wrapper.class))).thenReturn(taskPage);
-        when(classTaskService.listLegacyTasks(anyString())).thenThrow(new RuntimeException("Table 'course_arrange_v2.tb_class_task' doesn't exist"));
 
         ServerResponse<?> response = controller.page("2025-2026-1", 1, 10);
 
@@ -63,6 +62,24 @@ class ScheduleTaskControllerTest {
         assertEquals(Long.valueOf(101L), vo.getStandardId());
         assertEquals("C1", vo.getClassNo());
         assertEquals("数学", vo.getCourseName());
+        verify(classTaskService, never()).listLegacyTasks("2025-2026-1");
+    }
+
+    @Test
+    void page_shouldReturnEmptyPageWhenStandardTasksMissing() {
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleLogMirrorService);
+
+        Page<SchTask> taskPage = new Page<>(1, 10, 0);
+        taskPage.setRecords(List.of());
+        when(schTaskService.page(org.mockito.ArgumentMatchers.any(Page.class), org.mockito.ArgumentMatchers.any(Wrapper.class))).thenReturn(taskPage);
+
+        ServerResponse<?> response = controller.page("2025-2026-1", 1, 10);
+
+        assertTrue(response.isSuccess());
+        assertInstanceOf(IPage.class, response.getData());
+        IPage<?> page = (IPage<?>) response.getData();
+        assertEquals(0, page.getTotal());
+        verify(classTaskService, never()).pageLegacyTasks(1, 10, "2025-2026-1");
     }
 
     @Test
@@ -111,4 +128,5 @@ class ScheduleTaskControllerTest {
         verify(classTaskService, never()).removeLegacyTaskById(101);
         verify(scheduleLogMirrorService, never()).removeTaskMirror(org.mockito.ArgumentMatchers.any());
     }
+
 }

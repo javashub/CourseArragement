@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
@@ -25,9 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
 import java.util.List;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,16 +57,10 @@ public class ScheduleTaskController {
                                   @RequestParam(defaultValue = "1") Integer pageNum,
                                   @RequestParam(defaultValue = "10") Integer pageSize) {
         IPage<ScheduleTaskPageVO> standardPage = queryStandardTaskPage(semester, pageNum, pageSize);
-        if (standardPage != null && standardPage.getTotal() > 0) {
+        if (standardPage != null) {
             return ServerResponse.ofSuccess(standardPage);
         }
-        try {
-            IPage<ClassTask> page = classTaskService.pageLegacyTasks(pageNum, pageSize, semester);
-            return ServerResponse.ofSuccess(page);
-        } catch (Exception exception) {
-            logLegacyTaskAccessFailure("查询 legacy 排课任务分页失败", semester, exception);
-            return ServerResponse.ofSuccess(new Page<>(pageNum, pageSize, 0));
-        }
+        return ServerResponse.ofSuccess(new Page<>(pageNum, pageSize, 0));
     }
 
     @PostMapping
@@ -108,17 +100,7 @@ public class ScheduleTaskController {
 
     @GetMapping("/semesters")
     public ServerResponse<?> listSemesters() {
-        Set<String> standardSemesters = listStandardSemesters();
-        if (!standardSemesters.isEmpty()) {
-            return ServerResponse.ofSuccess(standardSemesters);
-        }
-        try {
-            List<ClassTask> list = classTaskService.listLegacyTasks(null);
-            return ServerResponse.ofSuccess(list.stream().map(ClassTask::getSemester).collect(Collectors.toSet()));
-        } catch (Exception exception) {
-            logLegacyTaskAccessFailure("查询 legacy 学期列表失败", null, exception);
-            return ServerResponse.ofSuccess(Set.of());
-        }
+        return ServerResponse.ofSuccess(listStandardSemesters());
     }
 
     @PostMapping("/arrange")
@@ -137,7 +119,6 @@ public class ScheduleTaskController {
      * 步骤说明：
      * 1. 优先从标准 sch_task 中读取任务。
      * 2. 再把标准任务转换成当前前端仍在使用的旧字段结构。
-     * 3. 为了兼容删除、课程属性等旧能力，按学期回填 legacy 任务信息。
      */
     private IPage<ScheduleTaskPageVO> queryStandardTaskPage(String semester, Integer pageNum, Integer pageSize) {
         LambdaQueryWrapper<SchTask> wrapper = new LambdaQueryWrapper<SchTask>()
@@ -147,36 +128,20 @@ public class ScheduleTaskController {
                 .orderByDesc(SchTask::getId);
         Page<SchTask> taskPage = schTaskService.page(new Page<>(pageNum, pageSize), wrapper);
         if (taskPage.getTotal() <= 0) {
-            return null;
-        }
-
-        Map<String, ClassTask> legacyTaskMap = new HashMap<>();
-        try {
-            Map<String, ClassTask> fetchedLegacyTaskMap = classTaskService.listLegacyTasks(semester)
-                    .stream()
-                    .collect(Collectors.toMap(this::buildLegacyTaskKey, item -> item, (left, right) -> left, HashMap::new));
-            legacyTaskMap.putAll(fetchedLegacyTaskMap);
-        } catch (Exception exception) {
-            logLegacyTaskAccessFailure("查询 legacy 排课任务副本失败，将仅返回标准任务字段", semester, exception);
+            return new Page<>(pageNum, pageSize, 0);
         }
 
         Page<ScheduleTaskPageVO> resultPage = new Page<>(taskPage.getCurrent(), taskPage.getSize(), taskPage.getTotal());
         resultPage.setRecords(taskPage.getRecords().stream()
-                .map(task -> buildScheduleTaskVO(task, legacyTaskMap))
+                .map(this::buildStandardTaskVO)
                 .toList());
         return resultPage;
     }
 
-    private ScheduleTaskPageVO buildScheduleTaskVO(SchTask task, Map<String, ClassTask> legacyTaskMap) {
+    private ScheduleTaskPageVO buildStandardTaskVO(SchTask task) {
         Map<String, String> meta = ScheduleTaskMetaUtils.parseTaskRemark(task.getRemark());
-        ClassTask legacyTask = legacyTaskMap.get(buildLegacyTaskKey(
-                meta.getOrDefault("semester", ""),
-                meta.getOrDefault("classNo", ""),
-                meta.getOrDefault("courseNo", ""),
-                meta.getOrDefault("teacherNo", "")));
-
         ScheduleTaskPageVO vo = new ScheduleTaskPageVO();
-        vo.setId(resolveLegacyTaskId(meta, legacyTask));
+        vo.setId(task.getId() == null ? null : task.getId().intValue());
         vo.setStandardId(task.getId());
         vo.setSemester(meta.getOrDefault("semester", ""));
         vo.setGradeNo(meta.getOrDefault("gradeNo", ""));
@@ -185,10 +150,10 @@ public class ScheduleTaskController {
         vo.setCourseName(meta.getOrDefault("courseName", ""));
         vo.setTeacherNo(meta.getOrDefault("teacherNo", ""));
         vo.setRealname(meta.getOrDefault("teacherName", ""));
-        vo.setCourseAttr(resolveCourseAttr(meta, legacyTask));
-        vo.setStudentNum(legacyTask != null ? legacyTask.getStudentNum() : task.getStudentCount());
-        vo.setWeeksNumber(legacyTask != null ? legacyTask.getWeeksNumber() : task.getWeekHours());
-        vo.setWeeksSum(legacyTask != null ? legacyTask.getWeeksSum() : calculateWeeksSum(task));
+        vo.setCourseAttr(meta.getOrDefault("courseAttr", ""));
+        vo.setStudentNum(task.getStudentCount());
+        vo.setWeeksNumber(task.getWeekHours());
+        vo.setWeeksSum(calculateWeeksSum(task));
         vo.setIsFix(task.getNeedFixedTime() != null && task.getNeedFixedTime() == 1 ? "1" : "0");
         vo.setClassTime(toLegacyClassTime(task.getFixedWeekdayNo(), task.getFixedPeriodNo()));
         return vo;
@@ -207,67 +172,11 @@ public class ScheduleTaskController {
                 .collect(Collectors.toSet());
     }
 
-    private Integer resolveLegacyTaskId(Map<String, String> meta, ClassTask legacyTask) {
-        if (legacyTask != null && legacyTask.getId() != null) {
-            return legacyTask.getId();
-        }
-        String legacyId = meta.get("legacyId");
-        if (legacyId == null || legacyId.isBlank()) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(legacyId);
-        } catch (NumberFormatException exception) {
-            log.warn("解析 legacyId 失败，legacyId={}", legacyId);
-            return null;
-        }
-    }
-
-    private String resolveCourseAttr(Map<String, String> meta, ClassTask legacyTask) {
-        if (legacyTask != null && legacyTask.getCourseAttr() != null) {
-            return legacyTask.getCourseAttr();
-        }
-        return meta.getOrDefault("courseAttr", "");
-    }
-
     private Integer calculateWeeksSum(SchTask task) {
         if (task.getTotalHours() == null || task.getWeekHours() == null || task.getWeekHours() <= 0) {
             return 0;
         }
         return task.getTotalHours() / task.getWeekHours();
-    }
-
-    private String buildLegacyTaskKey(ClassTask task) {
-        return buildLegacyTaskKey(task.getSemester(), task.getClassNo(), task.getCourseNo(), task.getTeacherNo());
-    }
-
-    private String buildLegacyTaskKey(String semester, String classNo, String courseNo, String teacherNo) {
-        return String.join("_",
-                semester == null ? "" : semester,
-                classNo == null ? "" : classNo,
-                courseNo == null ? "" : courseNo,
-                teacherNo == null ? "" : teacherNo);
-    }
-
-    private void logLegacyTaskAccessFailure(String message, String semester, Exception exception) {
-        if (isMissingLegacyTaskTable(exception)) {
-            if (semester == null || semester.isBlank()) {
-                log.warn("{}, tb_class_task 已不存在，将继续使用标准任务链路", message);
-            } else {
-                log.warn("{}, semester={}, tb_class_task 已不存在，将继续使用标准任务链路", message, semester);
-            }
-            return;
-        }
-        if (semester == null || semester.isBlank()) {
-            log.warn(message, exception);
-        } else {
-            log.warn(message + "，semester={}", semester, exception);
-        }
-    }
-
-    private boolean isMissingLegacyTaskTable(Exception exception) {
-        String message = exception == null ? null : exception.getMessage();
-        return message != null && message.contains("tb_class_task") && message.contains("doesn't exist");
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {

@@ -82,7 +82,7 @@
       </div>
     </div>
     <el-alert
-      title="手动新增、删除和开始排课都只使用标准任务与标准课表，不再回写旧 tb_class_task / tb_course_plan 副本。"
+      title="任务分页、学期列表、手动新增、删除和开始排课都只使用标准任务与标准课表，不再读取或回写旧 tb_class_task / tb_course_plan 副本。"
       type="info"
       :closable="false"
       show-icon
