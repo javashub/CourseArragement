@@ -82,7 +82,7 @@
       </div>
     </div>
     <el-alert
-      title="开始排课时只使用标准排课任务；缺少标准任务时不会再回退读取旧 tb_class_task。"
+      title="开始排课时只使用标准排课任务，同时不再回写旧 tb_course_plan 副本。"
       type="info"
       :closable="false"
       show-icon
@@ -353,10 +353,12 @@ export default {
     },
 
     showRequestSuccess(response, fallback) {
-      const degraded = response?.data?.legacyCoursePlanSaved === false;
+      const legacyDisabled = response?.data?.legacyCoursePlanEnabled === false;
+      const degraded =
+        response?.data?.legacyCoursePlanSaved === false && !legacyDisabled;
       this.$message({
         message: response?.message || fallback,
-        type: degraded ? "warning" : "success",
+        type: degraded ? "warning" : legacyDisabled ? "info" : "success",
       });
     },
 
@@ -389,10 +391,12 @@ export default {
       try {
         const response = await arrangeClassTask(this.semester);
         this.allClassTask();
-        const degraded = response?.data?.legacyCoursePlanSaved === false;
+        const legacyDisabled = response?.data?.legacyCoursePlanEnabled === false;
+        const degraded =
+          response?.data?.legacyCoursePlanSaved === false && !legacyDisabled;
         this.arrangeResult = {
           message: response?.message || "排课成功",
-          type: degraded ? "warning" : "success",
+          type: degraded ? "warning" : legacyDisabled ? "info" : "success",
         };
         this.showRequestSuccess(response, "排课成功");
         if (!degraded) {
