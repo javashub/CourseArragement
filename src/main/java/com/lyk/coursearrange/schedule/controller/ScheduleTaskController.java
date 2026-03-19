@@ -63,14 +63,11 @@ public class ScheduleTaskController {
         if (standardPage != null && standardPage.getTotal() > 0) {
             return ServerResponse.ofSuccess(standardPage);
         }
-        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
-                .eq(ClassTask::getSemester, semester)
-                .orderByDesc(ClassTask::getId);
         try {
-            IPage<ClassTask> page = classTaskService.page(new Page<>(pageNum, pageSize), wrapper);
+            IPage<ClassTask> page = classTaskService.pageLegacyTasks(pageNum, pageSize, semester);
             return ServerResponse.ofSuccess(page);
         } catch (Exception exception) {
-            log.warn("查询 legacy 排课任务分页失败，semester={}", semester, exception);
+            logLegacyTaskAccessFailure("查询 legacy 排课任务分页失败", semester, exception);
             return ServerResponse.ofSuccess(new Page<>(pageNum, pageSize, 0));
         }
     }
@@ -88,7 +85,7 @@ public class ScheduleTaskController {
         log.info("新增标准排课任务，semester={}, courseNo={}, classNo={}",
                 classTask.getSemester(), classTask.getCourseNo(), classTask.getClassNo());
         try {
-            if (!classTaskService.save(classTask)) {
+            if (!classTaskService.saveLegacyTask(classTask)) {
                 log.warn("写入 legacy 排课任务副本失败，semester={}, classNo={}", classTask.getSemester(), classTask.getClassNo());
             } else {
                 standardTask.setRemark(ScheduleTaskMetaUtils.buildTaskRemark(classTask));
@@ -104,13 +101,13 @@ public class ScheduleTaskController {
     public ServerResponse<?> delete(@PathVariable Integer id) {
         try {
             requireClassTaskExists(id);
-            ClassTask classTask = classTaskService.getById(id);
-            if (classTaskService.removeById(id)) {
+            ClassTask classTask = classTaskService.getLegacyTaskById(id);
+            if (classTaskService.removeLegacyTaskById(id)) {
                 scheduleLogMirrorService.removeTaskMirror(classTask);
                 return ServerResponse.ofSuccess("删除成功");
             }
         } catch (Exception exception) {
-            log.warn("删除 legacy 排课任务失败，将尝试按标准任务删除，id={}", id, exception);
+            logLegacyTaskAccessFailure("删除 legacy 排课任务失败，将尝试按标准任务删除，id=" + id, null, exception);
             SchTask standardTask = schTaskService.getById(id.longValue());
             if (standardTask != null && (standardTask.getDeleted() == null || standardTask.getDeleted() == 0)
                     && schTaskService.removeById(standardTask.getId())) {
@@ -141,14 +138,11 @@ public class ScheduleTaskController {
         if (!standardSemesters.isEmpty()) {
             return ServerResponse.ofSuccess(standardSemesters);
         }
-        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
-                .select(ClassTask::getSemester)
-                .groupBy(ClassTask::getSemester);
         try {
-            List<ClassTask> list = classTaskService.list(wrapper);
+            List<ClassTask> list = classTaskService.listLegacyTasks(null);
             return ServerResponse.ofSuccess(list.stream().map(ClassTask::getSemester).collect(Collectors.toSet()));
         } catch (Exception exception) {
-            log.warn("查询 legacy 学期列表失败", exception);
+            logLegacyTaskAccessFailure("查询 legacy 学期列表失败", null, exception);
             return ServerResponse.ofSuccess(Set.of());
         }
     }
@@ -166,7 +160,7 @@ public class ScheduleTaskController {
     }
 
     private void requireClassTaskExists(Integer id) {
-        if (id == null || classTaskService.getById(id) == null) {
+        if (id == null || classTaskService.getLegacyTaskById(id) == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "开课任务不存在");
         }
     }
@@ -188,10 +182,15 @@ public class ScheduleTaskController {
             return null;
         }
 
-        Map<String, ClassTask> legacyTaskMap = classTaskService.list(
-                        new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester))
-                .stream()
-                .collect(Collectors.toMap(this::buildLegacyTaskKey, item -> item, (left, right) -> left, HashMap::new));
+        Map<String, ClassTask> legacyTaskMap = new HashMap<>();
+        try {
+            Map<String, ClassTask> fetchedLegacyTaskMap = classTaskService.listLegacyTasks(semester)
+                    .stream()
+                    .collect(Collectors.toMap(this::buildLegacyTaskKey, item -> item, (left, right) -> left, HashMap::new));
+            legacyTaskMap.putAll(fetchedLegacyTaskMap);
+        } catch (Exception exception) {
+            logLegacyTaskAccessFailure("查询 legacy 排课任务副本失败，将仅返回标准任务字段", semester, exception);
+        }
 
         Page<ScheduleTaskPageVO> resultPage = new Page<>(taskPage.getCurrent(), taskPage.getSize(), taskPage.getTotal());
         resultPage.setRecords(taskPage.getRecords().stream()
@@ -297,14 +296,40 @@ public class ScheduleTaskController {
                 .eq(ClassTask::getTeacherNo, teacherNo)
                 .last("limit 1");
         try {
-            ClassTask legacyTask = classTaskService.getOne(wrapper, false);
+            ClassTask legacyTask = classTaskService.getLegacyTask(wrapper, false);
             if (legacyTask != null) {
-                classTaskService.removeById(legacyTask.getId());
+                classTaskService.removeLegacyTaskById(legacyTask.getId());
             }
         } catch (Exception exception) {
+            if (isMissingLegacyTaskTable(exception)) {
+                log.warn("删除 legacy 排课任务副本失败，tb_class_task 已不存在，semester={}, classNo={}, courseNo={}, teacherNo={}",
+                        semester, classNo, courseNo, teacherNo);
+                return;
+            }
             log.warn("删除 legacy 排课任务副本失败，semester={}, classNo={}, courseNo={}, teacherNo={}",
                     semester, classNo, courseNo, teacherNo, exception);
         }
+    }
+
+    private void logLegacyTaskAccessFailure(String message, String semester, Exception exception) {
+        if (isMissingLegacyTaskTable(exception)) {
+            if (semester == null || semester.isBlank()) {
+                log.warn("{}, tb_class_task 已不存在，将继续使用标准任务链路", message);
+            } else {
+                log.warn("{}, semester={}, tb_class_task 已不存在，将继续使用标准任务链路", message, semester);
+            }
+            return;
+        }
+        if (semester == null || semester.isBlank()) {
+            log.warn(message, exception);
+        } else {
+            log.warn(message + "，semester={}", semester, exception);
+        }
+    }
+
+    private boolean isMissingLegacyTaskTable(Exception exception) {
+        String message = exception == null ? null : exception.getMessage();
+        return message != null && message.contains("tb_class_task") && message.contains("doesn't exist");
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {

@@ -1,4 +1,4 @@
-package com.lyk.coursearrange.controller;
+package com.lyk.coursearrange.schedule.controller;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,21 +23,18 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ClassTaskControllerTest {
+class ScheduleTaskControllerTest {
 
     @Mock
     private ClassTaskService classTaskService;
     @Mock
-    private ScheduleLogMirrorService scheduleLogMirrorService;
-    @Mock
     private SchTaskService schTaskService;
+    @Mock
+    private ScheduleLogMirrorService scheduleLogMirrorService;
 
     @Test
-    void queryClassTask_shouldReturnStandardTasksWhenLegacyTaskTableMissing() {
-        ClassTaskController controller = new ClassTaskController();
-        ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
-        ReflectionTestUtils.setField(controller, "scheduleLogMirrorService", scheduleLogMirrorService);
-        ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
+    void page_shouldReturnStandardTasksWhenLegacyTaskTableMissing() {
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleLogMirrorService);
 
         SchTask task = new SchTask();
         task.setId(101L);
@@ -53,7 +50,7 @@ class ClassTaskControllerTest {
         when(schTaskService.page(org.mockito.ArgumentMatchers.any(Page.class), org.mockito.ArgumentMatchers.any(Wrapper.class))).thenReturn(taskPage);
         when(classTaskService.listLegacyTasks(anyString())).thenThrow(new RuntimeException("Table 'course_arrange_v2.tb_class_task' doesn't exist"));
 
-        ServerResponse response = controller.queryClassTask(1, "2025-2026-1", 10);
+        ServerResponse<?> response = controller.page("2025-2026-1", 1, 10);
 
         assertTrue(response.isSuccess());
         assertInstanceOf(IPage.class, response.getData());
@@ -62,6 +59,6 @@ class ClassTaskControllerTest {
         ScheduleTaskPageVO vo = (ScheduleTaskPageVO) page.getRecords().get(0);
         assertEquals(Long.valueOf(101L), vo.getStandardId());
         assertEquals("C1", vo.getClassNo());
+        assertEquals("数学", vo.getCourseName());
     }
-
 }

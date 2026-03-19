@@ -89,8 +89,8 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
 
         boolean legacySaved = true;
         try {
-            classTaskService.remove(new LambdaQueryWrapper<ClassTask>().in(ClassTask::getSemester, semesters));
-            legacySaved = classTaskService.saveBatch(classTasks);
+            classTaskService.removeLegacyTasks(new LambdaQueryWrapper<ClassTask>().in(ClassTask::getSemester, semesters));
+            legacySaved = classTaskService.saveLegacyTasksBatch(classTasks);
         } catch (Exception exception) {
             legacySaved = false;
             log.warn("写入 legacy 课程任务副本失败，将仅刷新标准任务镜像，semesters={}", semesters, exception);

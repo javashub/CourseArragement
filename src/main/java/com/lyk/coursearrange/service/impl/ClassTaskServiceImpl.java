@@ -1,6 +1,8 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
@@ -187,6 +189,50 @@ public class ClassTaskServiceImpl extends ServiceImpl<ClassTaskDao, ClassTask> i
             logLegacyTaskAccessFailure("统计 legacy 排课任务失败，将返回标准任务统计结果 0", null, exception);
             return 0;
         }
+    }
+
+    @Override
+    public IPage<ClassTask> pageLegacyTasks(int pageNum, int pageSize, String semester) {
+        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
+                .eq(ClassTask::getSemester, semester);
+        return page(new Page<>(pageNum, pageSize), wrapper);
+    }
+
+    @Override
+    public List<ClassTask> listLegacyTasks(String semester) {
+        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(semester != null && !semester.isBlank(), ClassTask::getSemester, semester);
+        return list(wrapper);
+    }
+
+    @Override
+    public boolean saveLegacyTask(ClassTask classTask) {
+        return save(classTask);
+    }
+
+    @Override
+    public ClassTask getLegacyTaskById(Integer id) {
+        return getById(id);
+    }
+
+    @Override
+    public ClassTask getLegacyTask(LambdaQueryWrapper<ClassTask> wrapper, boolean throwEx) {
+        return getOne(wrapper, throwEx);
+    }
+
+    @Override
+    public boolean removeLegacyTaskById(Integer id) {
+        return removeById(id);
+    }
+
+    @Override
+    public boolean removeLegacyTasks(LambdaQueryWrapper<ClassTask> wrapper) {
+        return remove(wrapper);
+    }
+
+    @Override
+    public boolean saveLegacyTasksBatch(List<ClassTask> classTasks) {
+        return saveBatch(classTasks);
     }
 
     private void logLegacyTaskAccessFailure(String message, String semester, Exception exception) {
