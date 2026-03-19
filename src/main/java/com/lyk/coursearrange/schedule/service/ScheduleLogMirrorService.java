@@ -1,9 +1,9 @@
 package com.lyk.coursearrange.schedule.service;
 
 import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
-import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.ScheduleExecuteLog;
+import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 
 import java.util.List;
 
@@ -12,7 +12,7 @@ import java.util.List;
  */
 public interface ScheduleLogMirrorService {
 
-    void replaceScheduleResults(String semester, List<ClassTask> schedulingTasks, List<CoursePlan> coursePlans);
+    void replaceScheduleResults(String semester, List<SchedulingTaskInput> schedulingTasks, List<CoursePlan> coursePlans);
 
     void syncAdjustedPlan(CoursePlan legacyPlan, String beforeClassTime);
 

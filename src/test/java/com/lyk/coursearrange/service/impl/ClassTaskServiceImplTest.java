@@ -2,8 +2,8 @@ package com.lyk.coursearrange.service.impl;
 
 import com.lyk.coursearrange.common.ServerResponse;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +47,7 @@ class ClassTaskServiceImplTest {
         when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
                 .thenReturn(List.of());
 
-        List<ClassTask> tasks = service.listSchedulingTasks("2025-2026-1");
+        List<SchedulingTaskInput> tasks = service.listSchedulingTasks("2025-2026-1");
 
         assertTrue(tasks.isEmpty());
     }
@@ -69,10 +69,10 @@ class ClassTaskServiceImplTest {
         when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
                 .thenReturn(List.of(standardTask));
 
-        List<ClassTask> tasks = service.listSchedulingTasks("2025-2026-1");
+        List<SchedulingTaskInput> tasks = service.listSchedulingTasks("2025-2026-1");
 
         assertEquals(1, tasks.size());
-        ClassTask task = tasks.get(0);
+        SchedulingTaskInput task = tasks.get(0);
         assertEquals("2025-2026-1", task.getSemester());
         assertEquals("2501", task.getClassNo());
         assertEquals("10001", task.getCourseNo());

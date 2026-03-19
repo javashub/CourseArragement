@@ -1,7 +1,6 @@
 package com.lyk.coursearrange.schedule.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.ScheduleExecuteLog;
@@ -15,6 +14,7 @@ import com.lyk.coursearrange.schedule.service.SchScheduleRunLogService;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
+import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -52,9 +52,9 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     @Override
-    public void replaceScheduleResults(String semester, List<ClassTask> schedulingTasks, List<CoursePlan> coursePlans) {
+    public void replaceScheduleResults(String semester, List<SchedulingTaskInput> schedulingTasks, List<CoursePlan> coursePlans) {
         Map<String, Long> taskIdMap = new HashMap<>();
-        for (ClassTask schedulingTask : schedulingTasks) {
+        for (SchedulingTaskInput schedulingTask : schedulingTasks) {
             SchTask schTask = getOrCreateTask(schedulingTask);
             taskIdMap.put(buildTaskKey(schedulingTask.getClassNo(), schedulingTask.getCourseNo(), schedulingTask.getTeacherNo()), schTask.getId());
         }
@@ -189,13 +189,13 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
         return ScheduleTaskMetaUtils.resolvePeriodNo(classTime);
     }
 
-    private SchTask getOrCreateTask(ClassTask legacyTask) {
-        SchTask existing = findTaskByCode(buildTaskCode(legacyTask));
+    private SchTask getOrCreateTask(SchedulingTaskInput schedulingTask) {
+        SchTask existing = findTaskByCode(buildTaskCode(schedulingTask));
         if (existing != null) {
             return existing;
         }
         SchTask task = new SchTask();
-        task.setTaskCode(buildTaskCode(legacyTask));
+        task.setTaskCode(buildTaskCode(schedulingTask));
         return task;
     }
 
@@ -214,12 +214,12 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
         return taskService.getOne(wrapper, false);
     }
 
-    private String buildTaskCode(ClassTask legacyTask) {
+    private String buildTaskCode(SchedulingTaskInput schedulingTask) {
         return ScheduleTaskMetaUtils.buildTaskCode(
-                legacyTask.getSemester(),
-                legacyTask.getClassNo(),
-                legacyTask.getCourseNo(),
-                legacyTask.getTeacherNo()
+                schedulingTask.getSemester(),
+                schedulingTask.getClassNo(),
+                schedulingTask.getCourseNo(),
+                schedulingTask.getTeacherNo()
         );
     }
 

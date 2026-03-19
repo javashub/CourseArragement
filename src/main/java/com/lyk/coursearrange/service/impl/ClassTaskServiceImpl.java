@@ -17,6 +17,7 @@ import com.lyk.coursearrange.common.ConstantInfo;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
+import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.service.ScheduleExecuteLogService;
 import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
@@ -67,7 +68,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         try {
             log.info("开始排课,时间：{}", start);
             // 1、优先从标准任务构造排课输入
-            List<ClassTask> schedulingTasks = listSchedulingTasks(semester);
+            List<SchedulingTaskInput> schedulingTasks = listSchedulingTasks(semester);
             if (null == schedulingTasks || schedulingTasks.isEmpty()) {
                 throw buildSchedulingException(start, semester, taskCount,
                         "排课失败，查询不到排课任务！请导入排课任务再进行排课~", ResultCode.BUSINESS_ERROR);
@@ -121,7 +122,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      * 2. 任务来源优先切到 sch_task，再转成算法输入对象。
      * 3. 排课执行本身只使用标准任务；缺失标准任务时直接返回空。
      */
-    List<ClassTask> listSchedulingTasks(String semester) {
+    List<SchedulingTaskInput> listSchedulingTasks(String semester) {
         List<SchTask> standardTasks = schTaskService.list(new LambdaQueryWrapper<SchTask>()
                 .eq(SchTask::getDeleted, 0)
                 .like(SchTask::getRemark, "semester=" + semester)
@@ -201,7 +202,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         return new BusinessException(resultCode, message);
     }
 
-    private ClassTask convertStandardTaskToSchedulingTask(SchTask standardTask) {
+    private SchedulingTaskInput convertStandardTaskToSchedulingTask(SchTask standardTask) {
         Map<String, String> meta = ScheduleTaskMetaUtils.parseTaskRemark(standardTask.getRemark());
         String semester = meta.get("semester");
         String classNo = meta.get("classNo");
@@ -214,7 +215,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             return null;
         }
 
-        ClassTask task = new ClassTask();
+        SchedulingTaskInput task = new SchedulingTaskInput();
         task.setSemester(semester);
         task.setGradeNo(meta.getOrDefault("gradeNo", ""));
         task.setClassNo(classNo);
@@ -245,9 +246,9 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
     }
 
-    private void checkWeeksNumber(List<ClassTask> classTaskList) {
-        classTaskList.stream().collect(Collectors.groupingBy(ClassTask::getClassNo)).forEach((k, v) -> {
-            int sum = v.stream().mapToInt(ClassTask::getWeeksNumber).sum();
+    private void checkWeeksNumber(List<SchedulingTaskInput> classTaskList) {
+        classTaskList.stream().collect(Collectors.groupingBy(SchedulingTaskInput::getClassNo)).forEach((k, v) -> {
+            int sum = v.stream().mapToInt(SchedulingTaskInput::getWeeksNumber).sum();
             if (sum > ClassUtil.MAX_CLASS_TIME * 2) {
                 throw new CourseArrangeException(String.format("班级：%s 的学时超过 %s，不能排课！", k, ClassUtil.MAX_CLASS_TIME * 2));
             }
@@ -680,12 +681,12 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      * <p>
      * 编码规则为：是否固定+年级编号+班级编号+教师编号+课程编号+课程属性+上课时间
      */
-    private Map<String, List<String>> coding(List<ClassTask> classTaskList) {
+    private Map<String, List<String>> coding(List<SchedulingTaskInput> classTaskList) {
         Map<String, List<String>> geneMap = new HashMap<>();
         List<String> unFixedTimeGeneList = new ArrayList<>();
         List<String> fixedTimeGeneList = new ArrayList<>();
 
-        for (ClassTask classTask : classTaskList) {
+        for (SchedulingTaskInput classTask : classTaskList) {
             // 1，不固定上课时间，默认默认不再填充 00
             if (classTask.getIsFix().equals(ConstantInfo.UN_FIX_TIME_FLAG)) {
                 // 得到每周上课的节数，因为设定2学时为一节课
