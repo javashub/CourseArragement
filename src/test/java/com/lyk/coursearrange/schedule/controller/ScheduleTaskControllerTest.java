@@ -7,7 +7,6 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
-import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
 import com.lyk.coursearrange.service.ClassTaskService;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,12 +30,10 @@ class ScheduleTaskControllerTest {
     private ClassTaskService classTaskService;
     @Mock
     private SchTaskService schTaskService;
-    @Mock
-    private ScheduleLogMirrorService scheduleLogMirrorService;
 
     @Test
     void page_shouldReturnStandardTasksWithoutReadingLegacyTaskTable() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleLogMirrorService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService);
 
         SchTask task = new SchTask();
         task.setId(101L);
@@ -62,12 +58,11 @@ class ScheduleTaskControllerTest {
         assertEquals(Long.valueOf(101L), vo.getStandardId());
         assertEquals("C1", vo.getClassNo());
         assertEquals("数学", vo.getCourseName());
-        verify(classTaskService, never()).listLegacyTasks("2025-2026-1");
     }
 
     @Test
     void page_shouldReturnEmptyPageWhenStandardTasksMissing() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleLogMirrorService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService);
 
         Page<SchTask> taskPage = new Page<>(1, 10, 0);
         taskPage.setRecords(List.of());
@@ -79,12 +74,11 @@ class ScheduleTaskControllerTest {
         assertInstanceOf(IPage.class, response.getData());
         IPage<?> page = (IPage<?>) response.getData();
         assertEquals(0, page.getTotal());
-        verify(classTaskService, never()).pageLegacyTasks(1, 10, "2025-2026-1");
     }
 
     @Test
     void save_shouldOnlyPersistStandardTask() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleLogMirrorService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -107,12 +101,11 @@ class ScheduleTaskControllerTest {
         ServerResponse<?> response = controller.save(request);
 
         assertTrue(response.isSuccess());
-        verify(classTaskService, never()).saveLegacyTask(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
     void delete_shouldOnlyDeleteStandardTask() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleLogMirrorService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService);
 
         SchTask task = new SchTask();
         task.setId(101L);
@@ -124,9 +117,6 @@ class ScheduleTaskControllerTest {
         ServerResponse<?> response = controller.delete(101);
 
         assertTrue(response.isSuccess());
-        verify(classTaskService, never()).getLegacyTaskById(101);
-        verify(classTaskService, never()).removeLegacyTaskById(101);
-        verify(scheduleLogMirrorService, never()).removeTaskMirror(org.mockito.ArgumentMatchers.any());
     }
 
 }

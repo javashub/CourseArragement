@@ -9,7 +9,6 @@ import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
-import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
 import com.lyk.coursearrange.service.ClassTaskService;
@@ -42,14 +41,11 @@ public class ScheduleTaskController {
 
     private final ClassTaskService classTaskService;
     private final SchTaskService schTaskService;
-    private final ScheduleLogMirrorService scheduleLogMirrorService;
 
     public ScheduleTaskController(ClassTaskService classTaskService,
-                                  SchTaskService schTaskService,
-                                  ScheduleLogMirrorService scheduleLogMirrorService) {
+                                  SchTaskService schTaskService) {
         this.classTaskService = classTaskService;
         this.schTaskService = schTaskService;
-        this.scheduleLogMirrorService = scheduleLogMirrorService;
     }
 
     @GetMapping("/page")

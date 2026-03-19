@@ -2,7 +2,6 @@ package com.lyk.coursearrange.service.impl;
 
 import com.lyk.coursearrange.common.ServerResponse;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.lyk.coursearrange.dao.ClassTaskDao;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
@@ -15,17 +14,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,21 +27,6 @@ class ClassTaskServiceImplTest {
 
     @Mock
     private SchTaskService schTaskService;
-    @Mock
-    private ClassTaskDao classTaskDao;
-
-    @Test
-    void ensureLegacyTasksForSemester_shouldIgnoreMissingLegacyTaskTable() {
-        ClassTaskServiceImpl service = spy(new ClassTaskServiceImpl());
-        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
-        ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
-        when(classTaskDao.selectCount(any(Wrapper.class)))
-                .thenThrow(new RuntimeException("Table 'course_arrange_v2.tb_class_task' doesn't exist"));
-
-        assertDoesNotThrow(() -> service.ensureLegacyTasksForSemester("2025-2026-1"));
-
-        verifyNoInteractions(schTaskService);
-    }
 
     @Test
     void buildSchedulingSuccessResponse_shouldExposeStandardOnlyStatus() {
@@ -65,39 +44,22 @@ class ClassTaskServiceImplTest {
     void listSchedulingTasks_shouldReturnEmptyWhenStandardTasksMissing() {
         ClassTaskServiceImpl service = spy(new ClassTaskServiceImpl());
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
-        ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
         when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
                 .thenReturn(List.of());
 
         List<ClassTask> tasks = service.listSchedulingTasks("2025-2026-1");
 
         assertTrue(tasks.isEmpty());
-        verify(service, never()).ensureLegacyTasksForSemester(anyString());
-        verify(classTaskDao, never()).selectList(any());
     }
 
     @Test
     void countScheduleTasks_shouldReturnStandardCountOnly() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
-        ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
         when(schTaskService.count(any())).thenReturn(0L);
 
         long count = service.countScheduleTasks();
 
         assertEquals(0L, count);
-        verify(classTaskDao, never()).selectCount(any());
-    }
-
-    @Test
-    void saveLegacyTasksBatch_shouldInsertEachTaskViaDao() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
-        ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
-        when(classTaskDao.insert(any(ClassTask.class))).thenReturn(1);
-
-        boolean saved = service.saveLegacyTasksBatch(List.of(new ClassTask(), new ClassTask()));
-
-        assertTrue(saved);
-        verify(classTaskDao, times(2)).insert(any(ClassTask.class));
     }
 }

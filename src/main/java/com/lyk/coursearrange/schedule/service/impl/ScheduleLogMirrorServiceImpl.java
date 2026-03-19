@@ -52,85 +52,6 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     @Override
-    public void mirrorTask(ClassTask legacyTask) {
-        try {
-            SchTask task = getOrCreateTask(legacyTask);
-            task.setSchoolYearId(0L);
-            task.setTermId(0L);
-            task.setStageId(0L);
-            task.setCourseId(0L);
-            task.setTeacherId(0L);
-            task.setStudentCount(legacyTask.getStudentNum());
-            task.setWeekHours(legacyTask.getWeeksNumber());
-            task.setTotalHours((legacyTask.getWeeksNumber() == null || legacyTask.getWeeksSum() == null)
-                    ? 0
-                    : legacyTask.getWeeksNumber() * legacyTask.getWeeksSum());
-            task.setNeedContinuous(0);
-            task.setContinuousSize(1);
-            task.setNeedFixedRoom(0);
-            task.setNeedFixedTime("1".equals(legacyTask.getIsFix()) ? 1 : 0);
-            task.setFixedWeekdayNo(resolveWeekdayNo(legacyTask.getClassTime()));
-            task.setFixedPeriodNo(resolvePeriodNo(legacyTask.getClassTime()));
-            task.setPriorityLevel(5);
-            task.setAllowConflict(0);
-            task.setTaskStatus("PENDING");
-            task.setSourceType("LEGACY_SYNC");
-            task.setStatus(1);
-            task.setRemark(buildTaskRemark(legacyTask));
-            taskService.saveOrUpdate(task);
-        } catch (Exception exception) {
-            log.warn("镜像标准排课任务失败，将继续保留旧任务链路，legacyId={}", legacyTask.getId(), exception);
-        }
-    }
-
-    @Override
-    public void removeTaskMirror(ClassTask legacyTask) {
-        try {
-            SchTask task = findTask(legacyTask);
-            if (task == null) {
-                return;
-            }
-            taskService.removeById(task.getId());
-        } catch (Exception exception) {
-            log.warn("移除标准排课任务镜像失败，legacyId={}", legacyTask.getId(), exception);
-        }
-    }
-
-    @Override
-    public void replaceTaskMirrorsBySemesters(Set<String> semesters, List<ClassTask> legacyTasks) {
-        if (semesters == null || semesters.isEmpty()) {
-            return;
-        }
-        try {
-            LambdaQueryWrapper<SchTask> removeWrapper = new LambdaQueryWrapper<>();
-            removeWrapper.eq(SchTask::getDeleted, 0)
-                    .and(wrapper -> {
-                        boolean first = true;
-                        for (String semester : semesters) {
-                            if (semester == null || semester.isBlank()) {
-                                continue;
-                            }
-                            if (first) {
-                                wrapper.like(SchTask::getRemark, "semester=" + semester);
-                                first = false;
-                            } else {
-                                wrapper.or().like(SchTask::getRemark, "semester=" + semester);
-                            }
-                        }
-                    });
-            taskService.remove(removeWrapper);
-            if (legacyTasks == null || legacyTasks.isEmpty()) {
-                return;
-            }
-            for (ClassTask legacyTask : legacyTasks) {
-                mirrorTask(legacyTask);
-            }
-        } catch (Exception exception) {
-            log.warn("批量刷新标准排课任务镜像失败，semesters={}", semesters, exception);
-        }
-    }
-
-    @Override
     public void replaceScheduleResults(String semester, List<ClassTask> legacyTasks, List<CoursePlan> legacyPlans) {
         Map<String, Long> taskIdMap = new HashMap<>();
         for (ClassTask legacyTask : legacyTasks) {
@@ -269,17 +190,13 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
     }
 
     private SchTask getOrCreateTask(ClassTask legacyTask) {
-        SchTask existing = findTask(legacyTask);
+        SchTask existing = findTaskByCode(buildTaskCode(legacyTask));
         if (existing != null) {
             return existing;
         }
         SchTask task = new SchTask();
         task.setTaskCode(buildTaskCode(legacyTask));
         return task;
-    }
-
-    private SchTask findTask(ClassTask legacyTask) {
-        return findTaskByCode(buildTaskCode(legacyTask));
     }
 
     private SchTask findTaskByKey(String classNo, String courseNo, String teacherNo, String semester) {
@@ -304,10 +221,6 @@ public class ScheduleLogMirrorServiceImpl implements ScheduleLogMirrorService {
                 legacyTask.getCourseNo(),
                 legacyTask.getTeacherNo()
         );
-    }
-
-    private String buildTaskRemark(ClassTask legacyTask) {
-        return ScheduleTaskMetaUtils.buildTaskRemark(legacyTask);
     }
 
     private String buildTaskKey(String classNo, String courseNo, String teacherNo) {

@@ -1,14 +1,14 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.exceptions.CourseArrangeException;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.dao.*;
+import com.lyk.coursearrange.dao.ClassInfoDao;
+import com.lyk.coursearrange.dao.ClassroomDao;
+import com.lyk.coursearrange.dao.TeachBuildInfoDao;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.CoursePlan;
@@ -41,8 +41,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ClassTaskServiceImpl implements ClassTaskService {
 
-    @Resource
-    private ClassTaskDao classTaskDao;
     @Resource
     private TeachBuildInfoDao teachBuildInfoDao;
     @Resource
@@ -117,44 +115,6 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         return ServerResponse.ofSuccess(String.format("排课成功，标准课表已生成，耗时：%sms", duration), data);
     }
 
-    @Override
-    public void ensureLegacyTasksForSemester(String semester) {
-        if (semester == null || semester.isBlank()) {
-            return;
-        }
-        long legacyCount;
-        try {
-            legacyCount = classTaskDao.selectCount(new LambdaQueryWrapper<ClassTask>().eq(ClassTask::getSemester, semester));
-        } catch (Exception exception) {
-            logLegacyTaskAccessFailure("检查 legacy 排课任务失败，后续仅使用标准任务执行", semester, exception);
-            return;
-        }
-        if (legacyCount > 0) {
-            return;
-        }
-        List<SchTask> standardTasks = schTaskService.list(new LambdaQueryWrapper<SchTask>()
-                .eq(SchTask::getDeleted, 0)
-                .like(SchTask::getRemark, "semester=" + semester)
-                .orderByAsc(SchTask::getId));
-        if (standardTasks.isEmpty()) {
-            return;
-        }
-
-        List<ClassTask> legacyTasks = standardTasks.stream()
-                .map(this::convertStandardTaskToLegacy)
-                .filter(Objects::nonNull)
-                .toList();
-        if (legacyTasks.isEmpty()) {
-            return;
-        }
-        try {
-            saveLegacyTasksBatch(legacyTasks);
-            log.info("标准排课任务已回填到旧任务表，semester={}, count={}", semester, legacyTasks.size());
-        } catch (Exception exception) {
-            logLegacyTaskAccessFailure("回填 legacy 排课任务失败，后续仅使用标准任务执行", semester, exception);
-        }
-    }
-
     /**
      * 步骤说明：
      * 1. 排课算法当前仍然使用 legacy ClassTask 结构作为内存输入。
@@ -179,76 +139,6 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     @Override
     public long countScheduleTasks() {
         return schTaskService.count(new LambdaQueryWrapper<SchTask>().eq(SchTask::getDeleted, 0));
-    }
-
-    @Override
-    public IPage<ClassTask> pageLegacyTasks(int pageNum, int pageSize, String semester) {
-        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<ClassTask>()
-                .eq(ClassTask::getSemester, semester);
-        Page<ClassTask> page = new Page<>(pageNum, pageSize);
-        return classTaskDao.selectPage(page, wrapper);
-    }
-
-    @Override
-    public List<ClassTask> listLegacyTasks(String semester) {
-        LambdaQueryWrapper<ClassTask> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(semester != null && !semester.isBlank(), ClassTask::getSemester, semester);
-        return classTaskDao.selectList(wrapper);
-    }
-
-    @Override
-    public boolean saveLegacyTask(ClassTask classTask) {
-        return classTaskDao.insert(classTask) > 0;
-    }
-
-    @Override
-    public ClassTask getLegacyTaskById(Integer id) {
-        return id == null ? null : classTaskDao.selectById(id);
-    }
-
-    @Override
-    public ClassTask getLegacyTask(LambdaQueryWrapper<ClassTask> wrapper, boolean throwEx) {
-        return classTaskDao.selectOne(wrapper);
-    }
-
-    @Override
-    public boolean removeLegacyTaskById(Integer id) {
-        return id != null && classTaskDao.deleteById(id) > 0;
-    }
-
-    @Override
-    public boolean removeLegacyTasks(LambdaQueryWrapper<ClassTask> wrapper) {
-        return classTaskDao.delete(wrapper) >= 0;
-    }
-
-    @Override
-    public boolean saveLegacyTasksBatch(List<ClassTask> classTasks) {
-        boolean saved = true;
-        for (ClassTask classTask : classTasks) {
-            saved &= classTaskDao.insert(classTask) > 0;
-        }
-        return saved;
-    }
-
-    private void logLegacyTaskAccessFailure(String message, String semester, Exception exception) {
-        if (isMissingLegacyTaskTable(exception)) {
-            if (semester == null || semester.isBlank()) {
-                log.warn("{}, tb_class_task 已不存在，将继续使用标准任务链路", message);
-            } else {
-                log.warn("{}, semester={}, tb_class_task 已不存在，将继续使用标准任务链路", message, semester);
-            }
-            return;
-        }
-        if (semester == null || semester.isBlank()) {
-            log.warn(message, exception);
-        } else {
-            log.warn(message + "，semester={}", semester, exception);
-        }
-    }
-
-    private boolean isMissingLegacyTaskTable(Exception exception) {
-        String message = exception == null ? null : exception.getMessage();
-        return message != null && message.contains("tb_class_task") && message.contains("doesn't exist");
     }
 
     @Override

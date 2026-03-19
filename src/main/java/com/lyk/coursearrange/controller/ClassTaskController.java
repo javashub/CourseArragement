@@ -7,19 +7,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.service.ClassTaskService;
-import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,8 +32,6 @@ public class ClassTaskController {
 
     @Resource
     private ClassTaskService classTaskService;
-    @Resource
-    private ScheduleLogMirrorService scheduleLogMirrorService;
     @Resource
     private SchTaskService schTaskService;
 
@@ -116,27 +111,6 @@ public class ClassTaskController {
 
     private ServerResponse throwBusiness(ResultCode resultCode, String message) {
         throw new BusinessException(resultCode, message);
-    }
-
-    private void logLegacyTaskAccessFailure(String message, String semester, Exception exception) {
-        if (isMissingLegacyTaskTable(exception)) {
-            if (semester == null || semester.isBlank()) {
-                log.warn("{}, tb_class_task 已不存在，将继续使用标准任务链路", message);
-            } else {
-                log.warn("{}, semester={}, tb_class_task 已不存在，将继续使用标准任务链路", message, semester);
-            }
-            return;
-        }
-        if (semester == null || semester.isBlank()) {
-            log.warn(message, exception);
-        } else {
-            log.warn(message + "，semester={}", semester, exception);
-        }
-    }
-
-    private boolean isMissingLegacyTaskTable(Exception exception) {
-        String message = exception == null ? null : exception.getMessage();
-        return message != null && message.contains("tb_class_task") && message.contains("doesn't exist");
     }
 
     private IPage<ScheduleTaskPageVO> queryStandardTaskPage(String semester, Integer pageNum, Integer pageSize) {
