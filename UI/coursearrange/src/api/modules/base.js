@@ -336,6 +336,13 @@ export function fetchLegacyTeachbuildList() {
   return request.get('/teachbuildinfo/list');
 }
 
+export function fetchEmptyClassroomList(teachbuildNo) {
+  return request.get(`/classroom/empty/${teachbuildNo}`).then((response) => ({
+    ...response,
+    data: (response.data || []).map(normalizeClassroomRecord)
+  }));
+}
+
 export function fetchLegacyLocationPage(page = 1, limit = 10) {
   return request.get(`/locations/${page}`, {
     params: { limit }

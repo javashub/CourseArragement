@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.lyk.coursearrange.entity.response.CoursePlanVo;
@@ -42,8 +41,6 @@ import static org.mockito.Mockito.when;
 class CoursePlanServiceImplTest {
 
     @Mock
-    private CoursePlanLegacySupport coursePlanLegacySupport;
-    @Mock
     private CoursePlanAdjustLogService coursePlanAdjustLogService;
     @Mock
     private AuthFacadeService authFacadeService;
@@ -61,7 +58,6 @@ class CoursePlanServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new CoursePlanServiceImpl();
-        ReflectionTestUtils.setField(service, "coursePlanLegacySupport", coursePlanLegacySupport);
         ReflectionTestUtils.setField(service, "coursePlanAdjustLogService", coursePlanAdjustLogService);
         ReflectionTestUtils.setField(service, "authFacadeService", authFacadeService);
         ReflectionTestUtils.setField(service, "scheduleLogMirrorService", scheduleLogMirrorService);
@@ -106,7 +102,6 @@ class CoursePlanServiceImplTest {
         assertEquals("张老师", plan.getRealname());
         assertEquals("01-101", plan.getClassroomNo());
         assertEquals("08", plan.getClassTime());
-        verify(coursePlanLegacySupport, never()).listAll();
     }
 
     @Test
@@ -117,7 +112,6 @@ class CoursePlanServiceImplTest {
 
         assertTrue(!response.isSuccess());
         assertEquals("该班级没有课表", response.getMessage());
-        verify(coursePlanLegacySupport, never()).listByClassNo("C1", "2025-2026-1");
     }
 
     @Test
@@ -128,7 +122,6 @@ class CoursePlanServiceImplTest {
 
         assertTrue(!response.isSuccess());
         assertEquals("该教师没有课表", response.getMessage());
-        verify(coursePlanLegacySupport, never()).listByTeacherNo("T1", "2025-2026-1");
     }
 
     @Test
@@ -157,9 +150,6 @@ class CoursePlanServiceImplTest {
         ServerResponse<?> response = service.adjustCoursePlan(request);
 
         assertTrue(response.isSuccess());
-        verify(coursePlanLegacySupport, never()).getOne(any());
-        verify(coursePlanLegacySupport, never()).updateById(any(CoursePlan.class));
-
         ArgumentCaptor<CoursePlanAdjustLog> logCaptor = ArgumentCaptor.forClass(CoursePlanAdjustLog.class);
         verify(coursePlanAdjustLogService).save(logCaptor.capture());
         CoursePlanAdjustLog log = logCaptor.getValue();
@@ -197,7 +187,6 @@ class CoursePlanServiceImplTest {
 
         assertTrue(response.isSuccess());
         assertEquals(Long.valueOf(101L), request.getStandardResultId());
-        verify(coursePlanLegacySupport, never()).getById(101);
     }
 
     @Test
@@ -212,7 +201,6 @@ class CoursePlanServiceImplTest {
 
         assertEquals(ResultCode.NOT_FOUND.getCode(), exception.getCode());
         assertEquals("标准课表记录不存在", exception.getMessage());
-        verify(coursePlanLegacySupport, never()).getById(999);
     }
 
     @Test
@@ -232,20 +220,14 @@ class CoursePlanServiceImplTest {
         List<String> occupiedClassrooms = service.listOccupiedClassroomNos("01");
 
         assertEquals(List.of("01-101"), occupiedClassrooms);
-        verify(coursePlanLegacySupport, never()).listAll();
     }
 
     @Test
-    void listOccupiedClassroomNos_shouldFallbackToLegacyCopiesWhenStandardQueryFails() {
-        CoursePlan legacyPlan = new CoursePlan();
-        legacyPlan.setClassroomNo("01-102");
-
+    void listOccupiedClassroomNos_shouldReturnEmptyWhenStandardQueryFails() {
         when(schScheduleResultService.list(any(Wrapper.class))).thenThrow(new RuntimeException("boom"));
-        when(coursePlanLegacySupport.listAll()).thenReturn(List.of(legacyPlan));
 
         List<String> occupiedClassrooms = service.listOccupiedClassroomNos("01");
 
-        assertEquals(List.of("01-102"), occupiedClassrooms);
-        verify(coursePlanLegacySupport).listAll();
+        assertEquals(List.of(), occupiedClassrooms);
     }
 }

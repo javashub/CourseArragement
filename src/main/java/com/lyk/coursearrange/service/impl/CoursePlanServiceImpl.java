@@ -6,7 +6,6 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
-import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.lyk.coursearrange.entity.response.CoursePlanVo;
 import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
@@ -53,8 +52,6 @@ public class CoursePlanServiceImpl implements CoursePlanService {
     private SchTaskService schTaskService;
     @Resource
     private ResClassroomService resClassroomService;
-    @Resource
-    private CoursePlanLegacySupport coursePlanLegacySupport;
 
     /**
      * 根据班级编号查询课表
@@ -129,7 +126,7 @@ public class CoursePlanServiceImpl implements CoursePlanService {
             throw new BusinessException(ResultCode.SYSTEM_ERROR, "调课失败，请稍后重试");
         }
 
-        saveAdjustLog(result, taskMeta, beforeWeekdayNo, beforePeriodNo, afterWeekdayNo, afterPeriodNo, null);
+        saveAdjustLog(result, taskMeta, beforeWeekdayNo, beforePeriodNo, afterWeekdayNo, afterPeriodNo);
         return ServerResponse.ofSuccess("调课成功");
     }
 
@@ -167,13 +164,9 @@ public class CoursePlanServiceImpl implements CoursePlanService {
                         .toList();
             }
         } catch (Exception exception) {
-            log.warn("查询标准课表占用教室失败，将回退 legacy 副本，teachbuildNo={}", teachbuildNo, exception);
+            log.warn("查询标准课表占用教室失败，将返回空占用集合，teachbuildNo={}", teachbuildNo, exception);
         }
-        return coursePlanLegacySupport.listAll().stream()
-                .map(CoursePlan::getClassroomNo)
-                .filter(code -> code != null && code.startsWith(teachbuildNo))
-                .distinct()
-                .toList();
+        return List.of();
     }
 
     private void saveAdjustLog(SchScheduleResult result,
@@ -181,10 +174,9 @@ public class CoursePlanServiceImpl implements CoursePlanService {
                                Integer beforeWeekdayNo,
                                Integer beforePeriodNo,
                                Integer afterWeekdayNo,
-                               Integer afterPeriodNo,
-                               CoursePlan legacyPlan) {
+                               Integer afterPeriodNo) {
         CoursePlanAdjustLog logEntity = new CoursePlanAdjustLog();
-        logEntity.setCoursePlanId(legacyPlan == null ? null : legacyPlan.getId());
+        logEntity.setCoursePlanId(null);
         logEntity.setSemester(result.getRemark());
         logEntity.setGradeNo(taskMeta.getOrDefault("gradeNo", ""));
         logEntity.setClassNo(taskMeta.getOrDefault("classNo", ""));
@@ -192,10 +184,10 @@ public class CoursePlanServiceImpl implements CoursePlanService {
         logEntity.setTeacherNo(taskMeta.getOrDefault("teacherNo", ""));
         logEntity.setBeforeClassTime(toLegacyClassTime(beforeWeekdayNo, beforePeriodNo));
         logEntity.setAfterClassTime(toLegacyClassTime(afterWeekdayNo, afterPeriodNo));
-        logEntity.setBeforeClassroomNo(legacyPlan == null ? null : legacyPlan.getClassroomNo());
-        logEntity.setAfterClassroomNo(legacyPlan == null ? null : legacyPlan.getClassroomNo());
+        logEntity.setBeforeClassroomNo(null);
+        logEntity.setAfterClassroomNo(null);
         logEntity.setRemark("拖拽调课");
-        fillAdjustOperator(logEntity, legacyPlan == null ? result.getId().intValue() : legacyPlan.getId());
+        fillAdjustOperator(logEntity, result.getId().intValue());
         coursePlanAdjustLogService.save(logEntity);
         scheduleLogMirrorService.mirrorAdjustLog(logEntity);
     }
