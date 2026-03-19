@@ -9,7 +9,38 @@ const request = axios.create({
   timeout: 15000
 });
 
+const MAX_PAGE_SIZE = 100;
+
 let redirectingToLogin = false;
+
+function clampPageParam(value) {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return value;
+  }
+  const normalizedValue = Math.trunc(numericValue);
+  if (normalizedValue < 1) {
+    return 1;
+  }
+  return Math.min(normalizedValue, MAX_PAGE_SIZE);
+}
+
+function normalizePagingParams(params) {
+  if (!params || typeof params !== 'object') {
+    return params;
+  }
+  const normalizedParams = { ...params };
+  if (Object.prototype.hasOwnProperty.call(normalizedParams, 'pageSize')) {
+    normalizedParams.pageSize = clampPageParam(normalizedParams.pageSize);
+  }
+  if (Object.prototype.hasOwnProperty.call(normalizedParams, 'limit')) {
+    normalizedParams.limit = clampPageParam(normalizedParams.limit);
+  }
+  return normalizedParams;
+}
 
 function redirectToLogin() {
   if (redirectingToLogin) {
@@ -34,6 +65,7 @@ request.interceptors.request.use((config) => {
   if (token) {
     config.headers['satoken'] = token.replaceAll('"', '');
   }
+  config.params = normalizePagingParams(config.params);
   return config;
 });
 
