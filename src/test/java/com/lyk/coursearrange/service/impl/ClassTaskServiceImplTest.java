@@ -77,6 +77,19 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
+    void countScheduleTasks_shouldReturnStandardCountOnly() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);
+        when(schTaskService.count(any())).thenReturn(0L);
+
+        long count = service.countScheduleTasks();
+
+        assertEquals(0L, count);
+        verify(classTaskDao, never()).selectCount(any());
+    }
+
+    @Test
     void saveLegacyTasksBatch_shouldInsertEachTaskViaDao() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
         ReflectionTestUtils.setField(service, "classTaskDao", classTaskDao);

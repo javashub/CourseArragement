@@ -2,13 +2,15 @@ package com.lyk.coursearrange.excel.service.impl;
 
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lyk.coursearrange.common.enums.ResultCode;
+import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.vo.ImportResultVO;
-import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.excel.model.ClassTaskExcelRow;
 import com.lyk.coursearrange.excel.service.ClassTaskExcelService;
-import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
-import com.lyk.coursearrange.service.ClassTaskService;
+import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.SchTaskService;
+import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -35,8 +37,7 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
 
     private static final String TEMPLATE_FILE_NAME = "课程任务导入模板.xlsx";
 
-    private final ClassTaskService classTaskService;
-    private final ScheduleLogMirrorService scheduleLogMirrorService;
+    private final SchTaskService schTaskService;
 
     @Override
     public void writeTemplate(HttpServletResponse response) throws IOException {
@@ -70,7 +71,7 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
         }
 
         List<String> errors = new ArrayList<>();
-        List<ClassTask> classTasks = new ArrayList<>();
+        List<SchTask> standardTasks = new ArrayList<>();
         Set<String> semesters = new LinkedHashSet<>();
         for (int index = 0; index < rows.size(); index++) {
             ClassTaskExcelRow row = rows.get(index);
@@ -79,29 +80,44 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
             if (errors.size() > errorCountBefore) {
                 continue;
             }
-            ClassTask classTask = convertRow(row);
-            classTasks.add(classTask);
-            semesters.add(classTask.getSemester());
+            SchTask standardTask = convertRow(row);
+            standardTasks.add(standardTask);
+            semesters.add(trim(row.getSemester()));
         }
         if (!errors.isEmpty()) {
-            return ServerResponse.ofError("课程任务导入失败，请修正后重试", buildImportResult(rows.size(), classTasks.size(), errors));
+            return ServerResponse.ofError("课程任务导入失败，请修正后重试", buildImportResult(rows.size(), standardTasks.size(), errors));
         }
 
-        boolean legacySaved = true;
-        try {
-            classTaskService.removeLegacyTasks(new LambdaQueryWrapper<ClassTask>().in(ClassTask::getSemester, semesters));
-            legacySaved = classTaskService.saveLegacyTasksBatch(classTasks);
-        } catch (Exception exception) {
-            legacySaved = false;
-            log.warn("写入 legacy 课程任务副本失败，将仅刷新标准任务镜像，semesters={}", semesters, exception);
-        }
-        scheduleLogMirrorService.replaceTaskMirrorsBySemesters(semesters, classTasks);
+        replaceStandardTasks(semesters, standardTasks);
         return ServerResponse.ofSuccess(
-                legacySaved
-                        ? String.format("课程任务导入成功，共 %s 条，已覆盖学期：%s", classTasks.size(), String.join("、", semesters))
-                        : String.format("课程任务导入成功，共 %s 条，标准任务已更新；legacy 副本未写入", classTasks.size()),
-                buildImportResult(rows.size(), classTasks.size(), List.of())
+                String.format("课程任务导入成功，共 %s 条，已覆盖学期：%s", standardTasks.size(), String.join("、", semesters)),
+                buildImportResult(rows.size(), standardTasks.size(), List.of())
         );
+    }
+
+    private void replaceStandardTasks(Set<String> semesters, List<SchTask> standardTasks) {
+        LambdaQueryWrapper<SchTask> removeWrapper = new LambdaQueryWrapper<>();
+        removeWrapper.eq(SchTask::getDeleted, 0)
+                .and(wrapper -> {
+                    boolean first = true;
+                    for (String semester : semesters) {
+                        if (semester == null || semester.isBlank()) {
+                            continue;
+                        }
+                        if (first) {
+                            wrapper.like(SchTask::getRemark, "semester=" + semester);
+                            first = false;
+                        } else {
+                            wrapper.or().like(SchTask::getRemark, "semester=" + semester);
+                        }
+                    }
+                });
+        if (!schTaskService.remove(removeWrapper)) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR, "课程任务导入失败，清理原有标准任务失败");
+        }
+        if (!schTaskService.saveBatch(standardTasks)) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR, "课程任务导入失败，保存标准任务失败");
+        }
     }
 
     private List<ClassTaskExcelRow> buildTemplateRows() {
@@ -164,22 +180,48 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
         }
     }
 
-    private ClassTask convertRow(ClassTaskExcelRow row) {
-        ClassTask classTask = new ClassTask();
-        classTask.setSemester(trim(row.getSemester()));
-        classTask.setGradeNo(trim(row.getGradeNo()));
-        classTask.setClassNo(trim(row.getClassNo()));
-        classTask.setCourseNo(trim(row.getCourseNo()));
-        classTask.setCourseName(trim(row.getCourseName()));
-        classTask.setTeacherNo(trim(row.getTeacherNo()));
-        classTask.setRealname(trim(row.getRealname()));
-        classTask.setCourseAttr(trim(row.getCourseAttr()));
-        classTask.setStudentNum(row.getStudentNum() == null ? 0 : row.getStudentNum());
-        classTask.setWeeksNumber(row.getWeeksNumber());
-        classTask.setWeeksSum(row.getWeeksSum());
-        classTask.setIsFix(StringUtils.defaultIfBlank(trim(row.getIsFix()), "0"));
-        classTask.setClassTime("1".equals(classTask.getIsFix()) ? trim(row.getClassTime()) : "");
-        return classTask;
+    private SchTask convertRow(ClassTaskExcelRow row) {
+        String semester = trim(row.getSemester());
+        String classNo = trim(row.getClassNo());
+        String courseNo = trim(row.getCourseNo());
+        String teacherNo = trim(row.getTeacherNo());
+        String gradeNo = trim(row.getGradeNo());
+        String courseName = trim(row.getCourseName());
+        String teacherName = trim(row.getRealname());
+        String courseAttr = trim(row.getCourseAttr());
+        String isFix = StringUtils.defaultIfBlank(trim(row.getIsFix()), "0");
+        String classTime = "1".equals(isFix) ? trim(row.getClassTime()) : "";
+
+        SchTask task = new SchTask();
+        task.setTaskCode(ScheduleTaskMetaUtils.buildTaskCode(semester, classNo, courseNo, teacherNo));
+        task.setSchoolYearId(0L);
+        task.setTermId(0L);
+        task.setStageId(0L);
+        task.setCourseId(0L);
+        task.setTeacherId(0L);
+        task.setStudentCount(row.getStudentNum() == null ? 0 : row.getStudentNum());
+        task.setWeekHours(row.getWeeksNumber() == null ? 0 : row.getWeeksNumber());
+        task.setTotalHours((row.getWeeksNumber() == null || row.getWeeksSum() == null) ? 0 : row.getWeeksNumber() * row.getWeeksSum());
+        task.setNeedContinuous(0);
+        task.setContinuousSize(1);
+        task.setNeedFixedRoom(0);
+        task.setNeedFixedTime("1".equals(isFix) ? 1 : 0);
+        task.setFixedWeekdayNo(ScheduleTaskMetaUtils.resolveWeekdayNo(classTime));
+        task.setFixedPeriodNo(ScheduleTaskMetaUtils.resolvePeriodNo(classTime));
+        task.setPriorityLevel(5);
+        task.setAllowConflict(0);
+        task.setTaskStatus("PENDING");
+        task.setSourceType("EXCEL_IMPORT");
+        task.setStatus(1);
+        task.setRemark("semester=" + ScheduleTaskMetaUtils.safe(semester)
+                + ",classNo=" + ScheduleTaskMetaUtils.safe(classNo)
+                + ",courseNo=" + ScheduleTaskMetaUtils.safe(courseNo)
+                + ",teacherNo=" + ScheduleTaskMetaUtils.safe(teacherNo)
+                + ",gradeNo=" + ScheduleTaskMetaUtils.safe(gradeNo)
+                + ",courseName=" + ScheduleTaskMetaUtils.safe(courseName)
+                + ",courseAttr=" + ScheduleTaskMetaUtils.safe(courseAttr)
+                + ",teacherName=" + ScheduleTaskMetaUtils.safe(teacherName));
+        return task;
     }
 
     private String trim(String value) {

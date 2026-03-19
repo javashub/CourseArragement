@@ -178,16 +178,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
 
     @Override
     public long countScheduleTasks() {
-        long standardCount = schTaskService.count(new LambdaQueryWrapper<SchTask>().eq(SchTask::getDeleted, 0));
-        if (standardCount > 0) {
-            return standardCount;
-        }
-        try {
-            return classTaskDao.selectCount(new LambdaQueryWrapper<>());
-        } catch (Exception exception) {
-            logLegacyTaskAccessFailure("统计 legacy 排课任务失败，将返回标准任务统计结果 0", null, exception);
-            return 0;
-        }
+        return schTaskService.count(new LambdaQueryWrapper<SchTask>().eq(SchTask::getDeleted, 0));
     }
 
     @Override
