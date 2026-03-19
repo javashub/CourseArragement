@@ -19,6 +19,36 @@
 
         <!-- 添加课程计划 -->
         <div>
+          <el-input
+            v-model.trim="filters.classNo"
+            class="task-filter-input"
+            size="small"
+            clearable
+            placeholder="按班级筛选"
+            @keyup.enter.native="handleSearch"
+          />
+          <el-input
+            v-model.trim="filters.courseNo"
+            class="task-filter-input"
+            size="small"
+            clearable
+            placeholder="按课程筛选"
+            @keyup.enter.native="handleSearch"
+          />
+          <el-input
+            v-model.trim="filters.teacherNo"
+            class="task-filter-input"
+            size="small"
+            clearable
+            placeholder="按教师筛选"
+            @keyup.enter.native="handleSearch"
+          />
+          <el-button class="add-button" size="small" type="primary" @click="handleSearch">
+            查询
+          </el-button>
+          <el-button class="add-button" size="small" @click="handleResetFilters">
+            重置
+          </el-button>
           <el-upload
             class="add-button"
             ref="upload"
@@ -291,6 +321,11 @@ export default {
       page: 1,
       total: 0,
       pageSize: 10,
+      filters: {
+        classNo: "",
+        courseNo: "",
+        teacherNo: "",
+      },
       // 学期选择绑定的值
       value: "2019-2020-1",
       // 当前选择的学期
@@ -442,7 +477,23 @@ export default {
     handleSelectChange(val) {
       // 这里的V就是选择的学期了
       this.semester = val;
+      this.page = 1;
       this.clearArrangeResult();
+      this.allClassTask();
+    },
+
+    handleSearch() {
+      this.page = 1;
+      this.allClassTask();
+    },
+
+    handleResetFilters() {
+      this.filters = {
+        classNo: "",
+        courseNo: "",
+        teacherNo: "",
+      };
+      this.page = 1;
       this.allClassTask();
     },
 
@@ -489,7 +540,7 @@ export default {
         return;
       }
       try {
-        const response = await fetchClassTaskPage(this.page, this.semester, this.pageSize);
+        const response = await fetchClassTaskPage(this.page, this.semester, this.pageSize, this.filters);
         let ret = response.data || {};
         this.classTaskData = ret.records || [];
         this.total = ret.total || 0;
@@ -546,6 +597,12 @@ export default {
 
 .add-button {
   float: left;
+  margin-left: 15px;
+}
+
+.task-filter-input {
+  float: left;
+  width: 160px;
   margin-left: 15px;
 }
 </style>

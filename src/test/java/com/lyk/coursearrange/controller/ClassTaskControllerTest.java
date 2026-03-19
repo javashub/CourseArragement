@@ -19,8 +19,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +48,7 @@ class ClassTaskControllerTest {
 
         when(schTaskService.page(org.mockito.ArgumentMatchers.any(Page.class), org.mockito.ArgumentMatchers.any(Wrapper.class))).thenReturn(taskPage);
 
-        ServerResponse response = controller.queryClassTask(1, "2025-2026-1", 10);
+        ServerResponse response = controller.queryClassTask(1, "2025-2026-1", 10, null, null, null);
 
         assertTrue(response.isSuccess());
         assertInstanceOf(IPage.class, response.getData());
@@ -71,12 +69,51 @@ class ClassTaskControllerTest {
         taskPage.setRecords(List.of());
         when(schTaskService.page(org.mockito.ArgumentMatchers.any(Page.class), org.mockito.ArgumentMatchers.any(Wrapper.class))).thenReturn(taskPage);
 
-        ServerResponse response = controller.queryClassTask(1, "2025-2026-1", 10);
+        ServerResponse response = controller.queryClassTask(1, "2025-2026-1", 10, null, null, null);
 
         assertTrue(response.isSuccess());
         assertInstanceOf(IPage.class, response.getData());
         IPage<?> page = (IPage<?>) response.getData();
         assertEquals(0, page.getTotal());
+    }
+
+    @Test
+    void queryClassTask_shouldFilterTasksByClassTeacherAndCourse() {
+        ClassTaskController controller = new ClassTaskController();
+        ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
+        ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
+
+        SchTask matchedTask = new SchTask();
+        matchedTask.setId(101L);
+        matchedTask.setStudentCount(40);
+        matchedTask.setWeekHours(4);
+        matchedTask.setTotalHours(20);
+        matchedTask.setNeedFixedTime(0);
+        matchedTask.setRemark("semester=2025-2026-1,classNo=C1,courseNo=K1,teacherNo=T1,gradeNo=G1,courseName=数学,teacherName=张老师");
+
+        SchTask filteredTask = new SchTask();
+        filteredTask.setId(102L);
+        filteredTask.setStudentCount(42);
+        filteredTask.setWeekHours(4);
+        filteredTask.setTotalHours(20);
+        filteredTask.setNeedFixedTime(0);
+        filteredTask.setRemark("semester=2025-2026-1,classNo=C2,courseNo=K2,teacherNo=T2,gradeNo=G1,courseName=英语,teacherName=李老师");
+
+        Page<SchTask> taskPage = new Page<>(1, 10, 2);
+        taskPage.setRecords(List.of(matchedTask, filteredTask));
+
+        when(schTaskService.page(org.mockito.ArgumentMatchers.any(Page.class), org.mockito.ArgumentMatchers.any(Wrapper.class))).thenReturn(taskPage);
+
+        ServerResponse response = controller.queryClassTask(1, "2025-2026-1", 10, "C1", "T1", "K1");
+
+        assertTrue(response.isSuccess());
+        assertInstanceOf(IPage.class, response.getData());
+        IPage<?> page = (IPage<?>) response.getData();
+        assertEquals(1, page.getTotal());
+        ScheduleTaskPageVO vo = (ScheduleTaskPageVO) page.getRecords().get(0);
+        assertEquals("C1", vo.getClassNo());
+        assertEquals("T1", vo.getTeacherNo());
+        assertEquals("K1", vo.getCourseNo());
     }
 
     @Test

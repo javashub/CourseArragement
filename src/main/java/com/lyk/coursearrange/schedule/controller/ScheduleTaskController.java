@@ -51,8 +51,11 @@ public class ScheduleTaskController {
     @GetMapping("/page")
     public ServerResponse<?> page(@RequestParam String semester,
                                   @RequestParam(defaultValue = "1") Integer pageNum,
-                                  @RequestParam(defaultValue = "10") Integer pageSize) {
-        IPage<ScheduleTaskPageVO> standardPage = queryStandardTaskPage(semester, pageNum, pageSize);
+                                  @RequestParam(defaultValue = "10") Integer pageSize,
+                                  @RequestParam(required = false) String classNo,
+                                  @RequestParam(required = false) String teacherNo,
+                                  @RequestParam(required = false) String courseNo) {
+        IPage<ScheduleTaskPageVO> standardPage = queryStandardTaskPage(semester, pageNum, pageSize, classNo, teacherNo, courseNo);
         if (standardPage != null) {
             return ServerResponse.ofSuccess(standardPage);
         }
@@ -116,10 +119,18 @@ public class ScheduleTaskController {
      * 1. 优先从标准 sch_task 中读取任务。
      * 2. 再把标准任务转换成当前前端仍在使用的旧字段结构。
      */
-    private IPage<ScheduleTaskPageVO> queryStandardTaskPage(String semester, Integer pageNum, Integer pageSize) {
+    private IPage<ScheduleTaskPageVO> queryStandardTaskPage(String semester,
+                                                            Integer pageNum,
+                                                            Integer pageSize,
+                                                            String classNo,
+                                                            String teacherNo,
+                                                            String courseNo) {
         LambdaQueryWrapper<SchTask> wrapper = new LambdaQueryWrapper<SchTask>()
                 .eq(SchTask::getDeleted, 0)
                 .like(SchTask::getRemark, "semester=" + semester)
+                .like(classNo != null && !classNo.isBlank(), SchTask::getRemark, ",classNo=" + ScheduleTaskMetaUtils.safe(classNo) + ",")
+                .like(teacherNo != null && !teacherNo.isBlank(), SchTask::getRemark, ",teacherNo=" + ScheduleTaskMetaUtils.safe(teacherNo) + ",")
+                .like(courseNo != null && !courseNo.isBlank(), SchTask::getRemark, ",courseNo=" + ScheduleTaskMetaUtils.safe(courseNo) + ",")
                 .orderByDesc(SchTask::getUpdatedAt)
                 .orderByDesc(SchTask::getId);
         Page<SchTask> taskPage = schTaskService.page(new Page<>(pageNum, pageSize), wrapper);
@@ -127,10 +138,17 @@ public class ScheduleTaskController {
             return new Page<>(pageNum, pageSize, 0);
         }
 
-        Page<ScheduleTaskPageVO> resultPage = new Page<>(taskPage.getCurrent(), taskPage.getSize(), taskPage.getTotal());
-        resultPage.setRecords(taskPage.getRecords().stream()
+        List<ScheduleTaskPageVO> filteredRecords = taskPage.getRecords().stream()
                 .map(this::buildStandardTaskVO)
-                .toList());
+                .filter(item -> matchesFilters(item, classNo, teacherNo, courseNo))
+                .toList();
+        long total = taskPage.getTotal();
+        if (filteredRecords.size() != taskPage.getRecords().size()) {
+            total = filteredRecords.size();
+        }
+
+        Page<ScheduleTaskPageVO> resultPage = new Page<>(taskPage.getCurrent(), taskPage.getSize(), total);
+        resultPage.setRecords(filteredRecords);
         return resultPage;
     }
 
@@ -173,6 +191,16 @@ public class ScheduleTaskController {
             return 0;
         }
         return task.getTotalHours() / task.getWeekHours();
+    }
+
+    private boolean matchesFilters(ScheduleTaskPageVO item, String classNo, String teacherNo, String courseNo) {
+        return matches(item.getClassNo(), classNo)
+                && matches(item.getTeacherNo(), teacherNo)
+                && matches(item.getCourseNo(), courseNo);
+    }
+
+    private boolean matches(String actualValue, String expectedValue) {
+        return expectedValue == null || expectedValue.isBlank() || expectedValue.equals(actualValue);
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {

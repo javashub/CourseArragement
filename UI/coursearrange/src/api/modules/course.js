@@ -12,12 +12,16 @@ export function fetchSemesterList() {
   return request.get('/schedule/tasks/semesters');
 }
 
-export function fetchClassTaskPage(page = 1, semester, limit = 10) {
+export function fetchClassTaskPage(page = 1, semester, limit = 10, filters = {}) {
+  const { classNo, teacherNo, courseNo } = filters || {};
   return request.get('/schedule/tasks/page', {
     params: {
       semester,
       pageNum: page,
-      pageSize: limit
+      pageSize: limit,
+      classNo,
+      teacherNo,
+      courseNo
     }
   });
 }
