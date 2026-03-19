@@ -378,7 +378,6 @@ import { getErrorMessage } from '@/utils/http';
 import {
   arrangeClassTask,
   createClassTask,
-  deleteClassTask,
   deleteStandardClassTask,
   downloadClassTaskTemplate,
   fetchArrangeLogs,
@@ -798,11 +797,7 @@ async function submitTask() {
 
 async function removeTask(row) {
   await ElMessageBox.confirm(`确认删除班级“${row.classNo}”的任务吗？`, '删除确认', { type: 'warning' });
-  if (row.standardId) {
-    await deleteStandardClassTask(row.standardId);
-  } else {
-    await deleteClassTask(row.id);
-  }
+  await deleteStandardClassTask(row.standardId || row.id);
   ElMessage.success('排课任务删除成功');
   await loadClassTasks();
 }

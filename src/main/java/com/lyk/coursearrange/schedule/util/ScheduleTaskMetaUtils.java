@@ -46,7 +46,6 @@ public interface ScheduleTaskMetaUtils {
      */
     static String buildTaskRemark(ClassTask legacyTask) {
         return "semester=" + safe(legacyTask.getSemester())
-                + ",legacyId=" + (legacyTask.getId() == null ? "" : legacyTask.getId())
                 + ",classNo=" + safe(legacyTask.getClassNo())
                 + ",courseNo=" + safe(legacyTask.getCourseNo())
                 + ",teacherNo=" + safe(legacyTask.getTeacherNo())
