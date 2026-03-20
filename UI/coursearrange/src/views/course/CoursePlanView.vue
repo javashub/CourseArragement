@@ -50,6 +50,10 @@
           <span class="config-label">教学时间片总数</span>
           <strong>{{ runtimeConfig.rawTeachingTimeSlotCount }}</strong>
         </div>
+        <div class="config-pill">
+          <span class="config-label">默认连堂上限</span>
+          <strong>{{ runtimeConfig.defaultContinuousLimit || '--' }}</strong>
+        </div>
       </div>
       <p class="config-note">
         当前遗传排课算法仍运行在 legacy 25 格编码窗口内，因此只会消费工作日 1-5、节次 1-5 范围内的可教学时间片。
@@ -190,6 +194,13 @@
         <el-table-column prop="studentNum" label="人数" width="80" />
         <el-table-column prop="weeksNumber" label="周学时" width="90" />
         <el-table-column prop="weeksSum" label="周数" width="80" />
+        <el-table-column label="连堂需求" min-width="140">
+          <template #default="{ row }">
+            <el-tag :type="row.needContinuous === 1 ? 'warning' : 'info'" effect="plain">
+              {{ row.needContinuous === 1 ? `连堂 ${row.continuousSize || 2} 节` : '常规排课' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="classTime" label="固定时段" min-width="130">
           <template #default="{ row }">
             {{ row.classTime || '--' }}
@@ -401,6 +412,32 @@
             <el-input-number v-model="taskForm.weeksSum" :min="1" :max="30" controls-position="right" />
           </el-form-item>
         </div>
+        <div class="constraint-band">
+          <div class="constraint-band__copy">
+            <div class="constraint-band__title">连堂约束</div>
+            <div class="constraint-band__text">
+              需要连堂时会把该任务作为连续节次约束参与排课，当前规则默认上限为
+              {{ runtimeConfig.defaultContinuousLimit || '未配置' }} 节。
+            </div>
+          </div>
+          <div class="constraint-band__controls">
+            <el-form-item label="是否连堂">
+              <el-radio-group v-model="taskForm.needContinuous">
+                <el-radio :value="0">否</el-radio>
+                <el-radio :value="1">是</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="连堂节数">
+              <el-input-number
+                v-model="taskForm.continuousSize"
+                :min="2"
+                :max="Math.max(runtimeConfig.defaultContinuousLimit || 2, 2)"
+                :disabled="taskForm.needContinuous !== 1"
+                controls-position="right"
+              />
+            </el-form-item>
+          </div>
+        </div>
         <div class="form-grid">
           <el-form-item label="是否固定上课时间">
             <el-radio-group v-model="taskForm.isFix">
@@ -467,6 +504,7 @@ const runtimeConfig = reactive({
   ruleName: '',
   effectiveTimeSlotCount: 25,
   rawTeachingTimeSlotCount: 0,
+  defaultContinuousLimit: 0,
   configApplied: false
 });
 
@@ -560,6 +598,14 @@ const formValidation = computed(() => {
       messages.push('固定排课时必须填写固定时间');
     } else if (!/^\d{2}$/.test(taskForm.value.classTime.trim())) {
       messages.push('固定时间当前只支持两位编码，例如 01、13');
+    }
+  }
+  if (taskForm.value.needContinuous === 1) {
+    if (!taskForm.value.continuousSize || taskForm.value.continuousSize < 2) {
+      messages.push('连堂任务的连堂节数不能小于 2');
+    }
+    if (runtimeConfig.defaultContinuousLimit > 0 && taskForm.value.continuousSize > runtimeConfig.defaultContinuousLimit) {
+      messages.push(`连堂节数不能超过当前规则上限 ${runtimeConfig.defaultContinuousLimit}`);
     }
   }
   if (taskForm.value.studentNum > 120) {
@@ -666,6 +712,8 @@ function createTaskForm() {
     studentNum: 40,
     weeksNumber: 4,
     weeksSum: 16,
+    needContinuous: 0,
+    continuousSize: 2,
     isFix: '0',
     classTime: ''
   };
@@ -713,11 +761,13 @@ async function loadRuntimeConfig() {
     runtimeConfig.ruleName = payload.scheduleRule?.ruleName || '默认 25 格时间片';
     runtimeConfig.effectiveTimeSlotCount = effectiveTimeSlots.length || 25;
     runtimeConfig.rawTeachingTimeSlotCount = rawTeachingTimeSlots.length;
+    runtimeConfig.defaultContinuousLimit = Number(payload.scheduleRule?.defaultContinuousLimit || 0) || 0;
     runtimeConfig.configApplied = effectiveTimeSlots.length > 0;
   } catch (error) {
     runtimeConfig.ruleName = '默认 25 格时间片';
     runtimeConfig.effectiveTimeSlotCount = 25;
     runtimeConfig.rawTeachingTimeSlotCount = 0;
+    runtimeConfig.defaultContinuousLimit = 0;
     runtimeConfig.configApplied = false;
   }
 }
@@ -837,6 +887,10 @@ function handleCourseChange(courseNo) {
   taskForm.value.courseNo = currentCourse.courseNo || '';
   taskForm.value.courseName = currentCourse.courseName || '';
   taskForm.value.courseAttr = currentCourse.courseAttr || taskForm.value.courseAttr;
+  taskForm.value.needContinuous = Number(currentCourse.needContinuous || 0) === 1 ? 1 : taskForm.value.needContinuous;
+  taskForm.value.continuousSize = Number(currentCourse.needContinuous || 0) === 1
+    ? Math.max(2, Number(currentCourse.continuousSize || 2))
+    : taskForm.value.continuousSize;
 }
 
 function clearCourseSelection() {
@@ -883,6 +937,8 @@ function prefillTaskByClass() {
     courseNo: firstCourse?.courseNo || '',
     courseName: firstCourse?.courseName || '',
     courseAttr: firstCourse?.courseAttr || '',
+    needContinuous: Number(firstCourse?.needContinuous || 0) === 1 ? 1 : 0,
+    continuousSize: Number(firstCourse?.needContinuous || 0) === 1 ? Math.max(2, Number(firstCourse?.continuousSize || 2)) : 2,
     teacherNo: firstTeacher?.teacherNo || '',
     realname: firstTeacher?.realname || ''
   };
@@ -920,6 +976,16 @@ async function submitTask() {
     ElMessage.warning('周数必须大于 0');
     return;
   }
+  if (taskForm.value.needContinuous === 1) {
+    if (!taskForm.value.continuousSize || taskForm.value.continuousSize < 2) {
+      ElMessage.warning('连堂任务的连堂节数不能小于 2');
+      return;
+    }
+    if (runtimeConfig.defaultContinuousLimit > 0 && taskForm.value.continuousSize > runtimeConfig.defaultContinuousLimit) {
+      ElMessage.warning(`连堂节数不能超过当前规则上限 ${runtimeConfig.defaultContinuousLimit}`);
+      return;
+    }
+  }
   if (taskForm.value.isFix === '1') {
     if (!fixedTime) {
       ElMessage.warning('固定排课时必须填写固定时间');
@@ -942,6 +1008,8 @@ async function submitTask() {
       courseName,
       teacherNo,
       realname,
+      needContinuous: taskForm.value.needContinuous === 1 ? 1 : 0,
+      continuousSize: taskForm.value.needContinuous === 1 ? Math.max(2, Number(taskForm.value.continuousSize || 2)) : 1,
       classTime: fixedTime || ''
     });
     ElMessage.success('排课任务创建成功');
@@ -1163,7 +1231,7 @@ onMounted(async () => {
 
 .config-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -1348,6 +1416,44 @@ onMounted(async () => {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.constraint-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  gap: 18px;
+  margin-bottom: 14px;
+  padding: 18px 20px;
+  border: 1px solid #eadfbe;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgb(255 250 240 / 96%) 0%, rgb(250 244 230 / 88%) 100%);
+}
+
+.constraint-band__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.constraint-band__title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7c5b1e;
+}
+
+.constraint-band__text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #6f634d;
+}
+
+.constraint-band__controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
 .validation-preview {
   display: flex;
   flex-direction: column;
@@ -1393,6 +1499,8 @@ onMounted(async () => {
 
   .tips-grid,
   .constraint-grid,
+  .constraint-band,
+  .constraint-band__controls,
   .form-grid,
   .compact-grid,
   .config-strip,

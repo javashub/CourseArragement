@@ -16,7 +16,9 @@ function normalizeCourseRecord(record = {}) {
     publisher: record.publisher ?? record.courseShortName ?? '',
     courseShortName: record.courseShortName ?? record.publisher ?? '',
     piority: record.piority ?? record.weekHours ?? 0,
-    weekHours: record.weekHours ?? record.piority ?? 0
+    weekHours: record.weekHours ?? record.piority ?? 0,
+    needContinuous: Number(record.needContinuous ?? 0) || 0,
+    continuousSize: Number(record.continuousSize ?? 1) || 1
   };
 }
 
@@ -148,6 +150,8 @@ function buildCoursePayload(payload = {}) {
     courseType: payload.courseType ?? payload.courseAttr ?? 'REQUIRED',
     totalHours: Number(payload.totalHours ?? weekHours * 16) || 0,
     weekHours,
+    needContinuous: Number(payload.needContinuous ?? 0) || 0,
+    continuousSize: Number(payload.continuousSize ?? 1) || 1,
     needSpecialRoom: Number(payload.needSpecialRoom ?? 0) || 0,
     roomType: payload.roomType ?? 'NORMAL',
     status: payload.status ?? 1,

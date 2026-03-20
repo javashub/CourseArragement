@@ -41,5 +41,9 @@ public class ScheduleTaskPageVO implements Serializable {
 
     private String isFix;
 
+    private Integer needContinuous;
+
+    private Integer continuousSize;
+
     private String classTime;
 }

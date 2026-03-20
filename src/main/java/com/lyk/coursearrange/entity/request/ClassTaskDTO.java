@@ -75,6 +75,16 @@ public class ClassTaskDTO implements Serializable {
     private String isFix;
 
     /**
+     * 是否需要连堂
+     */
+    private Integer needContinuous;
+
+    /**
+     * 连堂节数
+     */
+    private Integer continuousSize;
+
+    /**
      * 固定时间的话时间是什么时候
      */
     private String classTime;

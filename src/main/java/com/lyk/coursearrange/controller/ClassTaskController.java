@@ -13,6 +13,9 @@ import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
+import com.lyk.coursearrange.system.config.query.ConfigScopeQuery;
+import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
+import com.lyk.coursearrange.system.config.vo.ScheduleConfigVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +37,8 @@ public class ClassTaskController {
     private ClassTaskService classTaskService;
     @Resource
     private SchTaskService schTaskService;
+    @Resource
+    private ScheduleConfigFacadeService scheduleConfigFacadeService;
 
     /**
      * 查询开课任务
@@ -61,6 +66,7 @@ public class ClassTaskController {
     @PostMapping("/addclasstask")
     public ServerResponse addClassTask(@RequestBody ClassTaskDTO c) {
         validateTaskDuplicate(c, null);
+        validateContinuousConstraint(c);
         SchTask standardTask = buildStandardTask(c, new SchTask());
         if (!schTaskService.save(standardTask)) {
             return throwBusiness(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
@@ -77,6 +83,7 @@ public class ClassTaskController {
             return throwBusiness(ResultCode.NOT_FOUND, "开课任务不存在");
         }
         validateTaskDuplicate(request, id.longValue());
+        validateContinuousConstraint(request);
         SchTask standardTask = buildStandardTask(request, existingTask);
         standardTask.setId(id.longValue());
         if (!schTaskService.updateById(standardTask)) {
@@ -182,6 +189,8 @@ public class ClassTaskController {
         vo.setWeeksNumber(task.getWeekHours());
         vo.setWeeksSum(calculateWeeksSum(task));
         vo.setIsFix(task.getNeedFixedTime() != null && task.getNeedFixedTime() == 1 ? "1" : "0");
+        vo.setNeedContinuous(task.getNeedContinuous() != null && task.getNeedContinuous() == 1 ? 1 : 0);
+        vo.setContinuousSize(task.getContinuousSize() == null || task.getContinuousSize() <= 0 ? 1 : task.getContinuousSize());
         vo.setClassTime(toLegacyClassTime(task.getFixedWeekdayNo(), task.getFixedPeriodNo()));
         return vo;
     }
@@ -236,6 +245,10 @@ public class ClassTaskController {
     }
 
     private SchTask buildStandardTask(ClassTaskDTO request, SchTask task) {
+        int needContinuous = request.getNeedContinuous() != null && request.getNeedContinuous() == 1 ? 1 : 0;
+        int continuousSize = needContinuous == 1
+                ? Math.max(2, request.getContinuousSize() == null ? 2 : request.getContinuousSize())
+                : 1;
         task.setTaskCode(ScheduleTaskMetaUtils.buildTaskCode(request));
         task.setSchoolYearId(0L);
         task.setTermId(0L);
@@ -247,8 +260,8 @@ public class ClassTaskController {
         task.setTotalHours((request.getWeeksNumber() == null || request.getWeeksSum() == null)
                 ? 0
                 : request.getWeeksNumber() * request.getWeeksSum());
-        task.setNeedContinuous(0);
-        task.setContinuousSize(1);
+        task.setNeedContinuous(needContinuous);
+        task.setContinuousSize(continuousSize);
         task.setNeedFixedRoom(0);
         task.setNeedFixedTime("1".equals(request.getIsFix()) ? 1 : 0);
         task.setFixedWeekdayNo(ScheduleTaskMetaUtils.resolveWeekdayNo(request.getClassTime()));
@@ -267,5 +280,26 @@ public class ClassTaskController {
                 + ",courseAttr=" + ScheduleTaskMetaUtils.safe(request.getCourseAttr())
                 + ",teacherName=" + ScheduleTaskMetaUtils.safe(request.getRealname()));
         return task;
+    }
+
+    private void validateContinuousConstraint(ClassTaskDTO request) {
+        int needContinuous = request.getNeedContinuous() != null && request.getNeedContinuous() == 1 ? 1 : 0;
+        int continuousSize = request.getContinuousSize() == null ? 0 : request.getContinuousSize();
+        if (needContinuous == 0) {
+            return;
+        }
+        if (continuousSize < 2) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "连堂任务的连堂节数不能小于 2");
+        }
+        ScheduleConfigVO config = scheduleConfigFacadeService == null
+                ? null
+                : scheduleConfigFacadeService.getScheduleConfig(new ConfigScopeQuery());
+        Integer defaultContinuousLimit = config == null || config.getScheduleRule() == null
+                ? null
+                : config.getScheduleRule().getDefaultContinuousLimit();
+        if (defaultContinuousLimit != null && defaultContinuousLimit > 0 && continuousSize > defaultContinuousLimit) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                    "连堂节数不能超过当前排课规则允许的上限 " + defaultContinuousLimit);
+        }
     }
 }
