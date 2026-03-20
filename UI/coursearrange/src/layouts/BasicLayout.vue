@@ -1,5 +1,5 @@
 <template>
-  <div class="layout-wrapper">
+  <div class="layout-wrapper" :class="{ 'sider-collapsed': isCollapsed }">
     <aside class="layout-sider">
       <div class="sider-glow"></div>
       <div class="brand">
@@ -8,14 +8,28 @@
         <div class="brand-subtitle">排课、权限、组织与配置已经进入统一主链</div>
         <div class="brand-badge">RBAC3 + 多校区 + 多学段</div>
       </div>
-      <el-menu :default-active="activeMenu" router class="layout-menu" background-color="transparent" text-color="#d0d9e8" active-text-color="#ffffff">
+      <el-menu
+        :default-active="activeMenu"
+        class="layout-menu"
+        background-color="transparent"
+        text-color="#d0d9e8"
+        active-text-color="#ffffff"
+        :collapse="isCollapsed"
+        @select="handleMenuSelect"
+      >
         <template v-for="menu in visibleMenus" :key="menu.id || menu.menuCode">
           <el-sub-menu
             v-if="menu.children && menu.children.length"
             :index="menu.routePath || menu.menuCode"
           >
             <template #title>
-              <span class="menu-title">{{ menu.menuName }}</span>
+              <span
+                class="menu-title"
+                :class="{ 'menu-title--link': hasRegisteredRoute(menu.routePath) }"
+                @click="handleCatalogClick(menu)"
+              >
+                {{ menu.menuName }}
+              </span>
             </template>
             <el-menu-item
               v-for="child in menu.children"
@@ -33,7 +47,13 @@
     </aside>
     <div class="layout-main">
       <header class="layout-header">
-        <div class="header-ribbon">Course Arrange Rebuild</div>
+        <div class="header-left">
+          <el-icon class="sidebar-toggle" @click="toggleSidebar">
+            <Expand v-if="isCollapsed" />
+            <Fold v-else />
+          </el-icon>
+          <div class="header-ribbon">Course Arrange Rebuild</div>
+        </div>
         <div class="header-user">
           <div class="header-name">{{ authStore.displayName }}</div>
           <div class="header-subtitle">
@@ -53,20 +73,59 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { ElMessage } from 'element-plus';
+import { Fold, Expand } from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const isCollapsed = ref(false);
 
 const activeMenu = computed(() => route.path);
 const visibleMenus = computed(() => normalizeMenus(authStore.menus || []));
 
+function toggleSidebar() {
+  isCollapsed.value = !isCollapsed.value;
+}
+
 function handleLogout() {
   authStore.clearLoginState();
   router.push('/login');
+}
+
+function handleMenuSelect(index) {
+  navigateToMenu(index);
+}
+
+function handleCatalogClick(menu) {
+  if (!hasRegisteredRoute(menu?.routePath)) {
+    return;
+  }
+  navigateToMenu(menu.routePath);
+}
+
+function hasRegisteredRoute(routePath) {
+  if (!routePath) {
+    return false;
+  }
+  return router.getRoutes().some((item) => item.path === routePath);
+}
+
+function navigateToMenu(routePath) {
+  if (!routePath) {
+    return;
+  }
+  if (!hasRegisteredRoute(routePath)) {
+    ElMessage.warning(`菜单路由未注册：${routePath}`);
+    return;
+  }
+  if (route.path === routePath) {
+    return;
+  }
+  router.push(routePath).catch(() => {});
 }
 
 function normalizeMenus(menus) {
@@ -130,6 +189,11 @@ function sortMenus(a, b) {
     linear-gradient(180deg, #102636 0%, #17384d 48%, #1d3143 100%);
   color: #fff;
   box-shadow: 24px 0 50px rgb(16 24 40 / 0.18);
+  transition: width 0.3s ease;
+}
+
+.sider-collapsed .layout-sider {
+  width: 64px;
 }
 
 .sider-glow {
@@ -145,6 +209,8 @@ function sortMenus(a, b) {
 .brand {
   position: relative;
   padding: 34px 24px 24px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .brand-kicker {
@@ -190,6 +256,10 @@ function sortMenus(a, b) {
   background: transparent;
 }
 
+.layout-menu:not(.el-menu--collapse) {
+  width: 240px;
+}
+
 .layout-menu :deep(.el-menu) {
   border-right: none;
 }
@@ -217,6 +287,10 @@ function sortMenus(a, b) {
   letter-spacing: 0.04em;
 }
 
+.menu-title--link {
+  cursor: pointer;
+}
+
 .menu-leaf {
   position: relative;
   display: inline-flex;
@@ -240,6 +314,7 @@ function sortMenus(a, b) {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0; /* Prevents overflow from flex items */
 }
 
 .layout-header {
@@ -255,6 +330,18 @@ function sortMenus(a, b) {
   background: linear-gradient(180deg, rgb(255 251 245 / 0.9), rgb(248 241 230 / 0.7));
   backdrop-filter: blur(14px);
   border-bottom: 1px solid rgb(116 91 61 / 0.12);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-toggle {
+  font-size: 20px;
+  color: #72665b;
+  cursor: pointer;
 }
 
 .header-ribbon {
@@ -274,6 +361,7 @@ function sortMenus(a, b) {
   display: flex;
   flex-direction: column;
   flex: 1;
+  text-align: right;
 }
 
 .header-name {
@@ -311,6 +399,7 @@ function sortMenus(a, b) {
   background:
     radial-gradient(circle at top right, rgb(184 135 70 / 0.12), transparent 20%),
     linear-gradient(180deg, rgb(250 246 238 / 0.78) 0%, rgb(241 234 221 / 0.56) 100%);
+  overflow-y: auto;
 }
 
 @media (max-width: 1024px) {
