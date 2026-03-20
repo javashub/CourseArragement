@@ -44,4 +44,11 @@ class LegacyCleanupGuardTest {
         assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/service/impl/TokenService.java")));
         assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/util/TokenUtil.java")));
     }
+
+    @Test
+    void shouldRemoveUnusedOnlineCourseLegacyControllers() {
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/controller/OnlineCategoryController.java")));
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/controller/OnlineCourseController.java")));
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/entity/request/OnlineCourseAddVO.java")));
+    }
 }
