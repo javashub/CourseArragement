@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.controller;
 
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -10,7 +11,6 @@ import com.lyk.coursearrange.auth.service.AuthLoginService;
 import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.constants.SystemConstants;
-import com.lyk.coursearrange.common.UserLoginToken;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.Student;
@@ -136,7 +136,7 @@ public class StudentController {
      * @return
      */
     @PostMapping("/modify")
-    @UserLoginToken
+    @SaCheckLogin
     public ServerResponse modifyStudent(@RequestBody Student student) {
         // 修改操作
         requireStudentExists(student.getId());
@@ -151,7 +151,7 @@ public class StudentController {
      * @return
      */
     @GetMapping("/{id}")
-    @UserLoginToken
+    @SaCheckLogin
     public ServerResponse queryStudent(@PathVariable("id")Integer id){
         // 查询出来需要修改的学生实体
         Student student = studentService.getById(id);

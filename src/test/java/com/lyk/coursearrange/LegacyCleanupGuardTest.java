@@ -34,4 +34,14 @@ class LegacyCleanupGuardTest {
         assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/service/impl/LocationInfoServiceImpl.java")));
         assertFalse(Files.exists(Path.of("src/test/java/com/lyk/coursearrange/controller/ClassInfoControllerTest.java")));
     }
+
+    @Test
+    void shouldRemoveUnusedJwtHelperClasses() {
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/common/AuthenticationInterceptor.java")));
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/common/PassToken.java")));
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/common/UserLoginToken.java")));
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/config/InterceptorConfig.java")));
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/service/impl/TokenService.java")));
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/util/TokenUtil.java")));
+    }
 }
