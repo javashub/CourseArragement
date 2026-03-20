@@ -122,27 +122,6 @@ function normalizeClassroomPageResponse(response) {
   };
 }
 
-function normalizeClassInfoRecord(record = {}) {
-  const forbiddenTimeSlots = normalizeForbiddenTimeSlots(record.forbiddenTimeSlots);
-  return {
-    ...record,
-    gradeNo: record.gradeNo ?? record.remark ?? '',
-    teacherId: record.teacherId ?? record.teacher ?? record.id ?? '',
-    forbiddenTimeSlots,
-    forbiddenTimeSlotsText: forbiddenTimeSlots.join(', ')
-  };
-}
-
-function normalizeClassInfoPageResponse(response) {
-  return {
-    ...response,
-    data: {
-      ...(response.data || {}),
-      records: (response.data?.records || []).map(normalizeClassInfoRecord)
-    }
-  };
-}
-
 function buildTeacherPayload(payload = {}) {
   return {
     id: payload.id,
@@ -193,17 +172,6 @@ function buildCoursePayload(payload = {}) {
     roomType: payload.roomType ?? 'NORMAL',
     status: payload.status ?? 1,
     remark: payload.remark ?? ''
-  };
-}
-
-function buildClassPayload(payload = {}) {
-  return {
-    gradeNo: payload.gradeNo ?? payload.remark ?? '',
-    classNo: payload.classNo ?? '',
-    className: payload.className ?? '',
-    num: Number(payload.num ?? 0) || 0,
-    teacherId: Number(payload.teacherId ?? payload.teacher ?? payload.id ?? 0) || 0,
-    forbiddenTimeSlots: normalizeForbiddenTimeSlots(payload.forbiddenTimeSlots ?? payload.forbiddenTimeSlotsText).join(',')
   };
 }
 
@@ -346,75 +314,8 @@ export function deleteClassroom(id) {
   return request.delete(`/resources/classrooms/${id}`);
 }
 
-export function fetchLegacyClassInfoPage(page = 1, limit = 10, gradeNo = '') {
-  return request.get('/resources/admin-classes/page', {
-    params: { pageNum: page, pageSize: limit, gradeNo }
-  }).then(normalizeClassInfoPageResponse);
-}
-
-export function createLegacyClassInfo(payload) {
-  return request.post('/resources/admin-classes', buildClassPayload(payload));
-}
-
-export function updateLegacyClassInfo(id, payload) {
-  return request.put(`/resources/admin-classes/${id}`, buildClassPayload(payload));
-}
-
-export function deleteLegacyClassInfo(id) {
-  return request.delete(`/resources/admin-classes/${id}`);
-}
-
-export function fetchStudentsByClassPage(page = 1, classNo, limit = 10) {
-  return request.get(`/student-class/${page}/${classNo}`, {
-    params: { limit }
-  }).then(normalizeStudentPageResponse);
-}
-
 export function fetchTeachbuildList() {
   return request.get('/resources/buildings/options');
-}
-
-export function fetchLegacyTeachbuildPage(page = 1, limit = 10) {
-  return request.get(`/teachbuildinfo/list/${page}`, {
-    params: { limit }
-  });
-}
-
-export function createLegacyTeachbuild(payload) {
-  return request.post('/teachbuildinfo/add', payload);
-}
-
-export function updateLegacyTeachbuild(id, payload) {
-  return request.post(`/teachbuildinfo/modify/${id}`, payload);
-}
-
-export function deleteLegacyTeachbuild(id) {
-  return request.delete(`/teachbuildinfo/delete/${id}`);
-}
-
-export function fetchLegacyTeachbuildList() {
-  return request.get('/teachbuildinfo/list');
-}
-
-export function fetchEmptyClassroomList(teachbuildNo) {
-  return request.get(`/classroom/empty/${teachbuildNo}`).then((response) => ({
-    ...response,
-    data: (response.data || []).map(normalizeClassroomRecord)
-  }));
-}
-
-export function fetchLegacyLocationPage(page = 1, limit = 10) {
-  return request.get(`/locations/${page}`, {
-    params: { limit }
-  });
-}
-
-export function createLegacyTeachArea(payload) {
-  return request.post('/setteacharea', payload);
-}
-
-export function deleteLegacyTeachArea(id) {
-  return request.delete(`/location/delete/${id}`);
 }
 
 async function downloadExcel(url, fileName) {
