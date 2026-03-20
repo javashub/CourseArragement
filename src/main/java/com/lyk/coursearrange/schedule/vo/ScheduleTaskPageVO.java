@@ -45,5 +45,7 @@ public class ScheduleTaskPageVO implements Serializable {
 
     private Integer continuousSize;
 
+    private Integer priorityLevel;
+
     private String classTime;
 }

@@ -205,6 +205,7 @@ public class ClassTaskController {
         vo.setIsFix(task.getNeedFixedTime() != null && task.getNeedFixedTime() == 1 ? "1" : "0");
         vo.setNeedContinuous(task.getNeedContinuous() != null && task.getNeedContinuous() == 1 ? 1 : 0);
         vo.setContinuousSize(task.getContinuousSize() == null || task.getContinuousSize() <= 0 ? 1 : task.getContinuousSize());
+        vo.setPriorityLevel(normalizePriorityLevel(task.getPriorityLevel()));
         vo.setClassTime(toLegacyClassTime(task.getFixedWeekdayNo(), task.getFixedPeriodNo()));
         return vo;
     }
@@ -341,7 +342,7 @@ public class ClassTaskController {
         task.setNeedFixedTime("1".equals(request.getIsFix()) ? 1 : 0);
         task.setFixedWeekdayNo(ScheduleTaskMetaUtils.resolveWeekdayNo(request.getClassTime()));
         task.setFixedPeriodNo(ScheduleTaskMetaUtils.resolvePeriodNo(request.getClassTime()));
-        task.setPriorityLevel(5);
+        task.setPriorityLevel(normalizePriorityLevel(request.getPriorityLevel()));
         task.setAllowConflict(0);
         task.setTaskStatus("PENDING");
         task.setSourceType("LEGACY_API");
@@ -376,5 +377,12 @@ public class ClassTaskController {
             throw new BusinessException(ResultCode.BUSINESS_ERROR,
                     "连堂节数不能超过当前排课规则允许的上限 " + defaultContinuousLimit);
         }
+    }
+
+    private int normalizePriorityLevel(Integer priorityLevel) {
+        if (priorityLevel == null) {
+            return 5;
+        }
+        return Math.max(1, Math.min(priorityLevel, 9));
     }
 }

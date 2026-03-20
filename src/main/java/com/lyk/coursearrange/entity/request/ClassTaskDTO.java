@@ -85,6 +85,11 @@ public class ClassTaskDTO implements Serializable {
     private Integer continuousSize;
 
     /**
+     * 任务优先级，数值越大优先级越高
+     */
+    private Integer priorityLevel;
+
+    /**
      * 固定时间的话时间是什么时候
      */
     private String classTime;

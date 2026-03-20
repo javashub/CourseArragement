@@ -58,6 +58,7 @@ class ScheduleTaskControllerTest {
         task.setTotalHours(20);
         task.setNeedContinuous(1);
         task.setContinuousSize(2);
+        task.setPriorityLevel(9);
         task.setNeedFixedTime(0);
         task.setRemark("semester=2025-2026-1,classNo=C1,courseNo=K1,teacherNo=T1,gradeNo=G1,courseName=数学,teacherName=张老师");
 
@@ -78,6 +79,7 @@ class ScheduleTaskControllerTest {
         assertEquals("数学", vo.getCourseName());
         assertEquals(1, vo.getNeedContinuous());
         assertEquals(2, vo.getContinuousSize());
+        assertEquals(9, vo.getPriorityLevel());
     }
 
     @Test
@@ -153,6 +155,7 @@ class ScheduleTaskControllerTest {
         request.setClassTime("");
         request.setNeedContinuous(1);
         request.setContinuousSize(2);
+        request.setPriorityLevel(8);
 
         when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(buildScheduleConfig(2));
         when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
@@ -165,6 +168,7 @@ class ScheduleTaskControllerTest {
         verify(schTaskService).save(captor.capture());
         assertEquals(1, captor.getValue().getNeedContinuous());
         assertEquals(2, captor.getValue().getContinuousSize());
+        assertEquals(8, captor.getValue().getPriorityLevel());
     }
 
     @Test

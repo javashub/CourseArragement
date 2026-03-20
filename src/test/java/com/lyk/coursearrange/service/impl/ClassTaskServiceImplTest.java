@@ -78,12 +78,14 @@ class ClassTaskServiceImplTest {
         ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
 
         SchTask standardTask = new SchTask();
+        standardTask.setId(101L);
         standardTask.setStudentCount(45);
         standardTask.setWeekHours(4);
         standardTask.setTotalHours(64);
         standardTask.setNeedFixedTime(1);
         standardTask.setFixedWeekdayNo(2);
         standardTask.setFixedPeriodNo(3);
+        standardTask.setPriorityLevel(8);
         standardTask.setRemark("semester=2025-2026-1,classNo=2501,courseNo=10001,teacherNo=T2026001,gradeNo=2025,courseName=高等数学,courseAttr=必修,teacherName=张老师");
 
         when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
@@ -106,6 +108,37 @@ class ClassTaskServiceImplTest {
         assertEquals(16, task.getWeeksSum());
         assertEquals("1", task.getIsFix());
         assertEquals("08", task.getClassTime());
+        assertEquals(8, task.getPriorityLevel());
+    }
+
+    @Test
+    void listSchedulingTasks_shouldSortByPriorityLevelDescThenIdAsc() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
+
+        SchTask lowPriorityTask = new SchTask();
+        lowPriorityTask.setId(102L);
+        lowPriorityTask.setPriorityLevel(2);
+        lowPriorityTask.setRemark("semester=2025-2026-1,classNo=2502,courseNo=10002,teacherNo=T2,gradeNo=2025,courseName=英语,courseAttr=必修,teacherName=李老师");
+
+        SchTask highPriorityTask = new SchTask();
+        highPriorityTask.setId(101L);
+        highPriorityTask.setPriorityLevel(9);
+        highPriorityTask.setRemark("semester=2025-2026-1,classNo=2501,courseNo=10001,teacherNo=T1,gradeNo=2025,courseName=数学,courseAttr=必修,teacherName=张老师");
+
+        when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
+                .thenReturn(List.of(lowPriorityTask, highPriorityTask));
+        when(resTeacherService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResTeacher>>any()))
+                .thenReturn(List.of());
+
+        List<SchedulingTaskInput> tasks = service.listSchedulingTasks("2025-2026-1");
+
+        assertEquals(2, tasks.size());
+        assertEquals("2501", tasks.get(0).getClassNo());
+        assertEquals(9, tasks.get(0).getPriorityLevel());
+        assertEquals("2502", tasks.get(1).getClassNo());
+        assertEquals(2, tasks.get(1).getPriorityLevel());
     }
 
     @Test

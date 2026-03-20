@@ -28,8 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 @ExtendWith(MockitoExtension.class)
 class ClassTaskControllerTest {
@@ -63,6 +65,7 @@ class ClassTaskControllerTest {
         task.setTotalHours(20);
         task.setNeedContinuous(1);
         task.setContinuousSize(2);
+        task.setPriorityLevel(7);
         task.setNeedFixedTime(0);
         task.setRemark("semester=2025-2026-1,classNo=C1,courseNo=K1,teacherNo=T1,gradeNo=G1,courseName=数学,teacherName=张老师");
 
@@ -82,6 +85,7 @@ class ClassTaskControllerTest {
         assertEquals("C1", vo.getClassNo());
         assertEquals(1, vo.getNeedContinuous());
         assertEquals(2, vo.getContinuousSize());
+        assertEquals(7, vo.getPriorityLevel());
     }
 
     @Test
@@ -170,6 +174,7 @@ class ClassTaskControllerTest {
         request.setClassTime("");
         request.setNeedContinuous(1);
         request.setContinuousSize(2);
+        request.setPriorityLevel(6);
 
         when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(buildScheduleConfig(2));
         when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
@@ -178,6 +183,9 @@ class ClassTaskControllerTest {
         ServerResponse response = controller.addClassTask(request);
 
         assertTrue(response.isSuccess());
+        ArgumentCaptor<SchTask> captor = ArgumentCaptor.forClass(SchTask.class);
+        verify(schTaskService).save(captor.capture());
+        assertEquals(6, captor.getValue().getPriorityLevel());
     }
 
     @Test

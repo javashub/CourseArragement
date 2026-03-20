@@ -205,6 +205,10 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             List<SchedulingTaskInput> tasks = standardTasks.stream()
                     .map(this::convertStandardTaskToSchedulingTask)
                     .filter(Objects::nonNull)
+                    .sorted(Comparator
+                            .comparing(SchedulingTaskInput::getPriorityLevel, Comparator.nullsLast(Integer::compareTo))
+                            .reversed()
+                            .thenComparing(SchedulingTaskInput::getId, Comparator.nullsLast(Integer::compareTo)))
                     .toList();
             enrichTeacherHourLimits(tasks);
             enrichClassForbiddenTimeSlots(tasks);
@@ -328,9 +332,17 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         task.setStudentNum(standardTask.getStudentCount() == null ? 0 : standardTask.getStudentCount());
         task.setWeeksNumber(standardTask.getWeekHours() == null ? 0 : standardTask.getWeekHours());
         task.setWeeksSum(resolveWeeksSum(standardTask));
+        task.setPriorityLevel(normalizePriorityLevel(standardTask.getPriorityLevel()));
         task.setIsFix(standardTask.getNeedFixedTime() != null && standardTask.getNeedFixedTime() == 1 ? "1" : "0");
         task.setClassTime(toLegacyClassTime(standardTask.getFixedWeekdayNo(), standardTask.getFixedPeriodNo()));
         return task;
+    }
+
+    private int normalizePriorityLevel(Integer priorityLevel) {
+        if (priorityLevel == null) {
+            return 5;
+        }
+        return Math.max(1, Math.min(priorityLevel, 9));
     }
 
     void enrichTeacherHourLimits(List<SchedulingTaskInput> tasks) {

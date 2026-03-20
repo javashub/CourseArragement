@@ -195,6 +195,13 @@
           <el-table-column prop="studentNum" label="人数" width="80" />
           <el-table-column prop="weeksNumber" label="周学时" width="90" />
           <el-table-column prop="weeksSum" label="周数" width="80" />
+          <el-table-column label="优先级" width="110">
+            <template #default="{ row }">
+              <el-tag type="danger" effect="plain">
+                P{{ row.priorityLevel || 5 }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="连堂需求" min-width="140">
             <template #default="{ row }">
               <el-tag :type="row.needContinuous === 1 ? 'warning' : 'info'" effect="plain">
@@ -478,6 +485,24 @@
                   :min="2"
                   :max="Math.max(runtimeConfig.defaultContinuousLimit || 2, 2)"
                   :disabled="taskForm.needContinuous !== 1"
+                  controls-position="right"
+                />
+              </el-form-item>
+            </div>
+          </div>
+          <div class="constraint-band constraint-band--priority">
+            <div class="constraint-band__copy">
+              <div class="constraint-band__title">排课优先级</div>
+              <div class="constraint-band__text">
+                优先级越高，任务会越早进入排课主流程。当前建议范围为 1 到 9，默认值为 5。
+              </div>
+            </div>
+            <div class="constraint-band__controls">
+              <el-form-item label="优先级">
+                <el-input-number
+                  v-model="taskForm.priorityLevel"
+                  :min="1"
+                  :max="9"
                   controls-position="right"
                 />
               </el-form-item>
@@ -776,6 +801,7 @@ function createTaskForm() {
     studentNum: 40,
     weeksNumber: 4,
     weeksSum: 16,
+    priorityLevel: 5,
     needContinuous: 0,
     continuousSize: 2,
     isFix: '0',
