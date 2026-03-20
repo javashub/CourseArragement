@@ -28,6 +28,8 @@ public class SchedulingTaskInput implements Serializable {
     private Integer studentNum;
     private Integer weeksSum;
     private Integer weeksNumber;
+    private Integer maxWeekHours;
+    private Integer maxDayHours;
     private String isFix;
     private String classTime;
 }

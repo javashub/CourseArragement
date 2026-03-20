@@ -14,6 +14,8 @@ import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.ScheduleExecuteLog;
 import com.lyk.coursearrange.common.ConstantInfo;
+import com.lyk.coursearrange.resource.entity.ResTeacher;
+import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
@@ -64,6 +66,8 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     private SchTaskService schTaskService;
     @Resource
     private ScheduleConfigFacadeService scheduleConfigFacadeService;
+    @Resource
+    private ResTeacherService resTeacherService;
 
     /**
      * 排课算法入口
@@ -86,15 +90,18 @@ public class ClassTaskServiceImpl implements ClassTaskService {
 
             // 校验学时是否超过课表的容纳值
             checkWeeksNumber(schedulingTasks, runtimeContext.availableClassTimes());
+            validateTeacherDayHourLimit(schedulingTasks);
+            Map<String, Integer> teacherMaxDayHours = resolveTeacherMaxDayHours(schedulingTasks);
 
             // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间
             Map<String, List<String>> geneMap = coding(schedulingTasks, runtimeContext.availableClassTimes());
             // 3、给初始基因编码随机分配时间，得到同班上课时间不冲突的编码
             List<String> resultGeneList = codingTime(geneMap, runtimeContext.availableClassTimes());
+            resultGeneList = enforceTeacherDayHourLimit(resultGeneList, teacherMaxDayHours, runtimeContext.availableClassTimes());
             // 4、将分配好时间的基因编码以班级分类成为以班级的个体，得到班级的不冲突时间初始编码
             Map<String, List<String>> individualMap = transformIndividual(resultGeneList);
             // 5、遗传进化(这里面这里已经处理完上课时间)
-            individualMap = geneticEvolution(individualMap, runtimeContext.availableClassTimes());
+            individualMap = geneticEvolution(individualMap, runtimeContext.availableClassTimes(), teacherMaxDayHours);
 
             // 检测时间冲突
 //            checkConflict(individualMap);
@@ -186,10 +193,12 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 .like(SchTask::getRemark, "semester=" + semester)
                 .orderByAsc(SchTask::getId));
         if (!standardTasks.isEmpty()) {
-            return standardTasks.stream()
+            List<SchedulingTaskInput> tasks = standardTasks.stream()
                     .map(this::convertStandardTaskToSchedulingTask)
                     .filter(Objects::nonNull)
                     .toList();
+            enrichTeacherHourLimits(tasks);
+            return tasks;
         }
         log.warn("标准排课任务为空，排课流程不会再回退读取 tb_class_task，semester={}", semester);
         return List.of();
@@ -312,6 +321,34 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         task.setIsFix(standardTask.getNeedFixedTime() != null && standardTask.getNeedFixedTime() == 1 ? "1" : "0");
         task.setClassTime(toLegacyClassTime(standardTask.getFixedWeekdayNo(), standardTask.getFixedPeriodNo()));
         return task;
+    }
+
+    void enrichTeacherHourLimits(List<SchedulingTaskInput> tasks) {
+        if (tasks == null || tasks.isEmpty() || resTeacherService == null) {
+            return;
+        }
+        List<String> teacherCodes = tasks.stream()
+                .map(SchedulingTaskInput::getTeacherNo)
+                .filter(Objects::nonNull)
+                .filter(item -> !item.isBlank())
+                .distinct()
+                .toList();
+        if (teacherCodes.isEmpty()) {
+            return;
+        }
+        Map<String, ResTeacher> teacherMap = resTeacherService.list(new LambdaQueryWrapper<ResTeacher>()
+                        .eq(ResTeacher::getDeleted, 0)
+                        .in(ResTeacher::getTeacherCode, teacherCodes))
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(ResTeacher::getTeacherCode, item -> item, (left, right) -> left));
+        tasks.forEach(task -> {
+            ResTeacher teacher = teacherMap.get(task.getTeacherNo());
+            if (teacher != null) {
+                task.setMaxWeekHours(teacher.getMaxWeekHours());
+                task.setMaxDayHours(teacher.getMaxDayHours());
+            }
+        });
     }
 
     private Integer resolveWeeksSum(SchTask standardTask) {
@@ -607,14 +644,16 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      *
      * @param individualMap 按班级分的基因编码
      */
-    private Map<String, List<String>> geneticEvolution(Map<String, List<String>> individualMap, List<String> availableClassTimes) {
+    private Map<String, List<String>> geneticEvolution(Map<String, List<String>> individualMap,
+                                                       List<String> availableClassTimes,
+                                                       Map<String, Integer> teacherMaxDayHours) {
         List<String> resultGeneList;
 
         for (int i = 0; i < ConstantInfo.GENERATION; ++i) {
             hybridization(individualMap);
             List<String> allIndividual = collectGene(individualMap);
             resultGeneList = geneMutation(allIndividual, availableClassTimes);
-            List<String> list = conflictResolution(resultGeneList, availableClassTimes);
+            List<String> list = conflictResolution(resultGeneList, availableClassTimes, teacherMaxDayHours);
             individualMap.clear();
             individualMap = transformIndividual(list);
         }
@@ -630,7 +669,9 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      *
      * @param resultGeneList 所有个体集合 （大种群）
      */
-    private List<String> conflictResolution(List<String> resultGeneList, List<String> availableClassTimes) {
+    private List<String> conflictResolution(List<String> resultGeneList,
+                                            List<String> availableClassTimes,
+                                            Map<String, Integer> teacherMaxDayHours) {
         int conflictTimes = 0;
         exit:
         for (int i = 0; i < resultGeneList.size(); i++) {
@@ -662,7 +703,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             }
         }
         log.error("冲突发生次数: {}", conflictTimes);
-        return resultGeneList;
+        return enforceTeacherDayHourLimit(resultGeneList, teacherMaxDayHours, availableClassTimes);
     }
 
     private List<String> conflictResolution1(List<String> resultGeneList) {
@@ -879,6 +920,156 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             resultGeneList.add(gene);
         }
         return resultGeneList;
+    }
+
+    void validateTeacherDayHourLimit(List<SchedulingTaskInput> schedulingTasks) {
+        if (schedulingTasks == null || schedulingTasks.isEmpty()) {
+            return;
+        }
+        Map<String, Integer> teacherDayCount = new HashMap<>();
+        for (SchedulingTaskInput task : schedulingTasks) {
+            if (task == null || !isFixedTask(task)) {
+                continue;
+            }
+            int maxDayHours = task.getMaxDayHours() == null ? 0 : task.getMaxDayHours();
+            if (maxDayHours <= 0 || task.getClassTime() == null || task.getClassTime().isBlank()) {
+                continue;
+            }
+            for (String classTime : splitClassTimes(task.getClassTime())) {
+                String key = buildTeacherWeekdayKey(task.getTeacherNo(), classTime);
+                int nextCount = teacherDayCount.getOrDefault(key, 0) + 1;
+                if (nextCount > maxDayHours) {
+                    String teacherName = task.getRealname() == null || task.getRealname().isBlank()
+                            ? task.getTeacherNo()
+                            : task.getRealname();
+                    throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                            String.format("教师 %s 在同一天的固定课已超过日上限课时 %s，请调整任务或教师配置", teacherName, maxDayHours));
+                }
+                teacherDayCount.put(key, nextCount);
+            }
+        }
+    }
+
+    Map<String, Integer> resolveTeacherMaxDayHours(List<SchedulingTaskInput> schedulingTasks) {
+        if (schedulingTasks == null || schedulingTasks.isEmpty()) {
+            return Map.of();
+        }
+        return schedulingTasks.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getTeacherNo() != null && !item.getTeacherNo().isBlank())
+                .filter(item -> item.getMaxDayHours() != null && item.getMaxDayHours() > 0)
+                .collect(Collectors.toMap(SchedulingTaskInput::getTeacherNo, SchedulingTaskInput::getMaxDayHours, Math::min, LinkedHashMap::new));
+    }
+
+    List<String> enforceTeacherDayHourLimit(List<String> resultGeneList,
+                                            Map<String, Integer> teacherMaxDayHours,
+                                            List<String> availableClassTimes) {
+        if (resultGeneList == null || resultGeneList.isEmpty() || teacherMaxDayHours == null || teacherMaxDayHours.isEmpty()) {
+            return resultGeneList;
+        }
+        boolean adjusted;
+        int guard = 0;
+        do {
+            adjusted = false;
+            Map<String, List<String>> teacherDayGenes = resultGeneList.stream()
+                    .collect(Collectors.groupingBy(gene -> buildTeacherWeekdayKey(
+                            ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene),
+                            ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene))));
+            for (Map.Entry<String, List<String>> entry : teacherDayGenes.entrySet()) {
+                String teacherNo = entry.getKey().split("::")[0];
+                int limit = teacherMaxDayHours.getOrDefault(teacherNo, 0);
+                if (limit <= 0 || entry.getValue().size() <= limit) {
+                    continue;
+                }
+                List<String> movableGenes = entry.getValue().stream()
+                        .filter(gene -> !ConstantInfo.FIX_TIME_FLAG.equals(ClassUtil.cutGene(ConstantInfo.IS_FIX, gene)))
+                        .toList();
+                if (movableGenes.isEmpty()) {
+                    throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                            String.format("教师 %s 的固定排课已经超过日上限课时 %s，请调整固定时间任务或教师配置", teacherNo, limit));
+                }
+                String geneToMove = movableGenes.get(movableGenes.size() - 1);
+                String newClassTime = pickClassTimeForTeacherDayLimit(geneToMove, resultGeneList, teacherMaxDayHours, availableClassTimes);
+                if (Objects.equals(newClassTime, ClassUtil.cutGene(ConstantInfo.CLASS_TIME, geneToMove))) {
+                    throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                            String.format("教师 %s 无法在当前时间片配置下满足日上限课时 %s，请调整任务量、教师上限或时间片模板", teacherNo, limit));
+                }
+                replaceConflictTime(resultGeneList, geneToMove, newClassTime);
+                adjusted = true;
+                break;
+            }
+            guard++;
+        } while (adjusted && guard < 500);
+        return resultGeneList;
+    }
+
+    private String pickClassTimeForTeacherDayLimit(String gene,
+                                                   List<String> resultGeneList,
+                                                   Map<String, Integer> teacherMaxDayHours,
+                                                   List<String> availableClassTimes) {
+        List<String> candidates = new ArrayList<>(availableClassTimes == null || availableClassTimes.isEmpty()
+                ? defaultAvailableClassTimes()
+                : availableClassTimes);
+        Collections.shuffle(candidates, ClassUtil.RANDOM);
+        String teacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
+        String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
+        String currentClassTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene);
+        int maxDayHours = teacherMaxDayHours.getOrDefault(teacherNo, 0);
+        for (String candidate : candidates) {
+            if (Objects.equals(candidate, currentClassTime)) {
+                continue;
+            }
+            boolean classBusy = resultGeneList.stream()
+                    .filter(item -> !item.equals(gene))
+                    .anyMatch(item -> classNo.equals(ClassUtil.cutGene(ConstantInfo.CLASS_NO, item))
+                            && candidate.equals(ClassUtil.cutGene(ConstantInfo.CLASS_TIME, item)));
+            if (classBusy) {
+                continue;
+            }
+            boolean teacherBusy = resultGeneList.stream()
+                    .filter(item -> !item.equals(gene))
+                    .anyMatch(item -> teacherNo.equals(ClassUtil.cutGene(ConstantInfo.TEACHER_NO, item))
+                            && candidate.equals(ClassUtil.cutGene(ConstantInfo.CLASS_TIME, item)));
+            if (teacherBusy) {
+                continue;
+            }
+            if (maxDayHours > 0) {
+                long sameDayCount = resultGeneList.stream()
+                        .filter(item -> !item.equals(gene))
+                        .filter(item -> teacherNo.equals(ClassUtil.cutGene(ConstantInfo.TEACHER_NO, item)))
+                        .map(item -> ClassUtil.cutGene(ConstantInfo.CLASS_TIME, item))
+                        .filter(classTime -> resolveWeekdayNo(classTime) == resolveWeekdayNo(candidate))
+                        .count();
+                if (sameDayCount >= maxDayHours) {
+                    continue;
+                }
+            }
+            return candidate;
+        }
+        return currentClassTime;
+    }
+
+    private List<String> splitClassTimes(String classTime) {
+        if (classTime == null || classTime.isBlank()) {
+            return List.of();
+        }
+        List<String> classTimes = new ArrayList<>();
+        for (int i = 0; i + 1 < classTime.length(); i += 2) {
+            classTimes.add(classTime.substring(i, i + 2));
+        }
+        return classTimes;
+    }
+
+    private String buildTeacherWeekdayKey(String teacherNo, String classTime) {
+        return teacherNo + "::" + resolveWeekdayNo(classTime);
+    }
+
+    private int resolveWeekdayNo(String classTime) {
+        if (classTime == null || classTime.isBlank()) {
+            return 0;
+        }
+        int classTimeNo = Integer.parseInt(classTime);
+        return ((classTimeNo - 1) / 5) + 1;
     }
 
     /**

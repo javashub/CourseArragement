@@ -401,6 +401,24 @@
             <el-input v-model="taskForm.courseAttr" placeholder="例如 必修、实验课" />
           </el-form-item>
         </div>
+        <div class="teacher-limit-card">
+          <div class="teacher-limit-card__copy">
+            <div class="teacher-limit-card__title">教师课时约束</div>
+            <div class="teacher-limit-card__text">
+              自动排课会遵守教师资源里维护的日上限和周上限课时。当前任务页优先展示所选教师的实时配置，排课时会据此消解冲突。
+            </div>
+          </div>
+          <div class="teacher-limit-card__metrics">
+            <div class="teacher-limit-pill">
+              <span>日上限课时</span>
+              <strong>{{ selectedTeacherProfile?.maxDayHours > 0 ? `${selectedTeacherProfile.maxDayHours} 节` : '未限制' }}</strong>
+            </div>
+            <div class="teacher-limit-pill">
+              <span>周上限课时</span>
+              <strong>{{ selectedTeacherProfile?.maxWeekHours > 0 ? `${selectedTeacherProfile.maxWeekHours} 节` : '未限制' }}</strong>
+            </div>
+          </div>
+        </div>
         <div class="form-grid compact-grid">
           <el-form-item label="学生人数">
             <el-input-number v-model="taskForm.studentNum" :min="1" :max="300" controls-position="right" />
@@ -572,6 +590,13 @@ const arrangeSummaryCards = computed(() => {
       note: '成功任务数 / 任务总数'
     }
   ];
+});
+
+const selectedTeacherProfile = computed(() => {
+  if (!taskForm.value.teacherNo) {
+    return null;
+  }
+  return teacherOptions.value.find((item) => item.teacherNo === taskForm.value.teacherNo) || null;
 });
 
 const formValidation = computed(() => {
@@ -1406,6 +1431,65 @@ onMounted(async () => {
   color: #60748d;
 }
 
+.teacher-limit-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
+  gap: 18px;
+  margin-bottom: 14px;
+  padding: 18px 20px;
+  border: 1px solid #d8e3f2;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgb(244 248 255 / 96%) 0%, rgb(236 244 255 / 88%) 100%);
+}
+
+.teacher-limit-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.teacher-limit-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #28527a;
+}
+
+.teacher-limit-card__text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #5e7590;
+}
+
+.teacher-limit-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.teacher-limit-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgb(133 163 194 / 28%);
+  border-radius: 18px;
+  background: rgb(255 255 255 / 72%);
+}
+
+.teacher-limit-pill span {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #72879f;
+}
+
+.teacher-limit-pill strong {
+  font-size: 18px;
+  color: #16324f;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1501,6 +1585,8 @@ onMounted(async () => {
   .constraint-grid,
   .constraint-band,
   .constraint-band__controls,
+  .teacher-limit-card,
+  .teacher-limit-card__metrics,
   .form-grid,
   .compact-grid,
   .config-strip,

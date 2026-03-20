@@ -4,6 +4,8 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.CoursePlan;
+import com.lyk.coursearrange.resource.entity.ResTeacher;
+import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
@@ -37,6 +39,8 @@ class ClassTaskServiceImplTest {
     private SchTaskService schTaskService;
     @Mock
     private ScheduleConfigFacadeService scheduleConfigFacadeService;
+    @Mock
+    private ResTeacherService resTeacherService;
 
     @Test
     void buildSchedulingSuccessResponse_shouldExposeStandardOnlyStatus() {
@@ -54,6 +58,7 @@ class ClassTaskServiceImplTest {
     void listSchedulingTasks_shouldReturnEmptyWhenStandardTasksMissing() {
         ClassTaskServiceImpl service = spy(new ClassTaskServiceImpl());
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
         when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
                 .thenReturn(List.of());
 
@@ -66,6 +71,7 @@ class ClassTaskServiceImplTest {
     void listSchedulingTasks_shouldMapStandardTaskToAlgorithmInput() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
 
         SchTask standardTask = new SchTask();
         standardTask.setStudentCount(45);
@@ -78,6 +84,8 @@ class ClassTaskServiceImplTest {
 
         when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
                 .thenReturn(List.of(standardTask));
+        when(resTeacherService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResTeacher>>any()))
+                .thenReturn(List.of());
 
         List<SchedulingTaskInput> tasks = service.listSchedulingTasks("2025-2026-1");
 
@@ -94,6 +102,35 @@ class ClassTaskServiceImplTest {
         assertEquals(16, task.getWeeksSum());
         assertEquals("1", task.getIsFix());
         assertEquals("08", task.getClassTime());
+    }
+
+    @Test
+    void listSchedulingTasks_shouldAttachTeacherHourLimitsFromTeacherResource() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
+
+        SchTask standardTask = new SchTask();
+        standardTask.setStudentCount(40);
+        standardTask.setWeekHours(4);
+        standardTask.setTotalHours(64);
+        standardTask.setRemark("semester=2025-2026-1,classNo=2501,courseNo=10001,teacherNo=T0001,gradeNo=2025,courseName=高等数学,courseAttr=必修,teacherName=张老师");
+
+        ResTeacher teacher = new ResTeacher();
+        teacher.setTeacherCode("T0001");
+        teacher.setMaxWeekHours(18);
+        teacher.setMaxDayHours(2);
+
+        when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
+                .thenReturn(List.of(standardTask));
+        when(resTeacherService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResTeacher>>any()))
+                .thenReturn(List.of(teacher));
+
+        List<SchedulingTaskInput> tasks = service.listSchedulingTasks("2025-2026-1");
+
+        assertEquals(1, tasks.size());
+        assertEquals(18, tasks.get(0).getMaxWeekHours());
+        assertEquals(2, tasks.get(0).getMaxDayHours());
     }
 
     @Test
@@ -222,6 +259,54 @@ class ClassTaskServiceImplTest {
         assertEquals(1, geneMap.get("isFixedTime").size());
         assertTrue(geneMap.get("unFixedTime").get(0).startsWith("1"));
         assertTrue(geneMap.get("isFixedTime").get(0).startsWith("2"));
+    }
+
+    @Test
+    void validateTeacherDayHourLimit_shouldRejectFixedTasksExceedingDailyLimit() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+
+        SchedulingTaskInput firstTask = new SchedulingTaskInput();
+        firstTask.setTeacherNo("T0001");
+        firstTask.setRealname("张老师");
+        firstTask.setCourseName("高等数学");
+        firstTask.setClassNo("25010001");
+        firstTask.setIsFix("1");
+        firstTask.setClassTime("01");
+        firstTask.setMaxDayHours(1);
+
+        SchedulingTaskInput secondTask = new SchedulingTaskInput();
+        secondTask.setTeacherNo("T0001");
+        secondTask.setRealname("张老师");
+        secondTask.setCourseName("大学英语");
+        secondTask.setClassNo("25010002");
+        secondTask.setIsFix("1");
+        secondTask.setClassTime("02");
+        secondTask.setMaxDayHours(1);
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> service.validateTeacherDayHourLimit(List.of(firstTask, secondTask)));
+
+        assertTrue(exception.getMessage().contains("教师"));
+        assertTrue(exception.getMessage().contains("日上限课时"));
+    }
+
+    @Test
+    void enforceTeacherDayHourLimit_shouldMoveOverflowTaskToDifferentDay() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+
+        List<String> resultGeneList = new java.util.ArrayList<>(List.of(
+                "12525010001T00011000010101",
+                "12525010002T00011000020102"
+        ));
+
+        List<String> adjustedGenes = service.enforceTeacherDayHourLimit(resultGeneList, Map.of("T0001", 1), List.of("01", "02", "06"));
+
+        long dayOneCount = adjustedGenes.stream()
+                .map(gene -> gene.substring(24, 26))
+                .filter(classTime -> classTime.equals("01") || classTime.equals("02"))
+                .count();
+        assertEquals(1, dayOneCount);
+        assertTrue(adjustedGenes.stream().anyMatch(gene -> gene.endsWith("06")));
     }
 
     private CfgTimeSlot buildTimeSlot(int weekdayNo, int periodNo, int isTeaching, int isFixedBreak) {
