@@ -35,6 +35,8 @@ public class ResourceTeacherSaveRequest {
 
     private Integer maxDayHours;
 
+    private String forbiddenTimeSlots;
+
     private String hireStatus;
 
     @NotNull(message = "状态不能为空")

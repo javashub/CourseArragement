@@ -285,7 +285,7 @@ class ScheduleTaskControllerTest {
 
         ResTeacher teacher = new ResTeacher();
         teacher.setTeacherCode("T1");
-        teacher.setRemark("{\"teach\":\"主授数学\",\"forbiddenTimeSlots\":[\"01\"]}");
+        teacher.setForbiddenTimeSlots("01");
 
         when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
         when(resTeacherService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(teacher);

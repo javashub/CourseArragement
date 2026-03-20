@@ -147,7 +147,7 @@ class ClassTaskServiceImplTest {
 
         ResTeacher teacher = new ResTeacher();
         teacher.setTeacherCode("T0001");
-        teacher.setRemark("{\"teach\":\"主授高等数学\",\"forbiddenTimeSlots\":[\"01\",\"06\",\"11\"]}");
+        teacher.setForbiddenTimeSlots("01,06,11");
 
         when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
                 .thenReturn(List.of(standardTask));

@@ -44,6 +44,8 @@ public class ResTeacher extends BaseEntity {
 
     private Integer maxDayHours;
 
+    private String forbiddenTimeSlots;
+
     private String hireStatus;
 
     private Long userId;

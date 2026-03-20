@@ -26,7 +26,6 @@ import com.lyk.coursearrange.resource.service.ResCourseService;
 import com.lyk.coursearrange.resource.service.ResStudentService;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.resource.service.ResourceAccountSyncService;
-import com.lyk.coursearrange.resource.util.TeacherConstraintRemarkUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -442,7 +441,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         row.setUsername(teacher.getTeacherCode());
         row.setRealname(teacher.getTeacherName());
         row.setJobtitle(teacher.getTitleName());
-        row.setTeach(TeacherConstraintRemarkUtils.parse(teacher.getRemark()).teach());
+        row.setTeach(teacher.getRemark());
         row.setAge(null);
         row.setTelephone(teacher.getMobile());
         row.setEmail(teacher.getEmail());

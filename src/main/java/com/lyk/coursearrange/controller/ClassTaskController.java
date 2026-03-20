@@ -10,7 +10,7 @@ import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
-import com.lyk.coursearrange.resource.util.TeacherConstraintRemarkUtils;
+import com.lyk.coursearrange.resource.util.TeacherForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.service.ClassTaskService;
@@ -262,7 +262,7 @@ public class ClassTaskController {
         if (teacher == null) {
             return;
         }
-        List<String> forbiddenTimeSlots = TeacherConstraintRemarkUtils.parse(teacher.getRemark()).forbiddenTimeSlots();
+        List<String> forbiddenTimeSlots = TeacherForbiddenTimeSlotUtils.parse(teacher.getForbiddenTimeSlots());
         if (forbiddenTimeSlots.isEmpty()) {
             return;
         }

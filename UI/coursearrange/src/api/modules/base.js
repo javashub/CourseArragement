@@ -7,53 +7,15 @@ const legacyOptions = {
 };
 
 function normalizeForbiddenTimeSlots(rawValue) {
-  if (!Array.isArray(rawValue)) {
-    return [];
-  }
-  return [...new Set(rawValue
+  const values = Array.isArray(rawValue)
+    ? rawValue
+    : String(rawValue ?? '')
+      .split(/[\s,，]+/)
+      .filter(Boolean);
+  return [...new Set(values
     .map((item) => String(item ?? '').trim())
     .filter((item) => /^\d{1,2}$/.test(item))
     .map((item) => item.padStart(2, '0')))];
-}
-
-function parseTeacherRemark(remark) {
-  if (!remark || typeof remark !== 'string') {
-    return {
-      teach: '',
-      forbiddenTimeSlots: []
-    };
-  }
-  const trimmedRemark = remark.trim();
-  if (!trimmedRemark) {
-    return {
-      teach: '',
-      forbiddenTimeSlots: []
-    };
-  }
-  try {
-    const payload = JSON.parse(trimmedRemark);
-    return {
-      teach: String(payload?.teach ?? '').trim(),
-      forbiddenTimeSlots: normalizeForbiddenTimeSlots(payload?.forbiddenTimeSlots)
-    };
-  } catch (error) {
-    return {
-      teach: trimmedRemark,
-      forbiddenTimeSlots: []
-    };
-  }
-}
-
-function buildTeacherRemark(payload = {}) {
-  const teach = String(payload.teach ?? '').trim();
-  const forbiddenTimeSlots = normalizeForbiddenTimeSlots(payload.forbiddenTimeSlots);
-  if (!forbiddenTimeSlots.length) {
-    return teach;
-  }
-  return JSON.stringify({
-    teach,
-    forbiddenTimeSlots
-  });
 }
 
 function normalizeCourseRecord(record = {}) {
@@ -73,7 +35,7 @@ function normalizeCourseRecord(record = {}) {
 }
 
 function normalizeTeacherRecord(record = {}) {
-  const teacherRemark = parseTeacherRemark(record.remark ?? record.teach ?? '');
+  const forbiddenTimeSlots = normalizeForbiddenTimeSlots(record.forbiddenTimeSlots);
   return {
     ...record,
     teacherNo: record.teacherNo ?? record.teacherCode ?? '',
@@ -84,9 +46,9 @@ function normalizeTeacherRecord(record = {}) {
     mobile: record.mobile ?? record.telephone ?? '',
     jobtitle: record.jobtitle ?? record.titleName ?? '',
     titleName: record.titleName ?? record.jobtitle ?? '',
-    teach: record.teach ?? teacherRemark.teach ?? '',
-    forbiddenTimeSlots: teacherRemark.forbiddenTimeSlots,
-    forbiddenTimeSlotsText: teacherRemark.forbiddenTimeSlots.join(', '),
+    teach: record.teach ?? record.remark ?? '',
+    forbiddenTimeSlots,
+    forbiddenTimeSlotsText: forbiddenTimeSlots.join(', '),
     status: record.status ?? 1
   };
 }
@@ -173,9 +135,10 @@ function buildTeacherPayload(payload = {}) {
     allowCrossCollege: Number(payload.allowCrossCollege ?? 0) || 0,
     maxWeekHours: Number(payload.maxWeekHours ?? 16) || 0,
     maxDayHours: Number(payload.maxDayHours ?? 4) || 0,
+    forbiddenTimeSlots: normalizeForbiddenTimeSlots(payload.forbiddenTimeSlots).join(','),
     hireStatus: payload.hireStatus ?? 'ACTIVE',
     status: payload.status ?? 1,
-    remark: buildTeacherRemark(payload)
+    remark: payload.remark ?? payload.teach ?? ''
   };
 }
 

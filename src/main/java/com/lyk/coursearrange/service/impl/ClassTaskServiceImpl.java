@@ -16,7 +16,7 @@ import com.lyk.coursearrange.entity.ScheduleExecuteLog;
 import com.lyk.coursearrange.common.ConstantInfo;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
-import com.lyk.coursearrange.resource.util.TeacherConstraintRemarkUtils;
+import com.lyk.coursearrange.resource.util.TeacherForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
@@ -351,9 +351,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             if (teacher != null) {
                 task.setMaxWeekHours(teacher.getMaxWeekHours());
                 task.setMaxDayHours(teacher.getMaxDayHours());
-                TeacherConstraintRemarkUtils.TeacherConstraint constraint =
-                        TeacherConstraintRemarkUtils.parse(teacher.getRemark());
-                task.setTeacherForbiddenTimeSlots(constraint.forbiddenTimeSlots());
+                task.setTeacherForbiddenTimeSlots(TeacherForbiddenTimeSlotUtils.parse(teacher.getForbiddenTimeSlots()));
             }
         });
     }
