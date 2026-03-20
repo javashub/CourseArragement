@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
+import com.lyk.coursearrange.resource.entity.ResTeacher;
+import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
@@ -36,6 +38,8 @@ class ClassTaskControllerTest {
     private SchTaskService schTaskService;
     @Mock
     private ScheduleConfigFacadeService scheduleConfigFacadeService;
+    @Mock
+    private ResTeacherService resTeacherService;
 
     @Test
     void queryClassTask_shouldReturnStandardTasksWithoutReadingLegacyTaskTable() {
@@ -43,6 +47,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
 
         SchTask task = new SchTask();
         task.setId(101L);
@@ -78,6 +83,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
 
         Page<SchTask> taskPage = new Page<>(1, 10, 0);
         taskPage.setRecords(List.of());
@@ -97,6 +103,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
 
         SchTask matchedTask = new SchTask();
         matchedTask.setId(101L);
@@ -137,6 +144,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -170,6 +178,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -199,6 +208,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -223,6 +233,7 @@ class ClassTaskControllerTest {
         task.setRemark("semester=2025-2026-1,classNo=C1,courseNo=K1,teacherNo=T1,gradeNo=G1,courseName=数学,teacherName=张老师");
 
         when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(buildScheduleConfig(2));
+        when(resTeacherService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
         when(schTaskService.getById(101L)).thenReturn(task);
         when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
         when(schTaskService.updateById(org.mockito.ArgumentMatchers.any(SchTask.class))).thenReturn(true);
@@ -238,6 +249,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
 
         SchTask task = new SchTask();
         task.setId(101L);
@@ -249,6 +261,41 @@ class ClassTaskControllerTest {
         ServerResponse response = controller.deleteClassTask(101);
 
         assertTrue(response.isSuccess());
+    }
+
+    @Test
+    void addClassTask_shouldRejectFixedTaskWhenTeacherTimeSlotIsForbidden() {
+        ClassTaskController controller = new ClassTaskController();
+        ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
+        ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
+
+        ClassTaskDTO request = new ClassTaskDTO();
+        request.setSemester("2025-2026-1");
+        request.setGradeNo("G1");
+        request.setClassNo("C1");
+        request.setCourseNo("K1");
+        request.setCourseName("数学");
+        request.setTeacherNo("T1");
+        request.setRealname("张老师");
+        request.setCourseAttr("必修");
+        request.setStudentNum(40);
+        request.setWeeksNumber(2);
+        request.setWeeksSum(16);
+        request.setIsFix("1");
+        request.setClassTime("01");
+
+        ResTeacher teacher = new ResTeacher();
+        teacher.setTeacherCode("T1");
+        teacher.setRemark("{\"teach\":\"主授数学\",\"forbiddenTimeSlots\":[\"01\"]}");
+
+        when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
+        when(resTeacherService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(teacher);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> controller.addClassTask(request));
+
+        assertTrue(exception.getMessage().contains("禁排"));
     }
 
     private ScheduleConfigVO buildScheduleConfig(int defaultContinuousLimit) {

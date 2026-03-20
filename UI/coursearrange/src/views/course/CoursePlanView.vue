@@ -417,6 +417,10 @@
               <span>周上限课时</span>
               <strong>{{ selectedTeacherProfile?.maxWeekHours > 0 ? `${selectedTeacherProfile.maxWeekHours} 节` : '未限制' }}</strong>
             </div>
+            <div class="teacher-limit-pill teacher-limit-pill--wide">
+              <span>禁排时间</span>
+              <strong>{{ selectedTeacherProfile?.forbiddenTimeSlotsText || '未配置' }}</strong>
+            </div>
           </div>
         </div>
         <div class="form-grid compact-grid">
@@ -623,6 +627,8 @@ const formValidation = computed(() => {
       messages.push('固定排课时必须填写固定时间');
     } else if (!/^\d{2}$/.test(taskForm.value.classTime.trim())) {
       messages.push('固定时间当前只支持两位编码，例如 01、13');
+    } else if (selectedTeacherProfile.value?.forbiddenTimeSlots?.includes(taskForm.value.classTime.trim())) {
+      messages.push(`教师已将时间片 ${taskForm.value.classTime.trim()} 配置为禁排`);
     }
   }
   if (taskForm.value.needContinuous === 1) {
@@ -1020,6 +1026,10 @@ async function submitTask() {
       ElMessage.warning('固定时间当前只支持两位编码，例如 01、13');
       return;
     }
+    if (selectedTeacherProfile.value?.forbiddenTimeSlots?.includes(fixedTime)) {
+      ElMessage.warning(`教师已将时间片 ${fixedTime} 配置为禁排，请调整固定时间`);
+      return;
+    }
   } else {
     taskForm.value.classTime = '';
   }
@@ -1156,6 +1166,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 16px;
 }
@@ -1464,7 +1475,7 @@ onMounted(async () => {
 
 .teacher-limit-card__metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1488,6 +1499,11 @@ onMounted(async () => {
 .teacher-limit-pill strong {
   font-size: 18px;
   color: #16324f;
+}
+
+.teacher-limit-pill--wide strong {
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .form-grid {

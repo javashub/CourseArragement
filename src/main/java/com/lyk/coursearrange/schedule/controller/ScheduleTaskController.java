@@ -7,6 +7,9 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
+import com.lyk.coursearrange.resource.entity.ResTeacher;
+import com.lyk.coursearrange.resource.service.ResTeacherService;
+import com.lyk.coursearrange.resource.util.TeacherConstraintRemarkUtils;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,13 +50,16 @@ public class ScheduleTaskController {
     private final ClassTaskService classTaskService;
     private final SchTaskService schTaskService;
     private final ScheduleConfigFacadeService scheduleConfigFacadeService;
+    private final ResTeacherService resTeacherService;
 
     public ScheduleTaskController(ClassTaskService classTaskService,
                                   SchTaskService schTaskService,
-                                  ScheduleConfigFacadeService scheduleConfigFacadeService) {
+                                  ScheduleConfigFacadeService scheduleConfigFacadeService,
+                                  ResTeacherService resTeacherService) {
         this.classTaskService = classTaskService;
         this.schTaskService = schTaskService;
         this.scheduleConfigFacadeService = scheduleConfigFacadeService;
+        this.resTeacherService = resTeacherService;
     }
 
     @GetMapping("/page")
@@ -74,6 +81,7 @@ public class ScheduleTaskController {
     public ServerResponse<?> save(@RequestBody ClassTaskDTO request) {
         validateTaskDuplicate(request, null);
         validateContinuousConstraint(request);
+        validateTeacherForbiddenConstraint(request);
         SchTask standardTask = buildStandardTask(request, new SchTask());
         if (!schTaskService.save(standardTask)) {
             throw new BusinessException(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
@@ -92,6 +100,7 @@ public class ScheduleTaskController {
         }
         validateTaskDuplicate(request, id);
         validateContinuousConstraint(request);
+        validateTeacherForbiddenConstraint(request);
         SchTask standardTask = buildStandardTask(request, existingTask);
         standardTask.setId(id);
         if (!schTaskService.updateById(standardTask)) {
@@ -260,6 +269,40 @@ public class ScheduleTaskController {
         if (schTaskService.getOne(wrapper, false) != null) {
             throw new BusinessException(ResultCode.BUSINESS_ERROR, "相同班级、课程、教师、学期的任务已存在");
         }
+    }
+
+    private void validateTeacherForbiddenConstraint(ClassTaskDTO request) {
+        if (!Objects.equals("1", request.getIsFix()) || request.getTeacherNo() == null || request.getTeacherNo().isBlank()) {
+            return;
+        }
+        ResTeacher teacher = resTeacherService.getOne(new LambdaQueryWrapper<ResTeacher>()
+                .eq(ResTeacher::getDeleted, 0)
+                .eq(ResTeacher::getTeacherCode, request.getTeacherNo())
+                .last("limit 1"), false);
+        if (teacher == null) {
+            return;
+        }
+        List<String> forbiddenTimeSlots = TeacherConstraintRemarkUtils.parse(teacher.getRemark()).forbiddenTimeSlots();
+        if (forbiddenTimeSlots.isEmpty()) {
+            return;
+        }
+        for (String classTime : splitClassTimes(request.getClassTime())) {
+            if (forbiddenTimeSlots.contains(classTime)) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                        String.format("教师 %s 在时间片 %s 已配置禁排，请调整固定时间或教师约束",
+                                request.getRealname() == null || request.getRealname().isBlank() ? request.getTeacherNo() : request.getRealname(),
+                                classTime));
+            }
+        }
+    }
+
+    private List<String> splitClassTimes(String classTime) {
+        if (classTime == null || classTime.isBlank()) {
+            return List.of();
+        }
+        return java.util.stream.IntStream.range(0, classTime.length() / 2)
+                .mapToObj(index -> classTime.substring(index * 2, index * 2 + 2))
+                .toList();
     }
 
     private SchTask buildStandardTask(ClassTaskDTO request, SchTask task) {

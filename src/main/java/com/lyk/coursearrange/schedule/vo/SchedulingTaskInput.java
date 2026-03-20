@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 排课算法使用的标准任务输入对象。
@@ -30,6 +31,7 @@ public class SchedulingTaskInput implements Serializable {
     private Integer weeksNumber;
     private Integer maxWeekHours;
     private Integer maxDayHours;
+    private List<String> teacherForbiddenTimeSlots;
     private String isFix;
     private String classTime;
 }

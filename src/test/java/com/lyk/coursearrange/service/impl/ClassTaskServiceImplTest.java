@@ -134,6 +134,33 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
+    void listSchedulingTasks_shouldAttachTeacherForbiddenTimeSlotsFromTeacherRemark() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
+
+        SchTask standardTask = new SchTask();
+        standardTask.setStudentCount(40);
+        standardTask.setWeekHours(4);
+        standardTask.setTotalHours(64);
+        standardTask.setRemark("semester=2025-2026-1,classNo=2501,courseNo=10001,teacherNo=T0001,gradeNo=2025,courseName=高等数学,courseAttr=必修,teacherName=张老师");
+
+        ResTeacher teacher = new ResTeacher();
+        teacher.setTeacherCode("T0001");
+        teacher.setRemark("{\"teach\":\"主授高等数学\",\"forbiddenTimeSlots\":[\"01\",\"06\",\"11\"]}");
+
+        when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
+                .thenReturn(List.of(standardTask));
+        when(resTeacherService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResTeacher>>any()))
+                .thenReturn(List.of(teacher));
+
+        List<SchedulingTaskInput> tasks = service.listSchedulingTasks("2025-2026-1");
+
+        assertEquals(1, tasks.size());
+        assertEquals(List.of("01", "06", "11"), tasks.get(0).getTeacherForbiddenTimeSlots());
+    }
+
+    @Test
     void countScheduleTasks_shouldReturnStandardCountOnly() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
@@ -307,6 +334,46 @@ class ClassTaskServiceImplTest {
                 .count();
         assertEquals(1, dayOneCount);
         assertTrue(adjustedGenes.stream().anyMatch(gene -> gene.endsWith("06")));
+    }
+
+    @Test
+    void validateTeacherForbiddenTimeSlots_shouldRejectFixedTasksInForbiddenSlots() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+
+        SchedulingTaskInput fixedTask = new SchedulingTaskInput();
+        fixedTask.setTeacherNo("T0001");
+        fixedTask.setRealname("张老师");
+        fixedTask.setCourseName("高等数学");
+        fixedTask.setClassNo("25010001");
+        fixedTask.setIsFix("1");
+        fixedTask.setClassTime("01");
+        fixedTask.setTeacherForbiddenTimeSlots(List.of("01", "06"));
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> service.validateTeacherForbiddenTimeSlots(List.of(fixedTask)));
+
+        assertTrue(exception.getMessage().contains("教师"));
+        assertTrue(exception.getMessage().contains("禁排"));
+    }
+
+    @Test
+    void enforceTeacherForbiddenTimeSlots_shouldMoveTaskAwayFromForbiddenSlots() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+
+        List<String> resultGeneList = new java.util.ArrayList<>(List.of(
+                "12525010001T00011000010101",
+                "12525010002T00021000020102"
+        ));
+
+        List<String> adjustedGenes = service.enforceTeacherForbiddenTimeSlots(
+                resultGeneList,
+                Map.of("T0001", List.of("01")),
+                List.of("01", "02", "03", "04", "05")
+        );
+
+        assertTrue(adjustedGenes.stream()
+                .filter(gene -> gene.contains("T0001"))
+                .noneMatch(gene -> gene.endsWith("01")));
     }
 
     private CfgTimeSlot buildTimeSlot(int weekdayNo, int periodNo, int isTeaching, int isFixedBreak) {

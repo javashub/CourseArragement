@@ -8,6 +8,9 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
+import com.lyk.coursearrange.resource.entity.ResTeacher;
+import com.lyk.coursearrange.resource.service.ResTeacherService;
+import com.lyk.coursearrange.resource.util.TeacherConstraintRemarkUtils;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.service.ClassTaskService;
@@ -39,6 +42,8 @@ public class ClassTaskController {
     private SchTaskService schTaskService;
     @Resource
     private ScheduleConfigFacadeService scheduleConfigFacadeService;
+    @Resource
+    private ResTeacherService resTeacherService;
 
     /**
      * 查询开课任务
@@ -67,6 +72,7 @@ public class ClassTaskController {
     public ServerResponse addClassTask(@RequestBody ClassTaskDTO c) {
         validateTaskDuplicate(c, null);
         validateContinuousConstraint(c);
+        validateTeacherForbiddenConstraint(c);
         SchTask standardTask = buildStandardTask(c, new SchTask());
         if (!schTaskService.save(standardTask)) {
             return throwBusiness(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
@@ -84,6 +90,7 @@ public class ClassTaskController {
         }
         validateTaskDuplicate(request, id.longValue());
         validateContinuousConstraint(request);
+        validateTeacherForbiddenConstraint(request);
         SchTask standardTask = buildStandardTask(request, existingTask);
         standardTask.setId(id.longValue());
         if (!schTaskService.updateById(standardTask)) {
@@ -242,6 +249,40 @@ public class ClassTaskController {
         if (schTaskService.getOne(wrapper, false) != null) {
             throw new BusinessException(ResultCode.BUSINESS_ERROR, "相同班级、课程、教师、学期的任务已存在");
         }
+    }
+
+    private void validateTeacherForbiddenConstraint(ClassTaskDTO request) {
+        if (!"1".equals(request.getIsFix()) || request.getTeacherNo() == null || request.getTeacherNo().isBlank()) {
+            return;
+        }
+        ResTeacher teacher = resTeacherService.getOne(new LambdaQueryWrapper<ResTeacher>()
+                .eq(ResTeacher::getDeleted, 0)
+                .eq(ResTeacher::getTeacherCode, request.getTeacherNo())
+                .last("limit 1"), false);
+        if (teacher == null) {
+            return;
+        }
+        List<String> forbiddenTimeSlots = TeacherConstraintRemarkUtils.parse(teacher.getRemark()).forbiddenTimeSlots();
+        if (forbiddenTimeSlots.isEmpty()) {
+            return;
+        }
+        for (String classTime : splitClassTimes(request.getClassTime())) {
+            if (forbiddenTimeSlots.contains(classTime)) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                        String.format("教师 %s 在时间片 %s 已配置禁排，请调整固定时间或教师约束",
+                                request.getRealname() == null || request.getRealname().isBlank() ? request.getTeacherNo() : request.getRealname(),
+                                classTime));
+            }
+        }
+    }
+
+    private List<String> splitClassTimes(String classTime) {
+        if (classTime == null || classTime.isBlank()) {
+            return List.of();
+        }
+        return java.util.stream.IntStream.range(0, classTime.length() / 2)
+                .mapToObj(index -> classTime.substring(index * 2, index * 2 + 2))
+                .toList();
     }
 
     private SchTask buildStandardTask(ClassTaskDTO request, SchTask task) {

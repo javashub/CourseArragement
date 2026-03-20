@@ -70,6 +70,11 @@
             <el-table-column prop="jobtitle" label="职称" min-width="120" />
             <el-table-column prop="maxWeekHours" label="周上限课时" width="110" />
             <el-table-column prop="maxDayHours" label="日上限课时" width="110" />
+            <el-table-column label="禁排时间" min-width="150">
+              <template #default="{ row }">
+                {{ row.forbiddenTimeSlotsText || '--' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="teach" label="备注/授课说明" min-width="140" />
             <el-table-column prop="telephone" label="联系电话" min-width="140" />
             <el-table-column label="状态" width="90">
@@ -385,6 +390,20 @@
             <el-input-number v-model="teacherForm.maxDayHours" :min="0" :max="12" controls-position="right" />
           </el-form-item>
         </div>
+        <div class="teacher-constraint-panel">
+          <div class="teacher-constraint-panel__copy">
+            <div class="teacher-constraint-panel__title">教师禁排时间</div>
+            <div class="teacher-constraint-panel__text">
+              使用两位时间编码配置教师不能上课的时间片，例如 `01, 06, 11`。自动排课会避开这些时间，固定排课也会在保存时校验。
+            </div>
+          </div>
+          <el-form-item label="禁排时间编码">
+            <el-input
+              v-model="teacherForm.forbiddenTimeSlotsText"
+              placeholder="例如 01, 06, 11"
+            />
+          </el-form-item>
+        </div>
         <div class="form-grid">
           <el-form-item label="状态">
             <el-radio-group v-model="teacherForm.status">
@@ -668,6 +687,8 @@ function createTeacherForm() {
     address: '',
     maxWeekHours: 16,
     maxDayHours: 4,
+    forbiddenTimeSlots: [],
+    forbiddenTimeSlotsText: '',
     hireStatus: 'ACTIVE',
     status: 1
   };
@@ -943,11 +964,24 @@ async function openTeacherDialog(row) {
 async function submitTeacher() {
   teacherSubmitting.value = true;
   try {
+    const forbiddenTimeSlots = [...new Set(
+      String(teacherForm.value.forbiddenTimeSlotsText || '')
+        .split(/[\s,，]+/)
+        .map((item) => item.trim())
+        .filter((item) => /^\d{1,2}$/.test(item))
+        .map((item) => item.padStart(2, '0'))
+    )];
     if (teacherForm.value.id) {
-      await updateTeacher(teacherForm.value);
+      await updateTeacher({
+        ...teacherForm.value,
+        forbiddenTimeSlots
+      });
       ElMessage.success('教师信息更新成功');
     } else {
-      await createTeacher(teacherForm.value);
+      await createTeacher({
+        ...teacherForm.value,
+        forbiddenTimeSlots
+      });
       ElMessage.success('教师创建成功，默认密码为 123456');
     }
     teacherDialogVisible.value = false;
@@ -1403,6 +1437,33 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
+}
+
+.teacher-constraint-panel {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid #d8e3f0;
+  border-radius: 22px;
+  background:
+    linear-gradient(145deg, rgb(250 252 255 / 96%), rgb(245 249 255 / 86%)),
+    radial-gradient(circle at top right, rgb(180 210 255 / 18%), transparent 42%);
+}
+
+.teacher-constraint-panel__copy {
+  margin-bottom: 12px;
+}
+
+.teacher-constraint-panel__title {
+  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #173055;
+}
+
+.teacher-constraint-panel__text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #607089;
 }
 
 :deep(.resource-tabs .el-tabs__nav-wrap::after) {
