@@ -5,12 +5,14 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.exception.BusinessException;
+import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
+import com.lyk.coursearrange.service.ClassInfoService;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.system.config.entity.CfgScheduleRule;
 import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
@@ -42,10 +44,12 @@ class ScheduleTaskControllerTest {
     private ScheduleConfigFacadeService scheduleConfigFacadeService;
     @Mock
     private ResTeacherService resTeacherService;
+    @Mock
+    private ClassInfoService classInfoService;
 
     @Test
     void page_shouldReturnStandardTasksWithoutReadingLegacyTaskTable() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
 
         SchTask task = new SchTask();
         task.setId(101L);
@@ -78,7 +82,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void page_shouldReturnEmptyPageWhenStandardTasksMissing() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
 
         Page<SchTask> taskPage = new Page<>(1, 10, 0);
         taskPage.setRecords(List.of());
@@ -94,7 +98,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void page_shouldFilterTasksByClassTeacherAndCourse() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
 
         SchTask matchedTask = new SchTask();
         matchedTask.setId(101L);
@@ -131,7 +135,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void save_shouldPersistContinuousTaskFields() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -165,7 +169,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void save_shouldRejectWhenContinuousSizeExceedsRuleLimit() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -191,7 +195,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void update_shouldModifyStandardTask() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -228,7 +232,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void delete_shouldOnlyDeleteStandardTask() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
 
         SchTask task = new SchTask();
         task.setId(101L);
@@ -244,7 +248,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void createExecution_shouldDelegateToSchedulingService() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
         ServerResponse<?> expected = ServerResponse.ofSuccess("排课成功");
         when(classTaskService.classScheduling("2025-2026-1")).thenReturn(expected);
 
@@ -255,7 +259,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void listExecutions_shouldReturnRecentArrangeLogs() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
         when(classTaskService.listRecentExecuteLogs("2025-2026-1", 8)).thenReturn(List.of());
 
         ServerResponse<?> response = controller.listExecutions("2025-2026-1", 8);
@@ -266,7 +270,7 @@ class ScheduleTaskControllerTest {
 
     @Test
     void save_shouldRejectFixedTaskWhenTeacherTimeSlotIsForbidden() {
-        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService);
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -292,6 +296,39 @@ class ScheduleTaskControllerTest {
 
         BusinessException exception = assertThrows(BusinessException.class, () -> controller.save(request));
 
+        assertTrue(exception.getMessage().contains("禁排"));
+    }
+
+    @Test
+    void save_shouldRejectFixedTaskWhenClassTimeSlotIsForbidden() {
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, classInfoService);
+
+        ClassTaskDTO request = new ClassTaskDTO();
+        request.setSemester("2025-2026-1");
+        request.setGradeNo("G1");
+        request.setClassNo("C1");
+        request.setCourseNo("K1");
+        request.setCourseName("数学");
+        request.setTeacherNo("T1");
+        request.setRealname("张老师");
+        request.setCourseAttr("必修");
+        request.setStudentNum(40);
+        request.setWeeksNumber(2);
+        request.setWeeksSum(16);
+        request.setIsFix("1");
+        request.setClassTime("01");
+
+        ClassInfo classInfo = new ClassInfo();
+        classInfo.setClassNo("C1");
+        classInfo.setForbiddenTimeSlots("01");
+
+        when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
+        when(resTeacherService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
+        when(classInfoService.getOne(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(false))).thenReturn(classInfo);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> controller.save(request));
+
+        assertTrue(exception.getMessage().contains("班级"));
         assertTrue(exception.getMessage().contains("禁排"));
     }
 

@@ -9,6 +9,7 @@ import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.dao.ClassInfoDao;
 import com.lyk.coursearrange.dao.ClassroomDao;
 import com.lyk.coursearrange.dao.TeachBuildInfoDao;
+import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.CoursePlan;
@@ -16,6 +17,7 @@ import com.lyk.coursearrange.entity.ScheduleExecuteLog;
 import com.lyk.coursearrange.common.ConstantInfo;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
+import com.lyk.coursearrange.resource.util.ClassForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.resource.util.TeacherForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
@@ -92,20 +94,23 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             // 校验学时是否超过课表的容纳值
             checkWeeksNumber(schedulingTasks, runtimeContext.availableClassTimes());
             validateTeacherForbiddenTimeSlots(schedulingTasks);
+            validateClassForbiddenTimeSlots(schedulingTasks);
             validateTeacherDayHourLimit(schedulingTasks);
             Map<String, List<String>> teacherForbiddenTimeSlots = resolveTeacherForbiddenTimeSlots(schedulingTasks);
+            Map<String, List<String>> classForbiddenTimeSlots = resolveClassForbiddenTimeSlots(schedulingTasks);
             Map<String, Integer> teacherMaxDayHours = resolveTeacherMaxDayHours(schedulingTasks);
 
             // 2、将开课任务的各项信息进行编码成染色体，分为固定时间与不固定时间
             Map<String, List<String>> geneMap = coding(schedulingTasks, runtimeContext.availableClassTimes());
             // 3、给初始基因编码随机分配时间，得到同班上课时间不冲突的编码
             List<String> resultGeneList = codingTime(geneMap, runtimeContext.availableClassTimes());
+            resultGeneList = enforceClassForbiddenTimeSlots(resultGeneList, classForbiddenTimeSlots, runtimeContext.availableClassTimes());
             resultGeneList = enforceTeacherForbiddenTimeSlots(resultGeneList, teacherForbiddenTimeSlots, runtimeContext.availableClassTimes());
             resultGeneList = enforceTeacherDayHourLimit(resultGeneList, teacherMaxDayHours, runtimeContext.availableClassTimes());
             // 4、将分配好时间的基因编码以班级分类成为以班级的个体，得到班级的不冲突时间初始编码
             Map<String, List<String>> individualMap = transformIndividual(resultGeneList);
             // 5、遗传进化(这里面这里已经处理完上课时间)
-            individualMap = geneticEvolution(individualMap, runtimeContext.availableClassTimes(), teacherForbiddenTimeSlots, teacherMaxDayHours);
+            individualMap = geneticEvolution(individualMap, runtimeContext.availableClassTimes(), teacherForbiddenTimeSlots, classForbiddenTimeSlots, teacherMaxDayHours);
 
             // 检测时间冲突
 //            checkConflict(individualMap);
@@ -202,6 +207,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                     .filter(Objects::nonNull)
                     .toList();
             enrichTeacherHourLimits(tasks);
+            enrichClassForbiddenTimeSlots(tasks);
             return tasks;
         }
         log.warn("标准排课任务为空，排课流程不会再回退读取 tb_class_task，semester={}", semester);
@@ -352,6 +358,33 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 task.setMaxWeekHours(teacher.getMaxWeekHours());
                 task.setMaxDayHours(teacher.getMaxDayHours());
                 task.setTeacherForbiddenTimeSlots(TeacherForbiddenTimeSlotUtils.parse(teacher.getForbiddenTimeSlots()));
+            }
+        });
+    }
+
+    void enrichClassForbiddenTimeSlots(List<SchedulingTaskInput> tasks) {
+        if (tasks == null || tasks.isEmpty() || classInfoDao == null) {
+            return;
+        }
+        List<String> classNos = tasks.stream()
+                .map(SchedulingTaskInput::getClassNo)
+                .filter(Objects::nonNull)
+                .filter(item -> !item.isBlank())
+                .distinct()
+                .toList();
+        if (classNos.isEmpty()) {
+            return;
+        }
+        Map<String, ClassInfo> classInfoMap = classInfoDao.selectList(new LambdaQueryWrapper<ClassInfo>()
+                        .eq(ClassInfo::getDeleted, 0)
+                        .in(ClassInfo::getClassNo, classNos))
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(ClassInfo::getClassNo, item -> item, (left, right) -> left));
+        tasks.forEach(task -> {
+            ClassInfo classInfo = classInfoMap.get(task.getClassNo());
+            if (classInfo != null) {
+                task.setClassForbiddenTimeSlots(ClassForbiddenTimeSlotUtils.parse(classInfo.getForbiddenTimeSlots()));
             }
         });
     }
@@ -652,6 +685,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     private Map<String, List<String>> geneticEvolution(Map<String, List<String>> individualMap,
                                                        List<String> availableClassTimes,
                                                        Map<String, List<String>> teacherForbiddenTimeSlots,
+                                                       Map<String, List<String>> classForbiddenTimeSlots,
                                                        Map<String, Integer> teacherMaxDayHours) {
         List<String> resultGeneList;
 
@@ -659,7 +693,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             hybridization(individualMap);
             List<String> allIndividual = collectGene(individualMap);
             resultGeneList = geneMutation(allIndividual, availableClassTimes);
-            List<String> list = conflictResolution(resultGeneList, availableClassTimes, teacherForbiddenTimeSlots, teacherMaxDayHours);
+            List<String> list = conflictResolution(resultGeneList, availableClassTimes, teacherForbiddenTimeSlots, classForbiddenTimeSlots, teacherMaxDayHours);
             individualMap.clear();
             individualMap = transformIndividual(list);
         }
@@ -678,6 +712,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     private List<String> conflictResolution(List<String> resultGeneList,
                                             List<String> availableClassTimes,
                                             Map<String, List<String>> teacherForbiddenTimeSlots,
+                                            Map<String, List<String>> classForbiddenTimeSlots,
                                             Map<String, Integer> teacherMaxDayHours) {
         int conflictTimes = 0;
         exit:
@@ -710,6 +745,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             }
         }
         log.error("冲突发生次数: {}", conflictTimes);
+        resultGeneList = enforceClassForbiddenTimeSlots(resultGeneList, classForbiddenTimeSlots, availableClassTimes);
         resultGeneList = enforceTeacherForbiddenTimeSlots(resultGeneList, teacherForbiddenTimeSlots, availableClassTimes);
         return enforceTeacherDayHourLimit(resultGeneList, teacherMaxDayHours, availableClassTimes);
     }
@@ -974,6 +1010,47 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 ));
     }
 
+    void validateClassForbiddenTimeSlots(List<SchedulingTaskInput> schedulingTasks) {
+        if (schedulingTasks == null || schedulingTasks.isEmpty()) {
+            return;
+        }
+        for (SchedulingTaskInput task : schedulingTasks) {
+            if (task == null || !isFixedTask(task)) {
+                continue;
+            }
+            List<String> forbiddenTimeSlots = task.getClassForbiddenTimeSlots();
+            if (forbiddenTimeSlots == null || forbiddenTimeSlots.isEmpty()) {
+                continue;
+            }
+            for (String classTime : splitClassTimes(task.getClassTime())) {
+                if (forbiddenTimeSlots.contains(classTime)) {
+                    throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                            String.format("班级 %s 在时间片 %s 已配置禁排，请调整固定时间或班级约束", task.getClassNo(), classTime));
+                }
+            }
+        }
+    }
+
+    Map<String, List<String>> resolveClassForbiddenTimeSlots(List<SchedulingTaskInput> schedulingTasks) {
+        if (schedulingTasks == null || schedulingTasks.isEmpty()) {
+            return Map.of();
+        }
+        return schedulingTasks.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getClassNo() != null && !item.getClassNo().isBlank())
+                .filter(item -> item.getClassForbiddenTimeSlots() != null && !item.getClassForbiddenTimeSlots().isEmpty())
+                .collect(Collectors.toMap(
+                        SchedulingTaskInput::getClassNo,
+                        item -> new ArrayList<>(item.getClassForbiddenTimeSlots()),
+                        (left, right) -> {
+                            LinkedHashSet<String> merged = new LinkedHashSet<>(left);
+                            merged.addAll(right);
+                            return new ArrayList<>(merged);
+                        },
+                        LinkedHashMap::new
+                ));
+    }
+
     void validateTeacherDayHourLimit(List<SchedulingTaskInput> schedulingTasks) {
         if (schedulingTasks == null || schedulingTasks.isEmpty()) {
             return;
@@ -1094,6 +1171,45 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         return resultGeneList;
     }
 
+    List<String> enforceClassForbiddenTimeSlots(List<String> resultGeneList,
+                                                Map<String, List<String>> classForbiddenTimeSlots,
+                                                List<String> availableClassTimes) {
+        if (resultGeneList == null || resultGeneList.isEmpty()
+                || classForbiddenTimeSlots == null || classForbiddenTimeSlots.isEmpty()) {
+            return resultGeneList;
+        }
+        boolean adjusted;
+        int guard = 0;
+        do {
+            adjusted = false;
+            for (String gene : new ArrayList<>(resultGeneList)) {
+                String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
+                List<String> forbiddenSlots = classForbiddenTimeSlots.getOrDefault(classNo, List.of());
+                if (forbiddenSlots.isEmpty()) {
+                    continue;
+                }
+                String classTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene);
+                if (!forbiddenSlots.contains(classTime)) {
+                    continue;
+                }
+                if (ConstantInfo.FIX_TIME_FLAG.equals(ClassUtil.cutGene(ConstantInfo.IS_FIX, gene))) {
+                    throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                            String.format("班级 %s 在时间片 %s 已配置禁排，固定排课无法继续执行", classNo, classTime));
+                }
+                String newClassTime = pickClassTimeForClassForbiddenSlot(gene, resultGeneList, classForbiddenTimeSlots, availableClassTimes);
+                if (Objects.equals(newClassTime, classTime)) {
+                    throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                            String.format("班级 %s 的禁排时间过多，当前时间片模板下无法为任务分配可用时间", classNo));
+                }
+                replaceConflictTime(resultGeneList, gene, newClassTime);
+                adjusted = true;
+                break;
+            }
+            guard++;
+        } while (adjusted && guard < 500);
+        return resultGeneList;
+    }
+
     private String pickClassTimeForTeacherDayLimit(String gene,
                                                    List<String> resultGeneList,
                                                    Map<String, Integer> teacherMaxDayHours,
@@ -1134,6 +1250,41 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 if (sameDayCount >= maxDayHours) {
                     continue;
                 }
+            }
+            return candidate;
+        }
+        return currentClassTime;
+    }
+
+    private String pickClassTimeForClassForbiddenSlot(String gene,
+                                                      List<String> resultGeneList,
+                                                      Map<String, List<String>> classForbiddenTimeSlots,
+                                                      List<String> availableClassTimes) {
+        List<String> candidates = new ArrayList<>(availableClassTimes == null || availableClassTimes.isEmpty()
+                ? defaultAvailableClassTimes()
+                : availableClassTimes);
+        Collections.shuffle(candidates, ClassUtil.RANDOM);
+        String teacherNo = ClassUtil.cutGene(ConstantInfo.TEACHER_NO, gene);
+        String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
+        String currentClassTime = ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene);
+        List<String> forbiddenSlots = classForbiddenTimeSlots.getOrDefault(classNo, List.of());
+        for (String candidate : candidates) {
+            if (Objects.equals(candidate, currentClassTime) || forbiddenSlots.contains(candidate)) {
+                continue;
+            }
+            boolean classBusy = resultGeneList.stream()
+                    .filter(item -> !item.equals(gene))
+                    .anyMatch(item -> classNo.equals(ClassUtil.cutGene(ConstantInfo.CLASS_NO, item))
+                            && candidate.equals(ClassUtil.cutGene(ConstantInfo.CLASS_TIME, item)));
+            if (classBusy) {
+                continue;
+            }
+            boolean teacherBusy = resultGeneList.stream()
+                    .filter(item -> !item.equals(gene))
+                    .anyMatch(item -> teacherNo.equals(ClassUtil.cutGene(ConstantInfo.TEACHER_NO, item))
+                            && candidate.equals(ClassUtil.cutGene(ConstantInfo.CLASS_TIME, item)));
+            if (teacherBusy) {
+                continue;
             }
             return candidate;
         }

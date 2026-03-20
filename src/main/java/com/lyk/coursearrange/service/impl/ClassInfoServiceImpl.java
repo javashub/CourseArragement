@@ -45,7 +45,7 @@ public class ClassInfoServiceImpl extends ServiceImpl<ClassInfoDao, ClassInfo> i
     @Override
     public List<ClassInfo> listClassOptions(String gradeNo) {
         QueryWrapper<ClassInfo> wrapper = new QueryWrapper<ClassInfo>()
-                .select("id", "class_no", "class_name", "remark")
+                .select("id", "class_no", "class_name", "num", "remark", "forbidden_time_slots")
                 .orderByAsc("class_no");
         if (!"".equals(gradeNo)) {
             wrapper.eq("remark", gradeNo);

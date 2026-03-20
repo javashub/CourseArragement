@@ -1,491 +1,515 @@
 <template>
-  <section class="plan-shell">
-    <div class="hero-panel">
-      <div class="hero-copy">
-        <div class="eyebrow">Task Orchestrator</div>
-        <h1 class="hero-title">排课任务</h1>
-        <p class="hero-description">
-          先把开课任务、学期切换和一键排课打通。当前页已经优先读取标准排课任务，排课执行仍兼容旧算法链路，后续会继续替换旧表实现。
-        </p>
-      </div>
-      <div class="hero-actions">
-        <el-select
-          v-model="selectedSemester"
-          filterable
-          allow-create
-          default-first-option
-          placeholder="选择或输入学期，例如 2025-2026-1"
-          class="semester-select"
-          @change="handleSemesterChange"
-        >
-          <el-option v-for="item in semesters" :key="item" :label="item" :value="item" />
-        </el-select>
-        <el-button class="ghost-action" @click="loadClassTasks(true)">刷新任务</el-button>
-        <el-button class="primary-action" type="primary" :loading="arranging" @click="handleArrange">执行排课</el-button>
-      </div>
-    </div>
-
-    <el-card shadow="never" class="plan-card config-card">
-      <div class="config-headline">
-        <div>
-          <div class="card-title">当前生效排课规则</div>
-          <div class="card-subtitle">
-            自动排课现在会优先读取系统配置中的时间片模板，并排除“不可上课 / 固定休息”的时间片。
-          </div>
+  <div style="overflow-x: auto;">
+    <section class="plan-shell">
+      <div class="hero-panel">
+        <div class="hero-copy">
+          <div class="eyebrow">Task Orchestrator</div>
+          <h1 class="hero-title">排课任务</h1>
+          <p class="hero-description">
+            先把开课任务、学期切换和一键排课打通。当前页已经优先读取标准排课任务，排课执行仍兼容旧算法链路，后续会继续替换旧表实现。
+          </p>
         </div>
-        <el-tag :type="runtimeConfig.configApplied ? 'success' : 'info'" effect="light" round>
-          {{ runtimeConfig.configApplied ? '已应用系统配置' : '回退默认 25 格时间片' }}
-        </el-tag>
-      </div>
-      <div class="config-strip">
-        <div class="config-pill">
-          <span class="config-label">规则名称</span>
-          <strong>{{ runtimeConfig.ruleName || '未配置默认规则' }}</strong>
-        </div>
-        <div class="config-pill">
-          <span class="config-label">可用时间片</span>
-          <strong>{{ runtimeConfig.effectiveTimeSlotCount }}</strong>
-        </div>
-        <div class="config-pill">
-          <span class="config-label">教学时间片总数</span>
-          <strong>{{ runtimeConfig.rawTeachingTimeSlotCount }}</strong>
-        </div>
-        <div class="config-pill">
-          <span class="config-label">默认连堂上限</span>
-          <strong>{{ runtimeConfig.defaultContinuousLimit || '--' }}</strong>
-        </div>
-      </div>
-      <p class="config-note">
-        当前遗传排课算法仍运行在 legacy 25 格编码窗口内，因此只会消费工作日 1-5、节次 1-5 范围内的可教学时间片。
-      </p>
-    </el-card>
-
-    <el-card v-if="latestArrangeSummary" shadow="never" class="plan-card summary-card">
-      <div class="summary-header">
-        <div>
-          <div class="card-title">排课结果摘要</div>
-          <div class="card-subtitle">
-            当前仅展示本次会话中最近一次标准排课执行结果，摘要口径按任务维度统计。
-          </div>
-        </div>
-        <el-tag :type="latestArrangeSummary.unscheduledTaskCount > 0 ? 'warning' : 'success'" effect="light" round>
-          {{ latestArrangeSummary.unscheduledTaskCount > 0 ? '存在未排成功任务' : '任务已全部生成课表' }}
-        </el-tag>
-      </div>
-      <div class="summary-metrics">
-        <article v-for="item in arrangeSummaryCards" :key="item.label" class="metric-tile">
-          <span class="metric-label">{{ item.label }}</span>
-          <strong class="metric-value">{{ item.value }}</strong>
-          <span class="metric-note">{{ item.note }}</span>
-        </article>
-      </div>
-      <div v-if="latestArrangeSummary.unscheduledTasks.length" class="reason-board">
-        <div class="reason-title">未排成功任务与原因</div>
-        <div class="reason-list">
-          <div v-for="item in latestArrangeSummary.unscheduledTasks" :key="item" class="reason-item">
-            {{ item }}
-          </div>
-        </div>
-      </div>
-    </el-card>
-
-    <el-card shadow="never" class="plan-card">
-      <div class="toolbar-row">
-        <div class="summary-group">
-          <div class="summary-chip">
-            <span class="summary-label">当前学期</span>
-            <strong>{{ selectedSemester || '--' }}</strong>
-          </div>
-          <div class="summary-chip">
-            <span class="summary-label">当前页任务</span>
-            <strong>{{ taskState.filteredCount }}</strong>
-          </div>
-          <div class="summary-chip accent-chip">
-            <span class="summary-label">最近执行</span>
-            <strong>{{ latestExecutionSummary }}</strong>
-          </div>
-        </div>
-        <div class="toolbar-actions">
-          <el-upload
-            class="excel-upload"
-            :show-file-list="false"
-            :auto-upload="false"
-            :before-upload="handleExcelUpload"
-            accept=".xls,.xlsx"
+        <div class="hero-actions">
+          <el-select
+            v-model="selectedSemester"
+            filterable
+            allow-create
+            default-first-option
+            placeholder="选择或输入学期，例如 2025-2026-1"
+            class="semester-select"
+            @change="handleSemesterChange"
           >
-            <el-button class="ghost-action">导入任务</el-button>
-          </el-upload>
-          <el-button class="ghost-action" @click="handleTemplateDownload">下载模板</el-button>
-          <el-button class="ghost-action" @click="prefillTaskByClass">按班级回填示例</el-button>
-          <el-button class="primary-action" type="primary" @click="openTaskDialog()">新增任务</el-button>
+            <el-option v-for="item in semesters" :key="item" :label="item" :value="item" />
+          </el-select>
+          <el-button class="ghost-action" @click="loadClassTasks(true)">刷新任务</el-button>
+          <el-button class="primary-action" type="primary" :loading="arranging" @click="handleArrange">执行排课</el-button>
         </div>
       </div>
 
-      <el-alert
-        v-if="taskStatus"
-        class="status-alert"
-        :type="taskStatus.type"
-        :title="taskStatus.title"
-        :description="taskStatus.description"
-        :closable="false"
-        show-icon
-      />
-
-      <div class="filter-row">
-        <el-input
-          v-model="taskState.keyword"
-          clearable
-          class="filter-input"
-          placeholder="搜索班级 / 课程 / 教师"
-          @input="applyTaskFilters"
-          @clear="applyTaskFilters"
-        />
-        <el-select
-          v-model="taskState.courseFilter"
-          clearable
-          filterable
-          class="filter-select"
-          placeholder="按课程筛选"
-          @change="applyTaskFilters"
-          @clear="applyTaskFilters"
-        >
-          <el-option
-            v-for="item in courseOptions"
-            :key="item.id"
-            :label="`${item.courseNo} ${item.courseName}`"
-            :value="item.courseNo"
-          />
-        </el-select>
-        <el-select
-          v-model="taskState.teacherFilter"
-          clearable
-          filterable
-          class="filter-select"
-          placeholder="按教师筛选"
-          @change="applyTaskFilters"
-          @clear="applyTaskFilters"
-        >
-          <el-option
-            v-for="item in teacherOptions"
-            :key="item.id"
-            :label="`${item.teacherNo} ${item.realname || ''}`"
-            :value="item.teacherNo"
-          />
-        </el-select>
-        <el-select
-          v-model="taskState.fixFilter"
-          clearable
-          class="filter-select filter-select--narrow"
-          placeholder="固定排课"
-          @change="applyTaskFilters"
-          @clear="applyTaskFilters"
-        >
-          <el-option label="固定" value="1" />
-          <el-option label="非固定" value="0" />
-        </el-select>
-        <el-button class="ghost-action" @click="resetTaskFilters">重置筛选</el-button>
-      </div>
-
-      <el-table :data="taskState.displayRecords" stripe v-loading="taskState.loading">
-        <el-table-column prop="classNo" label="班级编号" min-width="120" />
-        <el-table-column prop="courseName" label="课程名称" min-width="150" />
-        <el-table-column prop="realname" label="教师姓名" min-width="110" />
-        <el-table-column prop="courseAttr" label="课程属性" min-width="120" />
-        <el-table-column prop="studentNum" label="人数" width="80" />
-        <el-table-column prop="weeksNumber" label="周学时" width="90" />
-        <el-table-column prop="weeksSum" label="周数" width="80" />
-        <el-table-column label="连堂需求" min-width="140">
-          <template #default="{ row }">
-            <el-tag :type="row.needContinuous === 1 ? 'warning' : 'info'" effect="plain">
-              {{ row.needContinuous === 1 ? `连堂 ${row.continuousSize || 2} 节` : '常规排课' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="classTime" label="固定时段" min-width="130">
-          <template #default="{ row }">
-            {{ row.classTime || '--' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="固定排课" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.isFix === '1' ? 'warning' : 'info'" effect="plain">
-              {{ row.isFix === '1' ? '是' : '否' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
-          <template #default="{ row }">
-            <el-space>
-              <el-button link type="primary" @click="goToSchedule(row.classNo)">课表</el-button>
-              <el-button link type="danger" :disabled="!row.id && !row.standardId" @click="removeTask(row)">删除</el-button>
-            </el-space>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="table-footer">
-        <el-pagination
-          background
-          layout="total, prev, pager, next"
-          :current-page="taskState.pageNum"
-          :page-size="taskState.pageSize"
-          :total="taskState.total"
-          @current-change="handleTaskPageChange"
-        />
-      </div>
-    </el-card>
-
-    <el-card shadow="never" class="plan-card">
-      <template #header>
-        <div class="log-header">
+      <el-card shadow="never" class="plan-card config-card">
+        <div class="config-headline">
           <div>
-            <div class="card-title">最近排课执行记录</div>
-            <div class="card-subtitle">保留当前学期最近 {{ executionLogLimit }} 次执行结果，方便核对成功、失败和耗时。</div>
+            <div class="card-title">当前生效排课规则</div>
+            <div class="card-subtitle">
+              自动排课现在会优先读取系统配置中的时间片模板，并排除“不可上课 / 固定休息”的时间片。
+            </div>
           </div>
-          <el-button class="ghost-action" :loading="executionLogsLoading" @click="loadExecutionLogs">
-            刷新记录
-          </el-button>
+          <el-tag :type="runtimeConfig.configApplied ? 'success' : 'info'" effect="light" round>
+            {{ runtimeConfig.configApplied ? '已应用系统配置' : '回退默认 25 格时间片' }}
+          </el-tag>
         </div>
-      </template>
-      <el-alert
-        v-if="executionLogStatus"
-        class="status-alert"
-        :type="executionLogStatus.type"
-        :title="executionLogStatus.title"
-        :description="executionLogStatus.description"
-        :closable="false"
-        show-icon
-      />
-      <el-table :data="executionLogs" stripe v-loading="executionLogsLoading" empty-text="暂无排课执行记录">
-        <el-table-column prop="createTime" label="执行时间" min-width="170" />
-        <el-table-column prop="semester" label="学期" min-width="120" />
-        <el-table-column label="执行状态" width="110">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" effect="plain">
-              {{ row.status === 1 ? '成功' : '失败' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="taskCount" label="任务数" width="90" />
-        <el-table-column prop="generatedPlanCount" label="生成课表" width="110" />
-        <el-table-column label="耗时" width="120">
-          <template #default="{ row }">
-            {{ formatDuration(row.durationMs) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="operatorName" label="执行人" width="120">
-          <template #default="{ row }">
-            {{ row.operatorName || '--' }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="message" label="执行结果" min-width="260" show-overflow-tooltip />
-        <el-table-column label="操作" width="100" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="goToSchedule('', row.semester)">查看课表</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-
-    <el-card shadow="never" class="tips-card">
-      <template #header>
-        <div class="card-title">联调说明</div>
-      </template>
-      <div class="tips-grid">
-        <div class="tip-item">
-          <strong>新增任务</strong>
-          <span>先录入学期、班级、课程、教师和周学时，形成排课输入数据。</span>
-        </div>
-        <div class="tip-item">
-          <strong>执行排课</strong>
-          <span>当前统一通过标准排课接口触发排课，内部仍复用现有算法实现，后续会继续替换旧表逻辑。</span>
-        </div>
-        <div class="tip-item">
-          <strong>查看课表</strong>
-          <span>切到“课表管理”页，按班级选择后即可看到排课结果。</span>
-        </div>
-      </div>
-    </el-card>
-
-    <el-card shadow="never" class="tips-card">
-      <template #header>
-        <div class="card-title">录入约束建议</div>
-      </template>
-      <div class="constraint-grid">
-        <div class="constraint-item">
-          <strong>周学时建议</strong>
-          <span>优先录入偶数节，例如 2、4、6。旧算法对单双周和连排支持有限，先按常规课处理。</span>
-        </div>
-        <div class="constraint-item">
-          <strong>固定时间编码</strong>
-          <span>固定排课请填写两位时间编码，如 `01`、`13`。当前课表视图按周一到周五、每天五节映射。</span>
-        </div>
-        <div class="constraint-item">
-          <strong>人数与教室容量</strong>
-          <span>学生人数应尽量贴近真实班级人数，过大的人数会降低教室匹配成功率。</span>
-        </div>
-        <div class="constraint-item">
-          <strong>教师与班级</strong>
-          <span>同一教师、同一班级在同一学期内不要重复录入明显冲突的固定时段任务。</span>
-        </div>
-      </div>
-    </el-card>
-
-    <el-dialog v-model="taskDialogVisible" title="新增排课任务" width="760px">
-      <el-form :model="taskForm" label-position="top">
-        <div class="dialog-alert">
-          <div class="alert-title">录入前检查</div>
-          <div class="alert-text">
-            请先确认学期、班级、课程、教师四项都已对应真实数据；固定时间仅在必须占位时填写。
+        <div class="config-strip">
+          <div class="config-pill">
+            <span class="config-label">规则名称</span>
+            <strong>{{ runtimeConfig.ruleName || '未配置默认规则' }}</strong>
+          </div>
+          <div class="config-pill">
+            <span class="config-label">可用时间片</span>
+            <strong>{{ runtimeConfig.effectiveTimeSlotCount }}</strong>
+          </div>
+          <div class="config-pill">
+            <span class="config-label">教学时间片总数</span>
+            <strong>{{ runtimeConfig.rawTeachingTimeSlotCount }}</strong>
+          </div>
+          <div class="config-pill">
+            <span class="config-label">默认连堂上限</span>
+            <strong>{{ runtimeConfig.defaultContinuousLimit || '--' }}</strong>
           </div>
         </div>
-        <div class="form-grid">
-          <el-form-item label="学期">
-            <el-input v-model="taskForm.semester" placeholder="例如 2025-2026-1" />
-          </el-form-item>
-          <el-form-item label="年级编号">
-            <el-input v-model="taskForm.gradeNo" placeholder="例如 2024、02" />
-          </el-form-item>
+        <p class="config-note">
+          当前遗传排课算法仍运行在 legacy 25 格编码窗口内，因此只会消费工作日 1-5、节次 1-5 范围内的可教学时间片。
+        </p>
+      </el-card>
+
+      <el-card v-if="latestArrangeSummary" shadow="never" class="plan-card summary-card">
+        <div class="summary-header">
+          <div>
+            <div class="card-title">排课结果摘要</div>
+            <div class="card-subtitle">
+              当前仅展示本次会话中最近一次标准排课执行结果，摘要口径按任务维度统计。
+            </div>
+          </div>
+          <el-tag :type="latestArrangeSummary.unscheduledTaskCount > 0 ? 'warning' : 'success'" effect="light" round>
+            {{ latestArrangeSummary.unscheduledTaskCount > 0 ? '存在未排成功任务' : '任务已全部生成课表' }}
+          </el-tag>
         </div>
-        <div class="form-grid">
-          <el-form-item label="班级编号">
-            <el-select v-model="taskForm.classNo" clearable filterable placeholder="例如 2401">
-              <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="课程名称">
-            <el-select
-              v-model="taskForm.courseNo"
-              clearable
-              filterable
-              placeholder="选择课程，例如 10001 高等数学"
-              @change="handleCourseChange"
-              @clear="clearCourseSelection"
+        <div class="summary-metrics">
+          <article v-for="item in arrangeSummaryCards" :key="item.label" class="metric-tile">
+            <span class="metric-label">{{ item.label }}</span>
+            <strong class="metric-value">{{ item.value }}</strong>
+            <span class="metric-note">{{ item.note }}</span>
+          </article>
+        </div>
+        <div v-if="latestArrangeSummary.unscheduledTasks.length" class="reason-board">
+          <div class="reason-title">未排成功任务与原因</div>
+          <div class="reason-list">
+            <div v-for="item in latestArrangeSummary.unscheduledTasks" :key="item" class="reason-item">
+              {{ item }}
+            </div>
+          </div>
+        </div>
+      </el-card>
+
+      <el-card shadow="never" class="plan-card">
+        <div class="toolbar-row">
+          <div class="summary-group">
+            <div class="summary-chip">
+              <span class="summary-label">当前学期</span>
+              <strong>{{ selectedSemester || '--' }}</strong>
+            </div>
+            <div class="summary-chip">
+              <span class="summary-label">当前页任务</span>
+              <strong>{{ taskState.filteredCount }}</strong>
+            </div>
+            <div class="summary-chip accent-chip">
+              <span class="summary-label">最近执行</span>
+              <strong>{{ latestExecutionSummary }}</strong>
+            </div>
+          </div>
+          <div class="toolbar-actions">
+            <el-upload
+              class="excel-upload"
+              :show-file-list="false"
+              :auto-upload="false"
+              :before-upload="handleExcelUpload"
+              accept=".xls,.xlsx"
             >
-              <el-option
-                v-for="item in courseOptions"
-                :key="item.id"
-                :label="`${item.courseNo} ${item.courseName}`"
-                :value="item.courseNo"
-              />
-            </el-select>
-          </el-form-item>
-        </div>
-        <div class="form-grid">
-          <el-form-item label="课程编号">
-            <el-input v-model="taskForm.courseNo" placeholder="例如 10001，建议优先从上方课程下拉选择" />
-          </el-form-item>
-          <el-form-item label="教师姓名">
-            <el-select
-              v-model="taskForm.teacherNo"
-              clearable
-              filterable
-              placeholder="选择教师，例如 T2026001 张老师"
-              @change="handleTeacherChange"
-              @clear="clearTeacherSelection"
-            >
-              <el-option
-                v-for="item in teacherOptions"
-                :key="item.id"
-                :label="`${item.teacherNo} ${item.realname || ''}`"
-                :value="item.teacherNo"
-              />
-            </el-select>
-          </el-form-item>
-        </div>
-        <div class="form-grid">
-          <el-form-item label="教师编号">
-            <el-input v-model="taskForm.teacherNo" placeholder="例如 T2026001，建议优先从上方教师下拉选择" />
-          </el-form-item>
-          <el-form-item label="课程属性">
-            <el-input v-model="taskForm.courseAttr" placeholder="例如 必修、实验课" />
-          </el-form-item>
-        </div>
-        <div class="teacher-limit-card">
-          <div class="teacher-limit-card__copy">
-            <div class="teacher-limit-card__title">教师课时约束</div>
-            <div class="teacher-limit-card__text">
-              自动排课会遵守教师资源里维护的日上限和周上限课时。当前任务页优先展示所选教师的实时配置，排课时会据此消解冲突。
-            </div>
-          </div>
-          <div class="teacher-limit-card__metrics">
-            <div class="teacher-limit-pill">
-              <span>日上限课时</span>
-              <strong>{{ selectedTeacherProfile?.maxDayHours > 0 ? `${selectedTeacherProfile.maxDayHours} 节` : '未限制' }}</strong>
-            </div>
-            <div class="teacher-limit-pill">
-              <span>周上限课时</span>
-              <strong>{{ selectedTeacherProfile?.maxWeekHours > 0 ? `${selectedTeacherProfile.maxWeekHours} 节` : '未限制' }}</strong>
-            </div>
-            <div class="teacher-limit-pill teacher-limit-pill--wide">
-              <span>禁排时间</span>
-              <strong>{{ selectedTeacherProfile?.forbiddenTimeSlotsText || '未配置' }}</strong>
-            </div>
+              <el-button class="ghost-action">导入任务</el-button>
+            </el-upload>
+            <el-button class="ghost-action" @click="handleTemplateDownload">下载模板</el-button>
+            <el-button class="ghost-action" @click="prefillTaskByClass">按班级回填示例</el-button>
+            <el-button class="primary-action" type="primary" @click="openTaskDialog()">新增任务</el-button>
           </div>
         </div>
-        <div class="form-grid compact-grid">
-          <el-form-item label="学生人数">
-            <el-input-number v-model="taskForm.studentNum" :min="1" :max="300" controls-position="right" />
-          </el-form-item>
-          <el-form-item label="周学时">
-            <el-input-number v-model="taskForm.weeksNumber" :min="1" :max="20" controls-position="right" />
-          </el-form-item>
-          <el-form-item label="周数">
-            <el-input-number v-model="taskForm.weeksSum" :min="1" :max="30" controls-position="right" />
-          </el-form-item>
+
+        <el-alert
+          v-if="taskStatus"
+          class="status-alert"
+          :type="taskStatus.type"
+          :title="taskStatus.title"
+          :description="taskStatus.description"
+          :closable="false"
+          show-icon
+        />
+
+        <div class="filter-row">
+          <el-input
+            v-model="taskState.keyword"
+            clearable
+            class="filter-input"
+            placeholder="搜索班级 / 课程 / 教师"
+            @input="applyTaskFilters"
+            @clear="applyTaskFilters"
+          />
+          <el-select
+            v-model="taskState.courseFilter"
+            clearable
+            filterable
+            class="filter-select"
+            placeholder="按课程筛选"
+            @change="applyTaskFilters"
+            @clear="applyTaskFilters"
+          >
+            <el-option
+              v-for="item in courseOptions"
+              :key="item.id"
+              :label="`${item.courseNo} ${item.courseName}`"
+              :value="item.courseNo"
+            />
+          </el-select>
+          <el-select
+            v-model="taskState.teacherFilter"
+            clearable
+            filterable
+            class="filter-select"
+            placeholder="按教师筛选"
+            @change="applyTaskFilters"
+            @clear="applyTaskFilters"
+          >
+            <el-option
+              v-for="item in teacherOptions"
+              :key="item.id"
+              :label="`${item.teacherNo} ${item.realname || ''}`"
+              :value="item.teacherNo"
+            />
+          </el-select>
+          <el-select
+            v-model="taskState.fixFilter"
+            clearable
+            class="filter-select filter-select--narrow"
+            placeholder="固定排课"
+            @change="applyTaskFilters"
+            @clear="applyTaskFilters"
+          >
+            <el-option label="固定" value="1" />
+            <el-option label="非固定" value="0" />
+          </el-select>
+          <el-button class="ghost-action" @click="resetTaskFilters">重置筛选</el-button>
         </div>
-        <div class="constraint-band">
-          <div class="constraint-band__copy">
-            <div class="constraint-band__title">连堂约束</div>
-            <div class="constraint-band__text">
-              需要连堂时会把该任务作为连续节次约束参与排课，当前规则默认上限为
-              {{ runtimeConfig.defaultContinuousLimit || '未配置' }} 节。
+
+        <el-table :data="taskState.displayRecords" stripe v-loading="taskState.loading">
+          <el-table-column prop="classNo" label="班级编号" min-width="120" />
+          <el-table-column prop="courseName" label="课程名称" min-width="150" />
+          <el-table-column prop="realname" label="教师姓名" min-width="110" />
+          <el-table-column prop="courseAttr" label="课程属性" min-width="120" />
+          <el-table-column prop="studentNum" label="人数" width="80" />
+          <el-table-column prop="weeksNumber" label="周学时" width="90" />
+          <el-table-column prop="weeksSum" label="周数" width="80" />
+          <el-table-column label="连堂需求" min-width="140">
+            <template #default="{ row }">
+              <el-tag :type="row.needContinuous === 1 ? 'warning' : 'info'" effect="plain">
+                {{ row.needContinuous === 1 ? `连堂 ${row.continuousSize || 2} 节` : '常规排课' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="classTime" label="固定时段" min-width="130">
+            <template #default="{ row }">
+              {{ row.classTime || '--' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="固定排课" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.isFix === '1' ? 'warning' : 'info'" effect="plain">
+                {{ row.isFix === '1' ? '是' : '否' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" fixed="right">
+            <template #default="{ row }">
+              <el-space>
+                <el-button link type="primary" @click="goToSchedule(row.classNo)">课表</el-button>
+                <el-button link type="danger" :disabled="!row.id && !row.standardId" @click="removeTask(row)">删除</el-button>
+              </el-space>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="table-footer">
+          <el-pagination
+            background
+            layout="total, prev, pager, next"
+            :current-page="taskState.pageNum"
+            :page-size="taskState.pageSize"
+            :total="taskState.total"
+            @current-change="handleTaskPageChange"
+          />
+        </div>
+      </el-card>
+
+      <el-card shadow="never" class="plan-card">
+        <template #header>
+          <div class="log-header">
+            <div>
+              <div class="card-title">最近排课执行记录</div>
+              <div class="card-subtitle">保留当前学期最近 {{ executionLogLimit }} 次执行结果，方便核对成功、失败和耗时。</div>
+            </div>
+            <el-button class="ghost-action" :loading="executionLogsLoading" @click="loadExecutionLogs">
+              刷新记录
+            </el-button>
+          </div>
+        </template>
+        <el-alert
+          v-if="executionLogStatus"
+          class="status-alert"
+          :type="executionLogStatus.type"
+          :title="executionLogStatus.title"
+          :description="executionLogStatus.description"
+          :closable="false"
+          show-icon
+        />
+        <el-table :data="executionLogs" stripe v-loading="executionLogsLoading" empty-text="暂无排课执行记录">
+          <el-table-column prop="createTime" label="执行时间" min-width="170" />
+          <el-table-column prop="semester" label="学期" min-width="120" />
+          <el-table-column label="执行状态" width="110">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 1 ? 'success' : 'danger'" effect="plain">
+                {{ row.status === 1 ? '成功' : '失败' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="taskCount" label="任务数" width="90" />
+          <el-table-column prop="generatedPlanCount" label="生成课表" width="110" />
+          <el-table-column label="耗时" width="120">
+            <template #default="{ row }">
+              {{ formatDuration(row.durationMs) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="operatorName" label="执行人" width="120">
+            <template #default="{ row }">
+              {{ row.operatorName || '--' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="message" label="执行结果" min-width="260" show-overflow-tooltip />
+          <el-table-column label="操作" width="100" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="goToSchedule('', row.semester)">查看课表</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+
+      <el-card shadow="never" class="tips-card">
+        <template #header>
+          <div class="card-title">联调说明</div>
+        </template>
+        <div class="tips-grid">
+          <div class="tip-item">
+            <strong>新增任务</strong>
+            <span>先录入学期、班级、课程、教师和周学时，形成排课输入数据。</span>
+          </div>
+          <div class="tip-item">
+            <strong>执行排课</strong>
+            <span>当前统一通过标准排课接口触发排课，内部仍复用现有算法实现，后续会继续替换旧表逻辑。</span>
+          </div>
+          <div class="tip-item">
+            <strong>查看课表</strong>
+            <span>切到“课表管理”页，按班级选择后即可看到排课结果。</span>
+          </div>
+        </div>
+      </el-card>
+
+      <el-card shadow="never" class="tips-card">
+        <template #header>
+          <div class="card-title">录入约束建议</div>
+        </template>
+        <div class="constraint-grid">
+          <div class="constraint-item">
+            <strong>周学时建议</strong>
+            <span>优先录入偶数节，例如 2、4、6。旧算法对单双周和连排支持有限，先按常规课处理。</span>
+          </div>
+          <div class="constraint-item">
+            <strong>固定时间编码</strong>
+            <span>固定排课请填写两位时间编码，如 `01`、`13`。当前课表视图按周一到周五、每天五节映射。</span>
+          </div>
+          <div class="constraint-item">
+            <strong>人数与教室容量</strong>
+            <span>学生人数应尽量贴近真实班级人数，过大的人数会降低教室匹配成功率。</span>
+          </div>
+          <div class="constraint-item">
+            <strong>教师与班级</strong>
+            <span>同一教师、同一班级在同一学期内不要重复录入明显冲突的固定时段任务。</span>
+          </div>
+        </div>
+      </el-card>
+
+      <el-dialog v-model="taskDialogVisible" title="新增排课任务" width="760px">
+        <el-form :model="taskForm" label-position="top">
+          <div class="dialog-alert">
+            <div class="alert-title">录入前检查</div>
+            <div class="alert-text">
+              请先确认学期、班级、课程、教师四项都已对应真实数据；固定时间仅在必须占位时填写。
             </div>
           </div>
-          <div class="constraint-band__controls">
-            <el-form-item label="是否连堂">
-              <el-radio-group v-model="taskForm.needContinuous">
-                <el-radio :value="0">否</el-radio>
-                <el-radio :value="1">是</el-radio>
+          <div class="form-grid">
+            <el-form-item label="学期">
+              <el-input v-model="taskForm.semester" placeholder="例如 2025-2026-1" />
+            </el-form-item>
+            <el-form-item label="年级编号">
+              <el-input v-model="taskForm.gradeNo" placeholder="例如 2024、02" />
+            </el-form-item>
+          </div>
+          <div class="form-grid">
+            <el-form-item label="班级编号">
+              <el-select v-model="taskForm.classNo" clearable filterable placeholder="例如 2401">
+                <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="课程名称">
+              <el-select
+                v-model="taskForm.courseNo"
+                clearable
+                filterable
+                placeholder="选择课程，例如 10001 高等数学"
+                @change="handleCourseChange"
+                @clear="clearCourseSelection"
+              >
+                <el-option
+                  v-for="item in courseOptions"
+                  :key="item.id"
+                  :label="`${item.courseNo} ${item.courseName}`"
+                  :value="item.courseNo"
+                />
+              </el-select>
+            </el-form-item>
+          </div>
+          <div class="form-grid">
+            <el-form-item label="课程编号">
+              <el-input v-model="taskForm.courseNo" placeholder="例如 10001，建议优先从上方课程下拉选择" />
+            </el-form-item>
+            <el-form-item label="教师姓名">
+              <el-select
+                v-model="taskForm.teacherNo"
+                clearable
+                filterable
+                placeholder="选择教师，例如 T2026001 张老师"
+                @change="handleTeacherChange"
+                @clear="clearTeacherSelection"
+              >
+                <el-option
+                  v-for="item in teacherOptions"
+                  :key="item.id"
+                  :label="`${item.teacherNo} ${item.realname || ''}`"
+                  :value="item.teacherNo"
+                />
+              </el-select>
+            </el-form-item>
+          </div>
+          <div class="form-grid">
+            <el-form-item label="教师编号">
+              <el-input v-model="taskForm.teacherNo" placeholder="例如 T2026001，建议优先从上方教师下拉选择" />
+            </el-form-item>
+            <el-form-item label="课程属性">
+              <el-input v-model="taskForm.courseAttr" placeholder="例如 必修、实验课" />
+            </el-form-item>
+          </div>
+          <div class="teacher-limit-card">
+            <div class="teacher-limit-card__copy">
+              <div class="teacher-limit-card__title">教师课时约束</div>
+              <div class="teacher-limit-card__text">
+                自动排课会遵守教师资源里维护的日上限和周上限课时。当前任务页优先展示所选教师的实时配置，排课时会据此消解冲突。
+              </div>
+            </div>
+            <div class="teacher-limit-card__metrics">
+              <div class="teacher-limit-pill">
+                <span>日上限课时</span>
+                <strong>{{ selectedTeacherProfile?.maxDayHours > 0 ? `${selectedTeacherProfile.maxDayHours} 节` : '未限制' }}</strong>
+              </div>
+              <div class="teacher-limit-pill">
+                <span>周上限课时</span>
+                <strong>{{ selectedTeacherProfile?.maxWeekHours > 0 ? `${selectedTeacherProfile.maxWeekHours} 节` : '未限制' }}</strong>
+              </div>
+              <div class="teacher-limit-pill teacher-limit-pill--wide">
+                <span>教师禁排时间</span>
+                <strong>{{ selectedTeacherProfile?.forbiddenTimeSlotsText || '未配置' }}</strong>
+              </div>
+            </div>
+          </div>
+          <div class="teacher-limit-card teacher-limit-card--class">
+            <div class="teacher-limit-card__copy">
+              <div class="teacher-limit-card__title">班级时间约束</div>
+              <div class="teacher-limit-card__text">
+                班级管理页维护的禁排时间会直接参与固定课保存校验和自动排课避让。
+              </div>
+            </div>
+            <div class="teacher-limit-card__metrics">
+              <div class="teacher-limit-pill teacher-limit-pill--wide">
+                <span>班级禁排时间</span>
+                <strong>{{ selectedClassProfile?.forbiddenTimeSlotsText || '未配置' }}</strong>
+              </div>
+              <div class="teacher-limit-pill">
+                <span>班级人数</span>
+                <strong>{{ selectedClassProfile?.num || '--' }}</strong>
+              </div>
+              <div class="teacher-limit-pill">
+                <span>所属年级</span>
+                <strong>{{ selectedClassProfile?.gradeNo || '--' }}</strong>
+              </div>
+            </div>
+          </div>
+          <div class="form-grid compact-grid">
+            <el-form-item label="学生人数">
+              <el-input-number v-model="taskForm.studentNum" :min="1" :max="300" controls-position="right" />
+            </el-form-item>
+            <el-form-item label="周学时">
+              <el-input-number v-model="taskForm.weeksNumber" :min="1" :max="20" controls-position="right" />
+            </el-form-item>
+            <el-form-item label="周数">
+              <el-input-number v-model="taskForm.weeksSum" :min="1" :max="30" controls-position="right" />
+            </el-form-item>
+          </div>
+          <div class="constraint-band">
+            <div class="constraint-band__copy">
+              <div class="constraint-band__title">连堂约束</div>
+              <div class="constraint-band__text">
+                需要连堂时会把该任务作为连续节次约束参与排课，当前规则默认上限为
+                {{ runtimeConfig.defaultContinuousLimit || '未配置' }} 节。
+              </div>
+            </div>
+            <div class="constraint-band__controls">
+              <el-form-item label="是否连堂">
+                <el-radio-group v-model="taskForm.needContinuous">
+                  <el-radio :value="0">否</el-radio>
+                  <el-radio :value="1">是</el-radio>
+                </el-radio-group>
+              </el-form-item>
+              <el-form-item label="连堂节数">
+                <el-input-number
+                  v-model="taskForm.continuousSize"
+                  :min="2"
+                  :max="Math.max(runtimeConfig.defaultContinuousLimit || 2, 2)"
+                  :disabled="taskForm.needContinuous !== 1"
+                  controls-position="right"
+                />
+              </el-form-item>
+            </div>
+          </div>
+          <div class="form-grid">
+            <el-form-item label="是否固定上课时间">
+              <el-radio-group v-model="taskForm.isFix">
+                <el-radio value="0">否</el-radio>
+                <el-radio value="1">是</el-radio>
               </el-radio-group>
             </el-form-item>
-            <el-form-item label="连堂节数">
-              <el-input-number
-                v-model="taskForm.continuousSize"
-                :min="2"
-                :max="Math.max(runtimeConfig.defaultContinuousLimit || 2, 2)"
-                :disabled="taskForm.needContinuous !== 1"
-                controls-position="right"
-              />
+            <el-form-item label="固定时间">
+              <el-input v-model="taskForm.classTime" placeholder="例如 01、13；未固定可留空，不建议一次填多个编码" />
             </el-form-item>
           </div>
-        </div>
-        <div class="form-grid">
-          <el-form-item label="是否固定上课时间">
-            <el-radio-group v-model="taskForm.isFix">
-              <el-radio value="0">否</el-radio>
-              <el-radio value="1">是</el-radio>
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item label="固定时间">
-            <el-input v-model="taskForm.classTime" placeholder="例如 01、13；未固定可留空，不建议一次填多个编码" />
-          </el-form-item>
-        </div>
-        <div class="validation-preview">
-          <el-tag :type="formValidation.isValid ? 'success' : 'warning'" effect="plain">
-            {{ formValidation.isValid ? '当前表单可提交' : '当前表单存在待处理项' }}
-          </el-tag>
-          <div class="validation-list">
-            <span v-for="item in formValidation.messages" :key="item">{{ item }}</span>
+          <div class="validation-preview">
+            <el-tag :type="formValidation.isValid ? 'success' : 'warning'" effect="plain">
+              {{ formValidation.isValid ? '当前表单可提交' : '当前表单存在待处理项' }}
+            </el-tag>
+            <div class="validation-list">
+              <span v-for="item in formValidation.messages" :key="item">{{ item }}</span>
+            </div>
           </div>
-        </div>
-      </el-form>
-      <template #footer>
-        <el-button @click="taskDialogVisible = false">取消</el-button>
-        <el-button class="primary-action" type="primary" :loading="taskSubmitting" @click="submitTask">保存任务</el-button>
-      </template>
-    </el-dialog>
-  </section>
+        </el-form>
+        <template #footer>
+          <el-button @click="taskDialogVisible = false">取消</el-button>
+          <el-button class="primary-action" type="primary" :loading="taskSubmitting" @click="submitTask">保存任务</el-button>
+        </template>
+      </el-dialog>
+    </section>
+  </div>
 </template>
 
 <script setup>
@@ -603,6 +627,13 @@ const selectedTeacherProfile = computed(() => {
   return teacherOptions.value.find((item) => item.teacherNo === taskForm.value.teacherNo) || null;
 });
 
+const selectedClassProfile = computed(() => {
+  if (!taskForm.value.classNo) {
+    return null;
+  }
+  return classOptions.value.find((item) => item.classNo === taskForm.value.classNo) || null;
+});
+
 const formValidation = computed(() => {
   const messages = [];
   if (!taskForm.value.semester?.trim()) {
@@ -629,6 +660,8 @@ const formValidation = computed(() => {
       messages.push('固定时间当前只支持两位编码，例如 01、13');
     } else if (selectedTeacherProfile.value?.forbiddenTimeSlots?.includes(taskForm.value.classTime.trim())) {
       messages.push(`教师已将时间片 ${taskForm.value.classTime.trim()} 配置为禁排`);
+    } else if (selectedClassProfile.value?.forbiddenTimeSlots?.includes(taskForm.value.classTime.trim())) {
+      messages.push(`班级已将时间片 ${taskForm.value.classTime.trim()} 配置为禁排`);
     }
   }
   if (taskForm.value.needContinuous === 1) {
@@ -962,7 +995,7 @@ function prefillTaskByClass() {
   const firstTeacher = teacherOptions.value[0];
   taskForm.value = {
     ...createTaskForm(),
-    gradeNo: firstClass?.remark || '',
+    gradeNo: firstClass?.gradeNo || firstClass?.remark || '',
     classNo: firstClass?.classNo || '',
     studentNum: firstClass?.num || 40,
     courseNo: firstCourse?.courseNo || '',
@@ -1028,6 +1061,10 @@ async function submitTask() {
     }
     if (selectedTeacherProfile.value?.forbiddenTimeSlots?.includes(fixedTime)) {
       ElMessage.warning(`教师已将时间片 ${fixedTime} 配置为禁排，请调整固定时间`);
+      return;
+    }
+    if (selectedClassProfile.value?.forbiddenTimeSlots?.includes(fixedTime)) {
+      ElMessage.warning(`班级已将时间片 ${fixedTime} 配置为禁排，请调整固定时间`);
       return;
     }
   } else {
@@ -1166,7 +1203,6 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 16px;
 }

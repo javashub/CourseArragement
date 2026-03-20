@@ -18,10 +18,10 @@ public interface ClassInfoDao extends BaseMapper<ClassInfo> {
     @Select("select num from tb_class_info where class_no = #{classNo}")
     int selectStuNum(@Param("classNo") String classNo);
 
-    @Select("SELECT tci.id,tgi.grade_name,tci.class_no,tci.class_name,t.realname,tci.num FROM tb_class_info tci join tb_teacher t on tci.teacher = t.id join tb_grade_info tgi on tci.remark = tgi.grade_no where tgi.grade_no = ${gradeNo} limit ${page}, ${limit}")
+    @Select("SELECT tci.id,tgi.grade_name,tci.class_no,tci.class_name,tci.teacher,t.realname,tci.num,tci.remark,tci.forbidden_time_slots FROM tb_class_info tci join tb_teacher t on tci.teacher = t.id join tb_grade_info tgi on tci.remark = tgi.grade_no where tgi.grade_no = ${gradeNo} limit ${page}, ${limit}")
     List<ClassInfoVO> queryClassInfo(Integer page, Integer limit, String gradeNo);
 
-    @Select("SELECT tci.id,tgi.grade_name,tci.class_no,tci.class_name,t.realname,tci.num FROM tb_class_info tci join tb_teacher t on tci.teacher = t.id join tb_grade_info tgi on tci.remark = tgi.grade_no limit ${page}, ${limit}")
+    @Select("SELECT tci.id,tgi.grade_name,tci.class_no,tci.class_name,tci.teacher,t.realname,tci.num,tci.remark,tci.forbidden_time_slots FROM tb_class_info tci join tb_teacher t on tci.teacher = t.id join tb_grade_info tgi on tci.remark = tgi.grade_no limit ${page}, ${limit}")
     List<ClassInfoVO> queryClassInfos(Integer page, Integer limit);
 
     @Select("SELECT count(tci.id) FROM tb_class_info tci join tb_teacher t on tci.teacher = t.id join tb_grade_info tgi on tci.remark = tgi.grade_no where tgi.grade_no = ${gradeNo}")

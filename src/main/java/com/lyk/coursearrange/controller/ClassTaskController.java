@@ -7,12 +7,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
+import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
+import com.lyk.coursearrange.resource.util.ClassForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.resource.util.TeacherForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
+import com.lyk.coursearrange.service.ClassInfoService;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
@@ -44,6 +47,8 @@ public class ClassTaskController {
     private ScheduleConfigFacadeService scheduleConfigFacadeService;
     @Resource
     private ResTeacherService resTeacherService;
+    @Resource
+    private ClassInfoService classInfoService;
 
     /**
      * 查询开课任务
@@ -73,6 +78,7 @@ public class ClassTaskController {
         validateTaskDuplicate(c, null);
         validateContinuousConstraint(c);
         validateTeacherForbiddenConstraint(c);
+        validateClassForbiddenConstraint(c);
         SchTask standardTask = buildStandardTask(c, new SchTask());
         if (!schTaskService.save(standardTask)) {
             return throwBusiness(ResultCode.SYSTEM_ERROR, "添加课程任务失败");
@@ -91,6 +97,7 @@ public class ClassTaskController {
         validateTaskDuplicate(request, id.longValue());
         validateContinuousConstraint(request);
         validateTeacherForbiddenConstraint(request);
+        validateClassForbiddenConstraint(request);
         SchTask standardTask = buildStandardTask(request, existingTask);
         standardTask.setId(id.longValue());
         if (!schTaskService.updateById(standardTask)) {
@@ -272,6 +279,33 @@ public class ClassTaskController {
                         String.format("教师 %s 在时间片 %s 已配置禁排，请调整固定时间或教师约束",
                                 request.getRealname() == null || request.getRealname().isBlank() ? request.getTeacherNo() : request.getRealname(),
                                 classTime));
+            }
+        }
+    }
+
+    private void validateClassForbiddenConstraint(ClassTaskDTO request) {
+        if (classInfoService == null
+                || !"1".equals(request.getIsFix())
+                || request.getClassNo() == null
+                || request.getClassNo().isBlank()) {
+            return;
+        }
+        ClassInfo classInfo = classInfoService.getOne(new LambdaQueryWrapper<ClassInfo>()
+                .eq(ClassInfo::getDeleted, 0)
+                .eq(ClassInfo::getClassNo, request.getClassNo())
+                .last("limit 1"), false);
+        if (classInfo == null) {
+            return;
+        }
+        List<String> forbiddenTimeSlots = ClassForbiddenTimeSlotUtils.parse(classInfo.getForbiddenTimeSlots());
+        if (forbiddenTimeSlots.isEmpty()) {
+            return;
+        }
+        for (String classTime : splitClassTimes(request.getClassTime())) {
+            if (forbiddenTimeSlots.contains(classTime)) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                        String.format("班级 %s 在时间片 %s 已配置禁排，请调整固定时间或班级约束",
+                                request.getClassNo(), classTime));
             }
         }
     }

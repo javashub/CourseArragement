@@ -8,6 +8,28 @@ const legacyOptions = {
 
 const MAX_PAGE_SIZE = 100;
 
+function normalizeForbiddenTimeSlots(rawValue) {
+  const values = Array.isArray(rawValue)
+    ? rawValue
+    : String(rawValue ?? '')
+      .split(/[\s,，]+/)
+      .filter(Boolean);
+  return [...new Set(values
+    .map((item) => String(item ?? '').trim())
+    .filter((item) => /^\d{1,2}$/.test(item))
+    .map((item) => item.padStart(2, '0')))];
+}
+
+function normalizeClassRecord(record = {}) {
+  const forbiddenTimeSlots = normalizeForbiddenTimeSlots(record.forbiddenTimeSlots);
+  return {
+    ...record,
+    gradeNo: record.gradeNo ?? record.remark ?? '',
+    forbiddenTimeSlots,
+    forbiddenTimeSlotsText: forbiddenTimeSlots.join(', ')
+  };
+}
+
 export function fetchSemesterList() {
   return request.get('/schedule/tasks/semesters');
 }
@@ -89,13 +111,22 @@ export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
       pageSize: Math.min(limit, MAX_PAGE_SIZE),
       gradeNo
     }
-  });
+  }).then((response) => ({
+    ...response,
+    data: {
+      ...(response.data || {}),
+      records: (response.data?.records || []).map(normalizeClassRecord)
+    }
+  }));
 }
 
 export function fetchClassOptions(gradeNo = '') {
   return request.get('/resources/admin-classes/options', {
     params: { gradeNo }
-  });
+  }).then((response) => ({
+    ...response,
+    data: (response.data || []).map(normalizeClassRecord)
+  }));
 }
 
 export function fetchCoursePlanByClassNo(classNo, options = {}) {

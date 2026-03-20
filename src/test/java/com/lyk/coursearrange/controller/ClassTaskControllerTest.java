@@ -5,12 +5,14 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.exception.BusinessException;
+import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
+import com.lyk.coursearrange.service.ClassInfoService;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.system.config.entity.CfgScheduleRule;
 import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
@@ -40,6 +42,8 @@ class ClassTaskControllerTest {
     private ScheduleConfigFacadeService scheduleConfigFacadeService;
     @Mock
     private ResTeacherService resTeacherService;
+    @Mock
+    private ClassInfoService classInfoService;
 
     @Test
     void queryClassTask_shouldReturnStandardTasksWithoutReadingLegacyTaskTable() {
@@ -48,6 +52,9 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
         ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
+        ReflectionTestUtils.setField(controller, "classInfoService", classInfoService);
+        ReflectionTestUtils.setField(controller, "classInfoService", classInfoService);
+        ReflectionTestUtils.setField(controller, "classInfoService", classInfoService);
 
         SchTask task = new SchTask();
         task.setId(101L);
@@ -145,6 +152,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
         ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
+        ReflectionTestUtils.setField(controller, "classInfoService", classInfoService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -179,6 +187,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
         ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
+        ReflectionTestUtils.setField(controller, "classInfoService", classInfoService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -209,6 +218,7 @@ class ClassTaskControllerTest {
         ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
         ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
+        ReflectionTestUtils.setField(controller, "classInfoService", classInfoService);
 
         ClassTaskDTO request = new ClassTaskDTO();
         request.setSemester("2025-2026-1");
@@ -234,6 +244,7 @@ class ClassTaskControllerTest {
 
         when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(buildScheduleConfig(2));
         when(resTeacherService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
+        when(classInfoService.getOne(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
         when(schTaskService.getById(101L)).thenReturn(task);
         when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
         when(schTaskService.updateById(org.mockito.ArgumentMatchers.any(SchTask.class))).thenReturn(true);
@@ -295,6 +306,44 @@ class ClassTaskControllerTest {
 
         BusinessException exception = assertThrows(BusinessException.class, () -> controller.addClassTask(request));
 
+        assertTrue(exception.getMessage().contains("禁排"));
+    }
+
+    @Test
+    void addClassTask_shouldRejectFixedTaskWhenClassTimeSlotIsForbidden() {
+        ClassTaskController controller = new ClassTaskController();
+        ReflectionTestUtils.setField(controller, "classTaskService", classTaskService);
+        ReflectionTestUtils.setField(controller, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(controller, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(controller, "resTeacherService", resTeacherService);
+        ReflectionTestUtils.setField(controller, "classInfoService", classInfoService);
+
+        ClassTaskDTO request = new ClassTaskDTO();
+        request.setSemester("2025-2026-1");
+        request.setGradeNo("G1");
+        request.setClassNo("C1");
+        request.setCourseNo("K1");
+        request.setCourseName("数学");
+        request.setTeacherNo("T1");
+        request.setRealname("张老师");
+        request.setCourseAttr("必修");
+        request.setStudentNum(40);
+        request.setWeeksNumber(2);
+        request.setWeeksSum(16);
+        request.setIsFix("1");
+        request.setClassTime("01");
+
+        ClassInfo classInfo = new ClassInfo();
+        classInfo.setClassNo("C1");
+        classInfo.setForbiddenTimeSlots("01");
+
+        when(schTaskService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
+        when(resTeacherService.getOne(org.mockito.ArgumentMatchers.any(Wrapper.class), org.mockito.ArgumentMatchers.eq(false))).thenReturn(null);
+        when(classInfoService.getOne(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(false))).thenReturn(classInfo);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> controller.addClassTask(request));
+
+        assertTrue(exception.getMessage().contains("班级"));
         assertTrue(exception.getMessage().contains("禁排"));
     }
 

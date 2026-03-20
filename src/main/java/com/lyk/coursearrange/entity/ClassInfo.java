@@ -58,6 +58,11 @@ public class ClassInfo extends Model<ClassInfo> implements Serializable {
      */
     private String remark;
 
+    /**
+     * 禁排时间编码，逗号分隔
+     */
+    private String forbiddenTimeSlots;
+
     @TableLogic
     private Integer deleted;
 

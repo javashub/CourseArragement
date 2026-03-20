@@ -32,6 +32,7 @@ public class SchedulingTaskInput implements Serializable {
     private Integer maxWeekHours;
     private Integer maxDayHours;
     private List<String> teacherForbiddenTimeSlots;
+    private List<String> classForbiddenTimeSlots;
     private String isFix;
     private String classTime;
 }

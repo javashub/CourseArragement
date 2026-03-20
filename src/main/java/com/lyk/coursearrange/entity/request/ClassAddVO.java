@@ -25,4 +25,6 @@ public class ClassAddVO implements Serializable {
     private Integer num;
 
     private String realname;
+
+    private String forbiddenTimeSlots;
 }

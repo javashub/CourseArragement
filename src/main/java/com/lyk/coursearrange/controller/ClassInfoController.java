@@ -10,6 +10,7 @@ import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.Student;
 import com.lyk.coursearrange.entity.request.ClassAddVO;
+import com.lyk.coursearrange.resource.util.ClassForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.service.ClassInfoService;
 import com.lyk.coursearrange.service.StudentService;
 import org.apache.commons.lang3.StringUtils;
@@ -75,6 +76,7 @@ public class ClassInfoController {
         ClassInfo c = new ClassInfo();
         BeanUtils.copyProperties(classAddVO, c);
         c.setRemark(classAddVO.getGradeNo());
+        c.setForbiddenTimeSlots(ClassForbiddenTimeSlotUtils.format(ClassForbiddenTimeSlotUtils.parse(classAddVO.getForbiddenTimeSlots())));
 
         return classInfoService.save(c) ? ServerResponse.ofSuccess("添加班级成功")
                 : throwBusiness(ResultCode.SYSTEM_ERROR, "添加班级失败");
