@@ -51,4 +51,10 @@ class LegacyCleanupGuardTest {
         assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/controller/OnlineCourseController.java")));
         assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/entity/request/OnlineCourseAddVO.java")));
     }
+
+    @Test
+    void shouldRemoveLegacyClassTaskControllerShell() {
+        assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/controller/ClassTaskController.java")));
+        assertFalse(Files.exists(Path.of("src/test/java/com/lyk/coursearrange/controller/ClassTaskControllerTest.java")));
+    }
 }
