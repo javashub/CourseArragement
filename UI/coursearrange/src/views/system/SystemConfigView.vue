@@ -68,6 +68,15 @@
         </template>
 
         <el-form :model="scheduleForm" label-position="top" class="rule-form">
+          <el-alert
+            v-if="scheduleValidation.messages.length"
+            class="config-alert"
+            :type="scheduleValidation.isValid ? 'success' : 'warning'"
+            :title="scheduleValidation.isValid ? '当前规则结构可保存' : '当前规则存在待处理项'"
+            :description="scheduleValidation.messages.join('；')"
+            :closable="false"
+            show-icon
+          />
           <div class="form-grid">
             <el-form-item label="规则编码">
               <el-input v-model="scheduleForm.ruleCode" placeholder="例如 RULE_GLOBAL_DEFAULT、RULE_CAMPUS_MAIN" />
@@ -188,6 +197,16 @@
         <span>建议先保存排课规则，再保存时间片。</span>
       </div>
 
+      <el-alert
+        v-if="timeSlotValidation.messages.length"
+        class="config-alert"
+        :type="timeSlotValidation.isValid ? 'success' : 'warning'"
+        :title="timeSlotValidation.isValid ? '当前时间片结构可保存' : '当前时间片存在待处理项'"
+        :description="timeSlotValidation.messages.join('；')"
+        :closable="false"
+        show-icon
+      />
+
       <el-table :data="timeSlots" stripe max-height="520">
         <el-table-column label="星期" width="100">
           <template #default="{ row }">
@@ -251,7 +270,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import {
   fetchCampusList,
@@ -292,6 +311,57 @@ const scope = reactive({
 });
 
 const scheduleForm = reactive(createDefaultRuleForm());
+
+const scheduleValidation = computed(() => {
+  const messages = [];
+  const segmentSum = Number(scheduleForm.morningPeriods || 0) + Number(scheduleForm.afternoonPeriods || 0) + Number(scheduleForm.nightPeriods || 0);
+  if (segmentSum !== Number(scheduleForm.dayPeriods || 0)) {
+    messages.push('上午、下午、晚间节次数之和必须等于每天总节数');
+  }
+  if (Number(scheduleForm.allowWeekend || 0) === 0 && Number(scheduleForm.weekDays || 0) > 5) {
+    messages.push('未开启周末排课时，每周上课天数不能超过 5 天');
+  }
+  if (Number(scheduleForm.defaultContinuousLimit || 0) > Number(scheduleForm.dayPeriods || 0)) {
+    messages.push('默认连堂上限不能大于每天总节数');
+  }
+  return {
+    isValid: messages.length === 0,
+    messages: messages.length ? messages : ['结构校验通过，规则可直接保存']
+  };
+});
+
+const timeSlotValidation = computed(() => {
+  const messages = [];
+  const duplicateKeys = new Set();
+  for (const item of timeSlots.value) {
+    const slotKey = `${item.weekdayNo}-${item.periodNo}`;
+    if (duplicateKeys.has(slotKey)) {
+      messages.push('同一星期和节次不能重复保存时间片');
+      break;
+    }
+    duplicateKeys.add(slotKey);
+    if (Number(item.weekdayNo || 0) > Number(scheduleForm.weekDays || 0)) {
+      messages.push('存在超出每周上课天数范围的时间片');
+      break;
+    }
+    if (Number(scheduleForm.allowWeekend || 0) === 0 && Number(item.weekdayNo || 0) > 5) {
+      messages.push('未开启周末排课时，不能保存周末时间片');
+      break;
+    }
+    if (Number(item.periodNo || 0) > Number(scheduleForm.dayPeriods || 0)) {
+      messages.push('存在超出每天总节数范围的时间片');
+      break;
+    }
+    if (Number(item.isTeaching || 0) === 1 && Number(item.isFixedBreak || 0) === 1) {
+      messages.push('固定休息时间片不能同时标记为可上课');
+      break;
+    }
+  }
+  return {
+    isValid: messages.length === 0,
+    messages: messages.length ? messages : ['时间片结构校验通过，可直接保存']
+  };
+});
 
 function createDefaultRuleForm() {
   return {
@@ -436,8 +506,8 @@ async function handleScopeReset() {
 }
 
 async function saveRuleSection() {
-  if (scheduleForm.morningPeriods + scheduleForm.afternoonPeriods + scheduleForm.nightPeriods !== scheduleForm.dayPeriods) {
-    ElMessage.warning('上午、下午、晚间节次数之和必须等于每天总节数');
+  if (!scheduleValidation.value.isValid) {
+    ElMessage.warning(scheduleValidation.value.messages[0]);
     return;
   }
   scheduleSaving.value = true;
@@ -492,6 +562,10 @@ async function saveTimeSlotSection() {
   }
   if (!timeSlots.value.length) {
     ElMessage.warning('请先生成或新增至少一条时间片');
+    return;
+  }
+  if (!timeSlotValidation.value.isValid) {
+    ElMessage.warning(timeSlotValidation.value.messages[0]);
     return;
   }
   timeSlotSaving.value = true;
@@ -821,6 +895,11 @@ onMounted(async () => {
   margin-bottom: 14px;
   font-size: 13px;
   color: #66788f;
+}
+
+.config-alert {
+  margin-bottom: 16px;
+  border-radius: 18px;
 }
 
 :deep(.primary-action.el-button) {

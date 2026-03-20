@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,6 +49,7 @@ public class ConfigWriteServiceImpl implements ConfigWriteService {
 
     @Override
     public CfgScheduleRule saveScheduleRule(CfgScheduleRuleSaveRequest request) {
+        validateScheduleRuleStructure(request);
         validateScheduleRuleCodeUnique(request.getId(), request.getRuleCode());
         CfgScheduleRule entity = request.getId() == null ? new CfgScheduleRule() : getScheduleRuleOrThrow(request.getId());
         BeanUtils.copyProperties(request, entity);
@@ -73,9 +75,11 @@ public class ConfigWriteServiceImpl implements ConfigWriteService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<CfgTimeSlot> saveTimeSlots(CfgTimeSlotBatchSaveRequest request) {
-        if (scheduleRuleService.getById(request.getScheduleRuleId()) == null) {
+        CfgScheduleRule scheduleRule = scheduleRuleService.getById(request.getScheduleRuleId());
+        if (scheduleRule == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "排课规则不存在");
         }
+        validateTimeSlotItems(scheduleRule, request);
         LambdaQueryWrapper<CfgTimeSlot> existingWrapper = new LambdaQueryWrapper<>();
         existingWrapper.eq(CfgTimeSlot::getScheduleRuleId, request.getScheduleRuleId())
                 .eq(CfgTimeSlot::getDeleted, 0);
@@ -105,6 +109,49 @@ public class ConfigWriteServiceImpl implements ConfigWriteService {
         }
         log.info("批量保存时间片成功，scheduleRuleId={}, count={}", request.getScheduleRuleId(), result.size());
         return result;
+    }
+
+    private void validateScheduleRuleStructure(CfgScheduleRuleSaveRequest request) {
+        int segmentSum = safeInt(request.getMorningPeriods()) + safeInt(request.getAfternoonPeriods()) + safeInt(request.getNightPeriods());
+        if (segmentSum != safeInt(request.getDayPeriods())) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "上午、下午、晚间节次数之和必须等于每天总节数");
+        }
+        if (safeInt(request.getAllowWeekend()) == 0 && safeInt(request.getWeekDays()) > 5) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "未开启周末排课时，每周上课天数不能超过 5 天");
+        }
+        if (safeInt(request.getDefaultContinuousLimit()) > safeInt(request.getDayPeriods())) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "默认连堂上限不能大于每天总节数");
+        }
+    }
+
+    private void validateTimeSlotItems(CfgScheduleRule scheduleRule, CfgTimeSlotBatchSaveRequest request) {
+        Set<String> slotKeys = new HashSet<>();
+        for (CfgTimeSlotBatchSaveRequest.Item item : request.getItems()) {
+            if (item.getWeekdayNo() < 1 || item.getWeekdayNo() > 7) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR, "时间片星期范围必须在 1 到 7 之间");
+            }
+            if (item.getWeekdayNo() > safeInt(scheduleRule.getWeekDays())) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR, "时间片星期超出了当前排课规则的每周上课天数");
+            }
+            if (safeInt(scheduleRule.getAllowWeekend()) == 0 && item.getWeekdayNo() > 5) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR, "当前排课规则未开启周末排课，不能保存周末时间片");
+            }
+            if (item.getPeriodNo() < 1 || item.getPeriodNo() > safeInt(scheduleRule.getDayPeriods())) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR, "时间片节次超出了当前排课规则的每天总节数");
+            }
+            if (item.getIsTeaching() != null && item.getIsTeaching() == 1
+                    && item.getIsFixedBreak() != null && item.getIsFixedBreak() == 1) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR, "固定休息时间片不能同时标记为可上课");
+            }
+            String slotKey = item.getWeekdayNo() + "-" + item.getPeriodNo();
+            if (!slotKeys.add(slotKey)) {
+                throw new BusinessException(ResultCode.BUSINESS_ERROR, "同一星期和节次不能重复保存时间片");
+            }
+        }
+    }
+
+    private int safeInt(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private void validateScheduleRuleCodeUnique(Long id, String ruleCode) {

@@ -57,23 +57,26 @@ export function deleteStage(id) {
 }
 
 export function fetchFeatureToggles(params = {}) {
-  return request.get('/config/features', { params });
+  return request.get('/config/feature-toggles', { params });
 }
 
 export function fetchScheduleConfig(params = {}) {
-  return request.get('/config/schedule', { params });
+  return request.get('/config/schedule-rules/active', { params });
 }
 
 export function saveScheduleConfig(data) {
-  return request.post('/config/schedule', data);
+  if (data?.id) {
+    return request.put(`/config/schedule-rules/${data.id}`, data);
+  }
+  return request.post('/config/schedule-rules', data);
 }
 
 export function saveFeatureToggles(data) {
-  return request.post('/config/features', data);
+  return request.put('/config/feature-toggles', data);
 }
 
 export function saveTimeSlots(data) {
-  return request.post('/config/time-slots', data);
+  return request.put(`/config/schedule-rules/${data.scheduleRuleId}/time-slots`, data);
 }
 
 export function fetchDictTypes() {
