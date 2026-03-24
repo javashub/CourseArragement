@@ -48,7 +48,7 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="stageForm.id ? '编辑学段' : '新增学段'" width="620px">
+    <el-dialog v-model="dialogVisible" :title="stageForm.id ? '编辑学段' : '新增学段'" width="620px" append-to-body>
       <el-form ref="formRef" :model="stageForm" :rules="formRules" label-width="100px">
         <el-form-item label="学段编码" prop="stageCode">
           <el-input v-model="stageForm.stageCode" placeholder="例如 PRIMARY、JUNIOR_HIGH、UNIVERSITY" />

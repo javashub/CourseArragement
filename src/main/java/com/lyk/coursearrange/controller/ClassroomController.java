@@ -2,14 +2,12 @@ package com.lyk.coursearrange.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.Classroom;
-import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.entity.TeachbuildInfo;
 import com.lyk.coursearrange.entity.request.ClassroomAddRequest;
 import com.lyk.coursearrange.service.ClassroomService;
@@ -19,7 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author lequal
@@ -50,30 +51,18 @@ public class ClassroomController {
         // 指定教学楼下的所有教室
         List<Classroom> allClassroom = classroomService.list(wrapper);
 
-        List<CoursePlan> coursePlanList;
+        List<String> occupiedClassroomNos;
         try {
-            coursePlanList = coursePlanService.list();
+            occupiedClassroomNos = coursePlanService.listOccupiedClassroomNos(teachbuildNo);
         } catch (Exception exception) {
-            log.warn("查询 legacy 课表副本失败，将按全部教室可用处理，teachbuildNo={}", teachbuildNo, exception);
-            coursePlanList = Collections.emptyList();
+            log.warn("查询占用教室失败，将按全部教室可用处理，teachbuildNo={}", teachbuildNo, exception);
+            occupiedClassroomNos = Collections.emptyList();
         }
-        // 得到已经使用了的教室编号
-        Set<String> usedClassroom = new HashSet<>();
-        for (CoursePlan coursePlan : coursePlanList) {
-            // 截取占用的教室所属编号前两位，即教学楼编号
-            if (coursePlan.getClassroomNo() != null
-                    && coursePlan.getClassroomNo().length() >= 2
-                    && teachbuildNo.equals(coursePlan.getClassroomNo().substring(0, 2))) {
-                usedClassroom.add(coursePlan.getClassroomNo());
-            }
-        }
-
-        LambdaQueryWrapper<Classroom> wrapper1 =
-                new LambdaQueryWrapper<Classroom>().in(Classroom::getClassroomNo, usedClassroom)
-                        .orderByAsc(Classroom::getClassroomNo);
-
-        List<Classroom> used = classroomService.list(wrapper1);
-        // 取差
+        List<Classroom> used = occupiedClassroomNos.isEmpty()
+                ? Collections.emptyList()
+                : classroomService.list(new LambdaQueryWrapper<Classroom>()
+                .in(Classroom::getClassroomNo, occupiedClassroomNos)
+                .orderByAsc(Classroom::getClassroomNo));
         Set<Classroom> newList = getSub(allClassroom, used);
 
         return ServerResponse.ofSuccess(newList);
@@ -83,16 +72,14 @@ public class ClassroomController {
      * 集合取差
      */
     private Set<Classroom> getSub(List<Classroom> list1, List<Classroom> list2) {
-        Set<Classroom> newList = new HashSet<>();
+        Set<Classroom> usedClassrooms = new HashSet<>(list2);
+        Set<Classroom> emptyClassrooms = new HashSet<>();
         for (Classroom classroom : list1) {
-            //遍历集合2，判断集合1中是否包含集合2中元素，若包含，则把这个共同元素加入新集合中
-            for (Classroom value : list2) {
-                if (!classroom.equals(value)) {
-                    newList.add(classroom);
-                }
+            if (!usedClassrooms.contains(classroom)) {
+                emptyClassrooms.add(classroom);
             }
         }
-        return newList;
+        return emptyClassrooms;
     }
 
     /**

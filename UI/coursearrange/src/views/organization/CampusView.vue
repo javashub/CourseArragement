@@ -77,7 +77,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="campusForm.id ? '编辑校区' : '新增校区'" width="640px">
+    <el-dialog v-model="dialogVisible" :title="campusForm.id ? '编辑校区' : '新增校区'" width="640px" append-to-body>
       <el-form ref="formRef" :model="campusForm" :rules="formRules" label-width="110px">
         <el-form-item label="校区编码" prop="campusCode">
           <el-input v-model="campusForm.campusCode" placeholder="例如 CAMPUS_MAIN、BJ_XC" />

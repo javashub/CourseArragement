@@ -82,7 +82,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="collegeForm.id ? '编辑学院' : '新增学院'" width="640px">
+    <el-dialog v-model="dialogVisible" :title="collegeForm.id ? '编辑学院' : '新增学院'" width="640px" append-to-body>
       <el-form ref="formRef" :model="collegeForm" :rules="formRules" label-width="110px">
         <el-form-item label="学院编码" prop="collegeCode">
           <el-input v-model="collegeForm.collegeCode" placeholder="例如 COLLEGE_CS、ARTS_SCHOOL" />

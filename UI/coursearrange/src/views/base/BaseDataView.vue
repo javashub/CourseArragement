@@ -342,7 +342,7 @@
       </el-tabs>
     </el-card>
 
-    <el-dialog v-model="teacherDialogVisible" :title="teacherForm.id ? '编辑教师' : '新增教师'" width="680px">
+    <el-dialog v-model="teacherDialogVisible" :title="teacherForm.id ? '编辑教师' : '新增教师'" width="680px" append-to-body>
       <el-form :model="teacherForm" label-position="top">
         <div class="form-grid">
           <el-form-item label="教师编号">
@@ -423,7 +423,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="studentDialogVisible" :title="studentForm.id ? '编辑学生' : '新增学生'" width="700px">
+    <el-dialog v-model="studentDialogVisible" :title="studentForm.id ? '编辑学生' : '新增学生'" width="700px" append-to-body>
       <el-form :model="studentForm" label-position="top">
         <div class="form-grid">
           <el-form-item label="学号">
@@ -473,7 +473,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="courseDialogVisible" :title="courseForm.id ? '编辑课程' : '新增课程'" width="680px">
+    <el-dialog v-model="courseDialogVisible" :title="courseForm.id ? '编辑课程' : '新增课程'" width="680px" append-to-body>
       <el-form :model="courseForm" label-position="top">
         <div class="form-grid">
           <el-form-item label="课程编号">
@@ -538,7 +538,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="classroomDialogVisible" :title="classroomForm.id ? '编辑教室' : '新增教室'" width="680px">
+    <el-dialog v-model="classroomDialogVisible" :title="classroomForm.id ? '编辑教室' : '新增教室'" width="680px" append-to-body>
       <el-form :model="classroomForm" label-position="top">
         <div class="form-grid">
           <el-form-item label="教室编号">

@@ -179,7 +179,7 @@
     </el-row>
   </section>
 
-  <el-dialog v-model="roleDialogVisible" :title="roleForm.id ? '编辑角色' : '新增角色'" width="520px">
+  <el-dialog v-model="roleDialogVisible" :title="roleForm.id ? '编辑角色' : '新增角色'" width="520px" append-to-body>
     <el-form :model="roleForm" label-position="top">
       <el-form-item label="角色编码">
         <el-input v-model="roleForm.roleCode" placeholder="例如 ADMIN" />
@@ -224,7 +224,7 @@
     </template>
   </el-dialog>
 
-  <el-dialog v-model="userDialogVisible" :title="userForm.id ? '编辑用户' : '新增用户'" width="620px">
+  <el-dialog v-model="userDialogVisible" :title="userForm.id ? '编辑用户' : '新增用户'" width="620px" append-to-body>
     <el-form :model="userForm" label-position="top">
       <div class="dialog-hint">
         <div class="dialog-hint-title">账号说明</div>
@@ -322,7 +322,7 @@
     </template>
   </el-dialog>
 
-  <el-dialog v-model="menuDialogVisible" :title="menuForm.id ? '编辑菜单' : '新增菜单'" width="900px">
+  <el-dialog v-model="menuDialogVisible" :title="menuForm.id ? '编辑菜单' : '新增菜单'" width="900px" append-to-body>
     <div class="dialog-toolbar">
       <el-input
         v-model="menuKeyword"
@@ -456,7 +456,7 @@
     </template>
   </el-dialog>
 
-  <el-dialog v-model="permissionDialogVisible" :title="permissionForm.id ? '编辑权限点' : '新增权限点'" width="900px">
+  <el-dialog v-model="permissionDialogVisible" :title="permissionForm.id ? '编辑权限点' : '新增权限点'" width="900px" append-to-body>
     <div class="dialog-toolbar">
       <el-input
         v-model="permissionKeyword"

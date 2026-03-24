@@ -339,7 +339,7 @@
         </div>
       </el-card>
 
-      <el-dialog v-model="taskDialogVisible" title="新增排课任务" width="760px">
+      <el-dialog v-model="taskDialogVisible" title="新增排课任务" width="760px" append-to-body>
         <el-form :model="taskForm" label-position="top">
           <div class="dialog-alert">
             <div class="alert-title">录入前检查</div>
