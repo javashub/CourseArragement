@@ -33,5 +33,8 @@ logs/
 ### VS Code ###
 .vscode/
 
+# local spec workflow artifacts
+openspec/
+
 # ignore macOS metadata after src/main negation
 **/.DS_Store
