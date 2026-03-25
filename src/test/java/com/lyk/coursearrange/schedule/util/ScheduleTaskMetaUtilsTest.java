@@ -19,7 +19,7 @@ class ScheduleTaskMetaUtilsTest {
         task.setGradeNo("2025");
         task.setCourseName("高等数学");
         task.setCourseAttr("必修");
-        task.setRealname("张老师");
+        task.setTeacherName("张老师");
 
         String remark = ScheduleTaskMetaUtils.buildTaskRemark(task);
 

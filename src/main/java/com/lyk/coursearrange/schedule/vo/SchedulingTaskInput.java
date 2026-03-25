@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.schedule.vo;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,7 +25,8 @@ public class SchedulingTaskInput implements Serializable {
     private String courseNo;
     private String courseName;
     private String teacherNo;
-    private String realname;
+    @JsonAlias("realname")
+    private String teacherName;
     private String courseAttr;
     private Integer studentNum;
     private Integer weeksSum;

@@ -1,20 +1,29 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.common.ConstantInfo;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.dao.ClassInfoDao;
-import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.CoursePlan;
+import com.lyk.coursearrange.resource.entity.ResClassroom;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
+import com.lyk.coursearrange.resource.service.ResClassroomService;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
+import com.lyk.coursearrange.schedule.service.AdminClassService;
+import com.lyk.coursearrange.schedule.entity.SchScheduleRunLog;
 import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.SchScheduleRunLogService;
+import com.lyk.coursearrange.schedule.vo.AdminClassVO;
+import com.lyk.coursearrange.schedule.vo.ScheduleRunLogVO;
 import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.system.config.entity.CfgScheduleRule;
 import com.lyk.coursearrange.system.config.entity.CfgTimeSlot;
 import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
 import com.lyk.coursearrange.system.config.vo.ScheduleConfigVO;
+import com.lyk.coursearrange.system.rbac.entity.SysUser;
+import com.lyk.coursearrange.system.rbac.service.SysUserService;
+import com.lyk.coursearrange.util.ClassUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -44,7 +53,13 @@ class ClassTaskServiceImplTest {
     @Mock
     private ResTeacherService resTeacherService;
     @Mock
-    private ClassInfoDao classInfoDao;
+    private ResClassroomService resClassroomService;
+    @Mock
+    private AdminClassService adminClassService;
+    @Mock
+    private SchScheduleRunLogService schScheduleRunLogService;
+    @Mock
+    private SysUserService sysUserService;
 
     @Test
     void buildSchedulingSuccessResponse_shouldExposeStandardOnlyStatus() {
@@ -56,6 +71,16 @@ class ClassTaskServiceImplTest {
         assertEquals("排课成功，标准课表已生成，耗时：123ms", response.getMessage());
         assertEquals(8, response.getData().get("generatedPlanCount"));
         assertEquals(123L, response.getData().get("durationMs"));
+    }
+
+    @Test
+    void classScheduling_shouldReturnDisabledMessageBeforeExecutingAlgorithm() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+
+        ServerResponse<?> response = service.classScheduling("2025-2026-1");
+
+        assertEquals(1, response.getCode());
+        assertEquals("排课算法已停用，等待标准重构完成后再启用", response.getMessage());
     }
 
     @Test
@@ -175,7 +200,6 @@ class ClassTaskServiceImplTest {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
-        ReflectionTestUtils.setField(service, "classInfoDao", classInfoDao);
 
         SchTask standardTask = new SchTask();
         standardTask.setStudentCount(40);
@@ -199,11 +223,11 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
-    void listSchedulingTasks_shouldAttachClassForbiddenTimeSlotsFromClassInfo() {
+    void listSchedulingTasks_shouldAttachClassForbiddenTimeSlotsFromAdminClass() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
-        ReflectionTestUtils.setField(service, "classInfoDao", classInfoDao);
+        ReflectionTestUtils.setField(service, "adminClassService", adminClassService);
 
         SchTask standardTask = new SchTask();
         standardTask.setStudentCount(40);
@@ -211,7 +235,7 @@ class ClassTaskServiceImplTest {
         standardTask.setTotalHours(64);
         standardTask.setRemark("semester=2025-2026-1,classNo=2501,courseNo=10001,teacherNo=T0001,gradeNo=2025,courseName=高等数学,courseAttr=必修,teacherName=张老师");
 
-        ClassInfo classInfo = new ClassInfo();
+        AdminClassVO classInfo = new AdminClassVO();
         classInfo.setClassNo("2501");
         classInfo.setForbiddenTimeSlots("02,07");
 
@@ -219,7 +243,7 @@ class ClassTaskServiceImplTest {
                 .thenReturn(List.of(standardTask));
         when(resTeacherService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResTeacher>>any()))
                 .thenReturn(List.of());
-        when(classInfoDao.selectList(org.mockito.ArgumentMatchers.any()))
+        when(adminClassService.listClassesByCodes(List.of("2501")))
                 .thenReturn(List.of(classInfo));
 
         List<SchedulingTaskInput> tasks = service.listSchedulingTasks("2025-2026-1");
@@ -240,6 +264,43 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
+    void listRecentExecuteLogs_shouldMapStandardRunLogsToFrontendShape() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schScheduleRunLogService", schScheduleRunLogService);
+        ReflectionTestUtils.setField(service, "sysUserService", sysUserService);
+
+        SchScheduleRunLog log = new SchScheduleRunLog();
+        log.setId(1L);
+        log.setRemark("2025-2026-1");
+        log.setTaskTotal(12);
+        log.setTaskSuccess(48);
+        log.setRunStatus("SUCCESS");
+        log.setFailureReason("排课成功");
+        log.setOperatorUserId(99L);
+        log.setStartedAt(java.time.LocalDateTime.of(2026, 3, 25, 9, 0, 0));
+        log.setFinishedAt(java.time.LocalDateTime.of(2026, 3, 25, 9, 0, 3));
+        log.setCreatedAt(java.time.LocalDateTime.of(2026, 3, 25, 9, 0, 3));
+
+        SysUser user = new SysUser();
+        user.setId(99L);
+        user.setDisplayName("管理员");
+
+        when(schScheduleRunLogService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.Wrapper<SchScheduleRunLog>>any()))
+                .thenReturn(List.of(log));
+        when(sysUserService.listByIds(List.of(99L))).thenReturn(List.of(user));
+
+        List<ScheduleRunLogVO> logs = service.listRecentExecuteLogs("2025-2026-1", 10);
+
+        assertEquals(1, logs.size());
+        assertEquals("2025-2026-1", logs.get(0).getSemester());
+        assertEquals(12, logs.get(0).getTaskCount());
+        assertEquals(48, logs.get(0).getGeneratedPlanCount());
+        assertEquals(1, logs.get(0).getStatus());
+        assertEquals("管理员", logs.get(0).getOperatorName());
+        assertEquals(3000L, logs.get(0).getDurationMs());
+    }
+
+    @Test
     void buildSchedulingSummary_shouldAggregateScheduledAndUnscheduledTasks() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
 
@@ -249,7 +310,7 @@ class ClassTaskServiceImplTest {
         scheduledTask.setCourseNo("10001");
         scheduledTask.setCourseName("高等数学");
         scheduledTask.setTeacherNo("T2026001");
-        scheduledTask.setRealname("张老师");
+        scheduledTask.setTeacherName("张老师");
 
         SchedulingTaskInput unscheduledTask = new SchedulingTaskInput();
         unscheduledTask.setSemester("2025-2026-1");
@@ -257,7 +318,7 @@ class ClassTaskServiceImplTest {
         unscheduledTask.setCourseNo("10002");
         unscheduledTask.setCourseName("大学英语");
         unscheduledTask.setTeacherNo("T2026002");
-        unscheduledTask.setRealname("李老师");
+        unscheduledTask.setTeacherName("李老师");
 
         CoursePlan plan = new CoursePlan();
         plan.setClassNo("2501");
@@ -362,7 +423,7 @@ class ClassTaskServiceImplTest {
 
         SchedulingTaskInput firstTask = new SchedulingTaskInput();
         firstTask.setTeacherNo("T0001");
-        firstTask.setRealname("张老师");
+        firstTask.setTeacherName("张老师");
         firstTask.setCourseName("高等数学");
         firstTask.setClassNo("25010001");
         firstTask.setIsFix("1");
@@ -371,7 +432,7 @@ class ClassTaskServiceImplTest {
 
         SchedulingTaskInput secondTask = new SchedulingTaskInput();
         secondTask.setTeacherNo("T0001");
-        secondTask.setRealname("张老师");
+        secondTask.setTeacherName("张老师");
         secondTask.setCourseName("大学英语");
         secondTask.setClassNo("25010002");
         secondTask.setIsFix("1");
@@ -410,7 +471,7 @@ class ClassTaskServiceImplTest {
 
         SchedulingTaskInput fixedTask = new SchedulingTaskInput();
         fixedTask.setTeacherNo("T0001");
-        fixedTask.setRealname("张老师");
+        fixedTask.setTeacherName("张老师");
         fixedTask.setCourseName("高等数学");
         fixedTask.setClassNo("25010001");
         fixedTask.setIsFix("1");
@@ -480,6 +541,50 @@ class ClassTaskServiceImplTest {
         assertTrue(adjustedGenes.stream()
                 .filter(gene -> gene.contains("25010001"))
                 .noneMatch(gene -> gene.endsWith("01")));
+    }
+
+    @Test
+    void finalResult_shouldAssignStandardClassroomWithinAdminClassScope() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "adminClassService", adminClassService);
+        ReflectionTestUtils.setField(service, "resClassroomService", resClassroomService);
+
+        AdminClassVO adminClass = new AdminClassVO();
+        adminClass.setClassNo("25010001");
+        adminClass.setNum(42);
+        adminClass.setCampusId(1L);
+        adminClass.setCollegeId(2L);
+
+        ResClassroom scopedRoom = new ResClassroom();
+        scopedRoom.setId(1L);
+        scopedRoom.setClassroomCode("A101");
+        scopedRoom.setCampusId(1L);
+        scopedRoom.setCollegeId(2L);
+        scopedRoom.setRoomType("NORMAL");
+        scopedRoom.setSeatCount(50);
+        scopedRoom.setStatus(1);
+        scopedRoom.setDeleted(0);
+
+        ResClassroom otherScopeRoom = new ResClassroom();
+        otherScopeRoom.setId(2L);
+        otherScopeRoom.setClassroomCode("A201");
+        otherScopeRoom.setCampusId(9L);
+        otherScopeRoom.setCollegeId(9L);
+        otherScopeRoom.setRoomType("NORMAL");
+        otherScopeRoom.setSeatCount(80);
+        otherScopeRoom.setStatus(1);
+        otherScopeRoom.setDeleted(0);
+
+        when(adminClassService.listClassesByCodes(List.of("25010001"))).thenReturn(List.of(adminClass));
+        when(resClassroomService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResClassroom>>any()))
+                .thenReturn(List.of(scopedRoom, otherScopeRoom));
+
+        List<String> result = service.finalResult(Map.of(
+                "25010001", List.of("12525010001T00011000010101")
+        ));
+
+        assertEquals(1, result.size());
+        assertEquals("A101", ClassUtil.cutGene(ConstantInfo.CLASSROOM_NO, result.get(0)));
     }
 
     private CfgTimeSlot buildTimeSlot(int weekdayNo, int periodNo, int isTeaching, int isFixedBreak) {

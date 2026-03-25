@@ -30,7 +30,7 @@ import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { loginByAdmin, loginByStudent, loginByTeacher } from '@/api/modules/auth';
+import { login } from '@/api/modules/auth';
 
 const router = useRouter();
 const route = useRoute();
@@ -46,11 +46,10 @@ const form = reactive({
   username: '',
   password: ''
 });
-
-const requestMap = {
-  admin: loginByAdmin,
-  teacher: loginByTeacher,
-  student: loginByStudent
+const userTypeMap = {
+  admin: 'ADMIN',
+  teacher: 'TEACHER',
+  student: 'STUDENT'
 };
 
 async function handleLogin() {
@@ -60,12 +59,13 @@ async function handleLogin() {
   }
   loading.value = true;
   try {
-    const response = await requestMap[loginType.value]({
+    const response = await login({
       username: form.username,
-      password: form.password
+      password: form.password,
+      userType: userTypeMap[loginType.value]
     });
     const result = response.data || {};
-    authStore.setLoginState(result.token || '', result.admin || result.teacher || result.student || null);
+    authStore.setLoginState(result.token || '', result.user || null);
     await authStore.loadAuthContext();
     ElMessage.success('登录成功');
     const redirectPath = (route.query.redirect || authStore.firstAccessiblePath || '/dashboard').toString();

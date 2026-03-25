@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.entity.response;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,7 +26,8 @@ public class CoursePlanVo implements Serializable {
     /**
      * 教师真名
      */
-    private String realname;
+    @JsonAlias("realname")
+    private String teacherName;
 
     /**
      * 课程名称

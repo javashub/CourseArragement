@@ -6,30 +6,32 @@ import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.exceptions.CourseArrangeException;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.dao.ClassInfoDao;
-import com.lyk.coursearrange.dao.ClassroomDao;
-import com.lyk.coursearrange.dao.TeachBuildInfoDao;
-import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.ClassTask;
-import com.lyk.coursearrange.entity.Classroom;
 import com.lyk.coursearrange.entity.CoursePlan;
-import com.lyk.coursearrange.entity.ScheduleExecuteLog;
 import com.lyk.coursearrange.common.ConstantInfo;
+import com.lyk.coursearrange.resource.entity.ResClassroom;
+import com.lyk.coursearrange.resource.service.ResClassroomService;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.resource.util.ClassForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.resource.util.TeacherForbiddenTimeSlotUtils;
+import com.lyk.coursearrange.schedule.entity.SchScheduleRunLog;
 import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.AdminClassService;
+import com.lyk.coursearrange.schedule.service.SchScheduleRunLogService;
+import com.lyk.coursearrange.schedule.service.ScheduleResultWriteService;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
+import com.lyk.coursearrange.schedule.vo.AdminClassVO;
+import com.lyk.coursearrange.schedule.vo.ScheduleRunLogVO;
 import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.service.ClassTaskService;
-import com.lyk.coursearrange.service.ScheduleExecuteLogService;
-import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.system.config.entity.CfgTimeSlot;
 import com.lyk.coursearrange.system.config.query.ConfigScopeQuery;
 import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
 import com.lyk.coursearrange.system.config.vo.ScheduleConfigVO;
+import com.lyk.coursearrange.system.rbac.entity.SysUser;
+import com.lyk.coursearrange.system.rbac.service.SysUserService;
 import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
 import com.lyk.coursearrange.util.ClassUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -45,32 +47,29 @@ import java.util.stream.Collectors;
 /**
  * @author lequal
  * @since 2020-04-06
- * UPDATE tb_student
- * SET student_no = CONCAT('2024', SUBSTRING(student_no, 5))
- * WHERE student_no LIKE '2019%';
  */
 @Service
 @Slf4j
 public class ClassTaskServiceImpl implements ClassTaskService {
 
     @Resource
-    private TeachBuildInfoDao teachBuildInfoDao;
-    @Resource
-    private ClassroomDao classroomDao;
-    @Resource
-    private ClassInfoDao classInfoDao;
-    @Resource
-    private ScheduleExecuteLogService scheduleExecuteLogService;
-    @Resource
     private AuthFacadeService authFacadeService;
     @Resource
-    private ScheduleLogMirrorService scheduleLogMirrorService;
+    private ScheduleResultWriteService scheduleResultWriteService;
     @Resource
     private SchTaskService schTaskService;
     @Resource
+    private SchScheduleRunLogService schScheduleRunLogService;
+    @Resource
     private ScheduleConfigFacadeService scheduleConfigFacadeService;
     @Resource
+    private ResClassroomService resClassroomService;
+    @Resource
     private ResTeacherService resTeacherService;
+    @Resource
+    private AdminClassService adminClassService;
+    @Resource
+    private SysUserService sysUserService;
 
     /**
      * 排课算法入口
@@ -78,6 +77,9 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ServerResponse classScheduling(String semester) {
+        log.warn("排课算法入口已停用，semester={}", semester);
+        return ServerResponse.ofError("排课算法已停用，等待标准重构完成后再启用");
+        /*
         long start = System.currentTimeMillis();
         int taskCount = 0;
         try {
@@ -120,7 +122,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             // 7、解码
             List<CoursePlan> coursePlanList = decoding(resultList);
             // 8、只写标准课表结果
-            scheduleLogMirrorService.replaceScheduleResults(semester, schedulingTasks, coursePlanList);
+            scheduleResultWriteService.replaceScheduleResults(semester, schedulingTasks, coursePlanList);
             long duration = System.currentTimeMillis() - start;
             Map<String, Object> schedulingSummary = buildSchedulingSummary(schedulingTasks, coursePlanList);
             schedulingSummary.put("effectiveScheduleRuleName", runtimeContext.scheduleRuleName());
@@ -136,6 +138,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             log.error("排课失败： {}", e.getMessage(), e);
             throw buildSchedulingException(start, semester, taskCount, buildExecuteErrorMessage(e), ResultCode.BUSINESS_ERROR);
         }
+        */
     }
 
     ServerResponse<Map<String, Object>> buildSchedulingSuccessResponse(long duration, int generatedPlanCount) {
@@ -214,7 +217,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             enrichClassForbiddenTimeSlots(tasks);
             return tasks;
         }
-        log.warn("标准排课任务为空，排课流程不会再回退读取 tb_class_task，semester={}", semester);
+        log.warn("标准排课任务为空，排课流程不会再回退读取 legacy 排课任务表，semester={}", semester);
         return List.of();
     }
 
@@ -248,46 +251,60 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     }
 
     @Override
-    public List<ScheduleExecuteLog> listRecentExecuteLogs(String semester, Integer limit) {
+    public List<ScheduleRunLogVO> listRecentExecuteLogs(String semester, Integer limit) {
         int safeLimit = limit == null || limit < 1 ? 10 : Math.min(limit, 50);
-        LambdaQueryWrapper<ScheduleExecuteLog> wrapper = new LambdaQueryWrapper<ScheduleExecuteLog>()
-                .eq(semester != null && !semester.isBlank(), ScheduleExecuteLog::getSemester, semester)
-                .orderByDesc(ScheduleExecuteLog::getCreateTime)
-                .last("limit " + safeLimit);
-        return scheduleExecuteLogService.list(wrapper);
+        List<SchScheduleRunLog> logs = schScheduleRunLogService.list(new LambdaQueryWrapper<SchScheduleRunLog>()
+                .eq(semester != null && !semester.isBlank(), SchScheduleRunLog::getRemark, semester)
+                .eq(SchScheduleRunLog::getDeleted, 0)
+                .orderByDesc(SchScheduleRunLog::getCreatedAt)
+                .last("limit " + safeLimit));
+        if (logs.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, String> operatorNameMap = buildOperatorNameMap(logs.stream()
+                .map(SchScheduleRunLog::getOperatorUserId)
+                .filter(Objects::nonNull)
+                .toList());
+        return logs.stream().map(item -> {
+            ScheduleRunLogVO vo = new ScheduleRunLogVO();
+            vo.setId(item.getId());
+            vo.setSemester(item.getRemark());
+            vo.setTaskCount(item.getTaskTotal());
+            vo.setGeneratedPlanCount(item.getTaskSuccess());
+            vo.setStatus("SUCCESS".equalsIgnoreCase(item.getRunStatus()) || "PARTIAL".equalsIgnoreCase(item.getRunStatus()) ? 1 : 0);
+            vo.setDurationMs(resolveDurationMs(item));
+            vo.setMessage(item.getFailureReason());
+            vo.setOperatorUserId(item.getOperatorUserId());
+            vo.setOperatorName(operatorNameMap.getOrDefault(item.getOperatorUserId(), "--"));
+            vo.setCreateTime(item.getCreatedAt());
+            return vo;
+        }).toList();
     }
 
     private void saveExecuteLog(String semester, int taskCount, int generatedPlanCount, int status,
                                 long duration, String message) {
-        ScheduleExecuteLog executeLog = new ScheduleExecuteLog();
-        executeLog.setSemester(semester);
-        executeLog.setTaskCount(taskCount);
-        executeLog.setGeneratedPlanCount(generatedPlanCount);
-        executeLog.setStatus(status);
-        executeLog.setDurationMs(duration);
-        executeLog.setMessage(message);
+        SchScheduleRunLog executeLog = new SchScheduleRunLog();
+        executeLog.setRunCode("RUN_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase());
+        executeLog.setTermId(0L);
+        executeLog.setRunType("MANUAL");
+        executeLog.setAlgorithmType("GENETIC");
+        executeLog.setTaskTotal(taskCount);
+        executeLog.setTaskSuccess(generatedPlanCount);
+        executeLog.setTaskFailed(status == 1 ? 0 : taskCount);
+        executeLog.setRunStatus(status == 1 ? "SUCCESS" : "FAILED");
+        executeLog.setFailureReason(message);
+        executeLog.setStartedAt(resolveStartedAt(duration));
+        executeLog.setFinishedAt(java.time.LocalDateTime.now());
+        executeLog.setRemark(semester);
         try {
             CurrentUserVO currentUser = authFacadeService.getCurrentUserView();
             if (currentUser != null) {
                 executeLog.setOperatorUserId(currentUser.getUserId());
-                executeLog.setOperatorName(resolveOperatorName(currentUser));
-                executeLog.setOperatorType(currentUser.getUserType());
             }
         } catch (Exception exception) {
             log.warn("获取当前操作人失败，排课日志将以匿名方式记录", exception);
         }
-        scheduleExecuteLogService.save(executeLog);
-        scheduleLogMirrorService.mirrorExecuteLog(executeLog);
-    }
-
-    private String resolveOperatorName(CurrentUserVO currentUser) {
-        if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().isBlank()) {
-            return currentUser.getDisplayName();
-        }
-        if (currentUser.getRealName() != null && !currentUser.getRealName().isBlank()) {
-            return currentUser.getRealName();
-        }
-        return currentUser.getUsername();
+        schScheduleRunLogService.save(executeLog);
     }
 
     private String buildExecuteErrorMessage(Exception exception) {
@@ -327,7 +344,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         task.setCourseNo(courseNo);
         task.setCourseName(meta.getOrDefault("courseName", ""));
         task.setTeacherNo(teacherNo);
-        task.setRealname(meta.getOrDefault("teacherName", ""));
+        task.setTeacherName(meta.getOrDefault("teacherName", ""));
         task.setCourseAttr(meta.getOrDefault("courseAttr", ""));
         task.setStudentNum(standardTask.getStudentCount() == null ? 0 : standardTask.getStudentCount());
         task.setWeeksNumber(standardTask.getWeekHours() == null ? 0 : standardTask.getWeekHours());
@@ -375,7 +392,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     }
 
     void enrichClassForbiddenTimeSlots(List<SchedulingTaskInput> tasks) {
-        if (tasks == null || tasks.isEmpty() || classInfoDao == null) {
+        if (tasks == null || tasks.isEmpty() || adminClassService == null) {
             return;
         }
         List<String> classNos = tasks.stream()
@@ -387,18 +404,47 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         if (classNos.isEmpty()) {
             return;
         }
-        Map<String, ClassInfo> classInfoMap = classInfoDao.selectList(new LambdaQueryWrapper<ClassInfo>()
-                        .eq(ClassInfo::getDeleted, 0)
-                        .in(ClassInfo::getClassNo, classNos))
-                .stream()
+        Map<String, AdminClassVO> classInfoMap = adminClassService.listClassesByCodes(classNos).stream()
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(ClassInfo::getClassNo, item -> item, (left, right) -> left));
+                .collect(Collectors.toMap(AdminClassVO::getClassNo, item -> item, (left, right) -> left));
         tasks.forEach(task -> {
-            ClassInfo classInfo = classInfoMap.get(task.getClassNo());
+            AdminClassVO classInfo = classInfoMap.get(task.getClassNo());
             if (classInfo != null) {
                 task.setClassForbiddenTimeSlots(ClassForbiddenTimeSlotUtils.parse(classInfo.getForbiddenTimeSlots()));
             }
         });
+    }
+
+    private Map<Long, String> buildOperatorNameMap(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        return sysUserService.listByIds(userIds).stream()
+                .collect(Collectors.toMap(SysUser::getId, this::resolveOperatorName, (left, right) -> left));
+    }
+
+    private String resolveOperatorName(SysUser user) {
+        if (user == null) {
+            return "--";
+        }
+        if (user.getDisplayName() != null && !user.getDisplayName().isBlank()) {
+            return user.getDisplayName();
+        }
+        if (user.getRealName() != null && !user.getRealName().isBlank()) {
+            return user.getRealName();
+        }
+        return user.getUsername();
+    }
+
+    private Long resolveDurationMs(SchScheduleRunLog logEntity) {
+        if (logEntity.getStartedAt() == null || logEntity.getFinishedAt() == null) {
+            return 0L;
+        }
+        return java.time.Duration.between(logEntity.getStartedAt(), logEntity.getFinishedAt()).toMillis();
+    }
+
+    private java.time.LocalDateTime resolveStartedAt(long duration) {
+        return java.time.LocalDateTime.now().minusNanos(duration * 1_000_000);
     }
 
     private Integer resolveWeeksSum(SchTask standardTask) {
@@ -452,9 +498,9 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         String courseName = task.getCourseName() == null || task.getCourseName().isBlank()
                 ? task.getCourseNo()
                 : task.getCourseName();
-        String teacherName = task.getRealname() == null || task.getRealname().isBlank()
+        String teacherName = task.getTeacherName() == null || task.getTeacherName().isBlank()
                 ? task.getTeacherNo()
-                : task.getRealname();
+                : task.getTeacherName();
         return String.format("%s / %s / %s：未生成对应课表记录，请检查固定时间、教师冲突与教室容量约束",
                 task.getClassNo(), courseName, teacherName);
     }
@@ -527,61 +573,141 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     /**
      * 开始给进化完的基因编码分配教室，即在原来的编码中加上教室编号
      */
-    private List<String> finalResult(Map<String, List<String>> individualMap) {
+    List<String> finalResult(Map<String, List<String>> individualMap) {
         List<String> resultList = new ArrayList<>();
         List<String> resultGeneList = collectGene(individualMap);
-        String classroomNo = "";
-        List<String> gradeList = resultGeneList.stream()
-                .map(gene -> ClassUtil.cutGene(ConstantInfo.GRADE_NO, gene))
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        Map<String, List<String>> gradeMap = collectGeneByGrade(resultGeneList, gradeList);
-        for (Map.Entry<String, List<String>> entry : gradeMap.entrySet()) {
-            String gradeNo = entry.getKey();
-            List<String> teachBuildNoList = teachBuildInfoDao.selectTeachBuildList(gradeNo);
-
-            List<String> gradeGeneList = gradeMap.get(gradeNo);
-
-            LambdaQueryWrapper<Classroom> wrapper = new LambdaQueryWrapper<Classroom>().in(Classroom::getTeachbuildNo, teachBuildNoList);
-            List<Classroom> classroomList2 = classroomDao.selectList(wrapper);
-
-            for (String gene : gradeGeneList) {
-                // 分配教室
-                classroomNo = issueClassroom(gene, classroomList2, resultList);
-                gene = gene + classroomNo;
-                resultList.add(gene);
-            }
+        if (resultGeneList.isEmpty()) {
+            return resultList;
+        }
+        Map<String, AdminClassVO> adminClassMap = loadAdminClassMap(resultGeneList);
+        List<StandardClassroomOption> standardClassrooms = listStandardClassrooms();
+        for (String gene : resultGeneList) {
+            String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
+            AdminClassVO adminClass = adminClassMap.get(classNo);
+            int studentNum = adminClass == null || adminClass.getNum() == null ? 0 : adminClass.getNum();
+            String classroomNo = issueClassroom(gene, studentNum, adminClass, standardClassrooms, resultList);
+            resultList.add(gene + classroomNo);
         }
         return resultList;
+    }
+
+    private Map<String, AdminClassVO> loadAdminClassMap(List<String> resultGeneList) {
+        if (adminClassService == null || resultGeneList == null || resultGeneList.isEmpty()) {
+            return Map.of();
+        }
+        List<String> classNos = resultGeneList.stream()
+                .map(gene -> ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene))
+                .filter(Objects::nonNull)
+                .filter(item -> !item.isBlank())
+                .distinct()
+                .toList();
+        if (classNos.isEmpty()) {
+            return Map.of();
+        }
+        return adminClassService.listClassesByCodes(classNos).stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(AdminClassVO::getClassNo, item -> item, (left, right) -> left));
+    }
+
+    private List<StandardClassroomOption> listStandardClassrooms() {
+        if (resClassroomService == null) {
+            return List.of();
+        }
+        return resClassroomService.list(new LambdaQueryWrapper<ResClassroom>()
+                        .eq(ResClassroom::getDeleted, 0)
+                        .eq(ResClassroom::getStatus, 1)
+                        .orderByAsc(ResClassroom::getCampusId)
+                        .orderByAsc(ResClassroom::getCollegeId)
+                        .orderByAsc(ResClassroom::getClassroomCode))
+                .stream()
+                .filter(Objects::nonNull)
+                .map(this::toStandardClassroomOption)
+                .toList();
+    }
+
+    private StandardClassroomOption toStandardClassroomOption(ResClassroom classroom) {
+        StandardClassroomOption option = new StandardClassroomOption();
+        option.setClassroomCode(classroom.getClassroomCode());
+        option.setCampusId(classroom.getCampusId());
+        option.setCollegeId(classroom.getCollegeId());
+        option.setRoomType(normalizeRoomType(classroom.getRoomType()));
+        option.setSeatCount(classroom.getSeatCount() == null ? 0 : classroom.getSeatCount());
+        return option;
     }
 
     /**
      * 给不同的基因编码分配教室
      *
-     * @param gene          需要分配教室的基因编码
-     * @param classroomList 教室
-     * @param resultList    分配有教室的编码
+     * @param gene 需要分配教室的基因编码
      */
-    private String issueClassroom(String gene, List<Classroom> classroomList, List<String> resultList) {
-        // 处理特殊课程，实验课，体育课
-        List<Classroom> sportBuilding = classroomDao.selectByTeachbuildNo("12");
-        List<Classroom> experimentBuilding = classroomDao.selectByTeachbuildNo("08");
-        String classNo = ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene);
-        int studentNum = classInfoDao.selectStuNum(classNo);
-        String courseAttr = ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene);
+    private String issueClassroom(String gene,
+                                  int studentNum,
+                                  AdminClassVO adminClass,
+                                  List<StandardClassroomOption> standardClassrooms,
+                                  List<String> resultList) {
+        List<StandardClassroomOption> classroomOptions = resolveCandidateClassrooms(gene, adminClass, standardClassrooms);
+        return chooseClassroom(studentNum, gene, classroomOptions, resultList);
+    }
 
-        if (courseAttr.equals(ConstantInfo.EXPERIMENT_COURSE)) {
-            // 03 为实验课
-            return chooseClassroom(studentNum, gene, experimentBuilding, resultList);
-        } else if (courseAttr.equals(ConstantInfo.PHYSICAL_COURSE)) {
-            // 04为体育课
-            return chooseClassroom(studentNum, gene, sportBuilding, resultList);
-        } else {
-            // 剩下主要课程、次要课程都放在普通的教室
-            // 如果还有其他课程另外加判断课程属性，暂时设定4种：主要，次要，实验，体育。音乐舞蹈那些不算
-            return chooseClassroom(studentNum, gene, classroomList, resultList);
+    private List<StandardClassroomOption> resolveCandidateClassrooms(String gene,
+                                                                     AdminClassVO adminClass,
+                                                                     List<StandardClassroomOption> standardClassrooms) {
+        if (standardClassrooms == null || standardClassrooms.isEmpty()) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR, "标准教室资源为空，无法完成排课");
         }
+        Set<String> requiredRoomTypes = resolveRequiredRoomTypes(ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene));
+        List<StandardClassroomOption> typeMatched = standardClassrooms.stream()
+                .filter(item -> requiredRoomTypes.contains(item.getRoomType()))
+                .sorted(Comparator
+                        .comparing(StandardClassroomOption::getSeatCount, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(StandardClassroomOption::getClassroomCode, Comparator.nullsLast(String::compareTo)))
+                .toList();
+        if (typeMatched.isEmpty()) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                    String.format("标准教室资源不足，课程属性 %s 没有可用教室类型", ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene)));
+        }
+        List<StandardClassroomOption> scoped = filterByScope(typeMatched, adminClass);
+        return scoped.isEmpty() ? typeMatched : scoped;
+    }
+
+    private List<StandardClassroomOption> filterByScope(List<StandardClassroomOption> classroomOptions, AdminClassVO adminClass) {
+        if (adminClass == null || classroomOptions == null || classroomOptions.isEmpty()) {
+            return classroomOptions == null ? List.of() : classroomOptions;
+        }
+        List<StandardClassroomOption> exactScope = classroomOptions.stream()
+                .filter(item -> Objects.equals(item.getCampusId(), adminClass.getCampusId()))
+                .filter(item -> adminClass.getCollegeId() == null || Objects.equals(item.getCollegeId(), adminClass.getCollegeId()))
+                .toList();
+        if (!exactScope.isEmpty()) {
+            return exactScope;
+        }
+        if (adminClass.getCampusId() == null) {
+            return classroomOptions;
+        }
+        List<StandardClassroomOption> campusScope = classroomOptions.stream()
+                .filter(item -> Objects.equals(item.getCampusId(), adminClass.getCampusId()))
+                .toList();
+        return campusScope.isEmpty() ? classroomOptions : campusScope;
+    }
+
+    private Set<String> resolveRequiredRoomTypes(String courseAttr) {
+        if (ConstantInfo.EXPERIMENT_COURSE.equals(courseAttr)) {
+            return Set.of("LAB");
+        }
+        if (ConstantInfo.PHYSICAL_COURSE.equals(courseAttr)) {
+            return Set.of("SPORT");
+        }
+        if (ConstantInfo.TECHNOLOGY_COURSE.equals(courseAttr)) {
+            return Set.of("COMPUTER");
+        }
+        if (ConstantInfo.MUSIC_COURSE.equals(courseAttr) || ConstantInfo.DANCE_COURSE.equals(courseAttr)) {
+            return Set.of("SPECIAL");
+        }
+        return Set.of("NORMAL", "MULTIMEDIA");
+    }
+
+    private String normalizeRoomType(String roomType) {
+        return roomType == null || roomType.isBlank() ? "NORMAL" : roomType.trim().toUpperCase(Locale.ROOT);
     }
 
     /**
@@ -591,20 +717,21 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      * @param gene          需要安排教室的基因编码
      * @param classroomList 教室
      */
-    private String chooseClassroom(int studentNum, String gene, List<Classroom> classroomList, List<String> resultList) {
-        int min = 0;
-        int max = classroomList.size() - 1;
-        int temp = min + (int) (Math.random() * (max + 1 - min));
-        Classroom classroom = classroomList.get(temp);
-        // 分配教室
-        boolean isClassRoomSuitable = judgeClassroom(studentNum, gene, classroom, resultList);
-        if (isClassRoomSuitable) {
-            // 该教室满足条件
-            return classroom.getClassroomNo();
-        } else {
-            // 不满足，继续找教室
-            return chooseClassroom(studentNum, gene, classroomList, resultList);
+    private String chooseClassroom(int studentNum, String gene, List<StandardClassroomOption> classroomList, List<String> resultList) {
+        if (classroomList == null || classroomList.isEmpty()) {
+            throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                    String.format("班级 %s 缺少可分配的标准教室资源",
+                            ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene)));
         }
+        for (StandardClassroomOption classroom : classroomList) {
+            if (judgeClassroom(studentNum, gene, classroom, resultList)) {
+                return classroom.getClassroomCode();
+            }
+        }
+        throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                String.format("班级 %s 在时间片 %s 没有满足容量与占用约束的标准教室",
+                        ClassUtil.cutGene(ConstantInfo.CLASS_NO, gene),
+                        ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene)));
     }
 
     /**
@@ -612,52 +739,80 @@ public class ClassTaskServiceImpl implements ClassTaskService {
      * 即：不同属性的课要放在对应属性的教室上课
      * @param classroom  随机分配教室
      */
-    private boolean judgeClassroom(int studentNum, String gene, Classroom classroom, List<String> resultList) {
-
-        String courseAttr = ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene);
-        // 只要是语数英物化生政史地这些课程都是放在普通教室上课
-        if (courseAttr.equals(ConstantInfo.MAIN_COURSE) || courseAttr.equals(ConstantInfo.SECONDARY_COURSE)) {
-            // 找到普通教室，普通教室的属性都是01
-            if (classroom.getAttr().equals(ConstantInfo.NORMAL_CLASS_ROOM)) {
-                if (classroom.getCapacity() >= studentNum) {
-                    // 还要判断该教室是否在同一时间有别的班级使用了
-                    return isFree(gene, resultList, classroom);
-                } else {
-                    // 教室容量不够
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else {
-            if (ClassUtil.cutGene(ConstantInfo.COURSE_ATTR, gene).equals(classroom.getAttr())) {
-                if (classroom.getCapacity() >= studentNum) {
-                    // 判断该教室上课时间是否重复
-                    return isFree(gene, resultList, classroom);
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
-            }
+    private boolean judgeClassroom(int studentNum, String gene, StandardClassroomOption classroom, List<String> resultList) {
+        if (classroom == null) {
+            return false;
         }
+        if (classroom.getSeatCount() != null && classroom.getSeatCount() < studentNum) {
+            return false;
+        }
+        return isFree(gene, resultList, classroom);
     }
 
-    /**
+     /**
      * 判断同一时间同一个教室是否有多个班级使用
      */
-    private Boolean isFree(String gene, List<String> resultList, Classroom classroom) {
+    private Boolean isFree(String gene, List<String> resultList, StandardClassroomOption classroom) {
         if (resultList.isEmpty()) {
             return true;
         } else {
             for (String resultGene : resultList) {
-                if (ClassUtil.cutGene(ConstantInfo.CLASSROOM_NO, resultGene).equals(classroom.getClassroomNo())
+                if (ClassUtil.cutGene(ConstantInfo.CLASSROOM_NO, resultGene).equals(classroom.getClassroomCode())
                         && (ClassUtil.cutGene(ConstantInfo.CLASS_TIME, gene).equals(ClassUtil.cutGene(ConstantInfo.CLASS_TIME, resultGene)))) {
                         return false;
                 }
             }
         }
         return true;
+    }
+
+    private static final class StandardClassroomOption {
+
+        private String classroomCode;
+        private Long campusId;
+        private Long collegeId;
+        private String roomType;
+        private Integer seatCount;
+
+        public String getClassroomCode() {
+            return classroomCode;
+        }
+
+        public void setClassroomCode(String classroomCode) {
+            this.classroomCode = classroomCode;
+        }
+
+        public Long getCampusId() {
+            return campusId;
+        }
+
+        public void setCampusId(Long campusId) {
+            this.campusId = campusId;
+        }
+
+        public Long getCollegeId() {
+            return collegeId;
+        }
+
+        public void setCollegeId(Long collegeId) {
+            this.collegeId = collegeId;
+        }
+
+        public String getRoomType() {
+            return roomType;
+        }
+
+        public void setRoomType(String roomType) {
+            this.roomType = roomType;
+        }
+
+        public Integer getSeatCount() {
+            return seatCount;
+        }
+
+        public void setSeatCount(Integer seatCount) {
+            this.seatCount = seatCount;
+        }
     }
 
     /**
@@ -992,9 +1147,9 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             }
             for (String classTime : splitClassTimes(task.getClassTime())) {
                 if (forbiddenTimeSlots.contains(classTime)) {
-                    String teacherName = task.getRealname() == null || task.getRealname().isBlank()
+                    String teacherName = task.getTeacherName() == null || task.getTeacherName().isBlank()
                             ? task.getTeacherNo()
-                            : task.getRealname();
+                            : task.getTeacherName();
                     throw new BusinessException(ResultCode.BUSINESS_ERROR,
                             String.format("教师 %s 在时间片 %s 已配置禁排，请调整固定时间或教师约束", teacherName, classTime));
                 }
@@ -1080,9 +1235,9 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 String key = buildTeacherWeekdayKey(task.getTeacherNo(), classTime);
                 int nextCount = teacherDayCount.getOrDefault(key, 0) + 1;
                 if (nextCount > maxDayHours) {
-                    String teacherName = task.getRealname() == null || task.getRealname().isBlank()
+                    String teacherName = task.getTeacherName() == null || task.getTeacherName().isBlank()
                             ? task.getTeacherNo()
-                            : task.getRealname();
+                            : task.getTeacherName();
                     throw new BusinessException(ResultCode.BUSINESS_ERROR,
                             String.format("教师 %s 在同一天的固定课已超过日上限课时 %s，请调整任务或教师配置", teacherName, maxDayHours));
                 }

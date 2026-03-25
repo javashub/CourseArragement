@@ -1,8 +1,8 @@
 package com.lyk.coursearrange.service;
 
 import com.lyk.coursearrange.common.ServerResponse;
-import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
+import com.lyk.coursearrange.schedule.vo.ScheduleAdjustLogVO;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
@@ -31,11 +31,11 @@ public interface CoursePlanService {
     /**
      * 查询最近调课日志。
      */
-    List<CoursePlanAdjustLog> listRecentAdjustLogs(String semester, String classNo, String teacherNo, Integer limit);
+    List<ScheduleAdjustLogVO> listRecentAdjustLogs(String semester, String classNo, String teacherNo, Integer limit);
 
     /**
      * 查询指定教学楼下已占用的教室编号，标准课表优先。
      */
-    List<String> listOccupiedClassroomNos(String teachbuildNo);
+    List<String> listOccupiedClassroomNos(String buildingCode);
 
 }

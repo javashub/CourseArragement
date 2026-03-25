@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.entity.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -47,7 +48,8 @@ public class ClassTaskDTO implements Serializable {
     /**
      * 讲师名字
      */
-    private String realname;
+    @JsonAlias("realname")
+    private String teacherName;
 
     /**
      * 课程属性

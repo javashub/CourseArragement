@@ -69,7 +69,7 @@ class ClassTaskExcelServiceImplTest {
         row.setCourseNo("10001");
         row.setCourseName("高等数学");
         row.setTeacherNo("T2026001");
-        row.setRealname("张老师");
+        row.setTeacherName("张老师");
         row.setCourseAttr("必修");
         row.setStudentNum(45);
         row.setWeeksNumber(4);

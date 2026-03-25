@@ -5,8 +5,8 @@
         <div class="eyebrow">Base Resource Studio</div>
         <h1 class="hero-title">基础数据</h1>
         <p class="hero-description">
-          先把教师、学生、课程、教室这些基础资源做成统一后台入口。当前阶段优先把课程、教室切到新的资源表结构，逐步替换旧的
-          `tb_*` 逻辑。
+          先把教师、学生、课程、教室这些基础资源做成统一后台入口。当前页面已经按标准资源表读写，后续联调和演示数据也只维护
+          `res_*` 标准模型。
         </p>
       </div>
       <div class="hero-stats">
@@ -66,7 +66,7 @@
 
           <el-table :data="teacherState.displayRecords" stripe v-loading="teacherState.loading">
             <el-table-column prop="teacherNo" label="教师编号" min-width="130" />
-            <el-table-column prop="realname" label="姓名" min-width="110" />
+            <el-table-column prop="teacherName" label="姓名" min-width="110" />
             <el-table-column prop="jobtitle" label="职称" min-width="120" />
             <el-table-column prop="maxWeekHours" label="周上限课时" width="110" />
             <el-table-column prop="maxDayHours" label="日上限课时" width="110" />
@@ -150,7 +150,7 @@
 
           <el-table :data="studentState.displayRecords" stripe v-loading="studentState.loading">
             <el-table-column prop="studentNo" label="学号" min-width="130" />
-            <el-table-column prop="realname" label="姓名" min-width="110" />
+            <el-table-column prop="studentName" label="姓名" min-width="110" />
             <el-table-column prop="grade" label="年级" min-width="120" />
             <el-table-column prop="classNo" label="备注/班级说明" min-width="120" />
             <el-table-column prop="telephone" label="联系电话" min-width="140" />
@@ -271,7 +271,7 @@
               @input="applyClassroomFilter"
             />
             <el-select
-              v-model="classroomState.teachbuildFilter"
+              v-model="classroomState.buildingFilter"
               clearable
               filterable
               placeholder="筛选教学楼"
@@ -280,7 +280,7 @@
               @clear="applyClassroomFilter"
             >
               <el-option
-                v-for="item in teachbuildOptions"
+                v-for="item in buildingOptions"
                 :key="item.id"
                 :label="`${item.buildingCode} ${item.buildingName}`"
                 :value="item.buildingCode"
@@ -357,7 +357,7 @@
         </div>
         <div class="form-grid">
           <el-form-item label="真实姓名">
-            <el-input v-model="teacherForm.realname" placeholder="例如 张老师" />
+            <el-input v-model="teacherForm.teacherName" placeholder="例如 张老师" />
           </el-form-item>
           <el-form-item label="职称">
             <el-input v-model="teacherForm.jobtitle" placeholder="例如 讲师、副教授" />
@@ -438,7 +438,7 @@
         </div>
         <div class="form-grid">
           <el-form-item label="真实姓名">
-            <el-input v-model="studentForm.realname" placeholder="例如 李同学" />
+            <el-input v-model="studentForm.studentName" placeholder="例如 李同学" />
           </el-form-item>
           <el-form-item label="年级">
             <el-input v-model="studentForm.grade" placeholder="例如 2024级" />
@@ -552,7 +552,7 @@
           <el-form-item label="教学楼">
             <el-select v-model="classroomForm.buildingCode" clearable filterable placeholder="例如 B08 实验楼">
               <el-option
-                v-for="item in teachbuildOptions"
+                v-for="item in buildingOptions"
                 :key="item.id"
                 :label="`${item.buildingCode} ${item.buildingName}`"
                 :value="item.buildingCode"
@@ -604,12 +604,12 @@ import {
   downloadClassroomTemplate,
   downloadCourseTemplate,
   downloadStudentTemplate,
-  downloadTeachbuildTemplate,
+  downloadBuildingTemplate,
   downloadTeacherTemplate,
   exportClassroomExcel,
   exportCourseExcel,
   exportStudentExcel,
-  exportTeachbuildExcel,
+  exportBuildingExcel,
   exportTeacherExcel,
   fetchClassroomDetail,
   fetchClassroomPage,
@@ -619,13 +619,13 @@ import {
   fetchNextTeacherNo,
   fetchStudentDetail,
   fetchStudentPage,
-  fetchTeachbuildList,
+  fetchBuildingList,
   fetchTeacherDetail,
   fetchTeacherPage,
   importClassroomExcel,
   importCourseExcel,
   importStudentExcel,
-  importTeachbuildExcel,
+  importBuildingExcel,
   importTeacherExcel,
   searchCoursePage,
   searchStudentPage,
@@ -648,7 +648,7 @@ const studentSubmitting = ref(false);
 const courseSubmitting = ref(false);
 const classroomSubmitting = ref(false);
 
-const teachbuildOptions = ref([]);
+const buildingOptions = ref([]);
 
 const teacherState = reactive(createPageState());
 const studentState = reactive(createPageState());
@@ -671,7 +671,7 @@ function createPageState() {
     pageSize: 10,
     keyword: '',
     statusFilter: '',
-    teachbuildFilter: ''
+    buildingFilter: ''
   };
 }
 
@@ -679,7 +679,7 @@ function createTeacherForm() {
   return {
     id: null,
     teacherNo: '',
-    realname: '',
+    teacherName: '',
     jobtitle: '',
     teach: '',
     telephone: '',
@@ -698,7 +698,7 @@ function createStudentForm() {
   return {
     id: null,
     studentNo: '',
-    realname: '',
+    studentName: '',
     grade: `${new Date().getFullYear()}级`,
     classNo: '',
     telephone: '',
@@ -820,8 +820,8 @@ function applyClassroomFilter() {
         .join(' ')
         .toLowerCase()
         .includes(keyword);
-    const matchTeachbuild = !classroomState.teachbuildFilter || item.buildingCode === classroomState.teachbuildFilter;
-    return matchKeyword && matchTeachbuild;
+    const matchBuilding = !classroomState.buildingFilter || item.buildingCode === classroomState.buildingFilter;
+    return matchKeyword && matchBuilding;
   });
 }
 
@@ -891,7 +891,7 @@ async function loadClassrooms() {
   try {
     const response = await fetchClassroomPage(classroomState.pageNum, classroomState.pageSize, {
       keyword: classroomState.keyword || undefined,
-      buildingCode: classroomState.teachbuildFilter || undefined
+      buildingCode: classroomState.buildingFilter || undefined
     });
     applyPageData(classroomState, response.data);
     applyClassroomFilter();
@@ -923,7 +923,7 @@ function resetCourseSearch() {
 
 function resetClassroomSearch() {
   classroomState.keyword = '';
-  classroomState.teachbuildFilter = '';
+  classroomState.buildingFilter = '';
   loadClassrooms();
 }
 
@@ -1004,7 +1004,7 @@ async function toggleTeacher(row) {
 }
 
 async function removeTeacher(row) {
-  await ElMessageBox.confirm(`确认删除教师“${row.realname}”吗？`, '删除确认', { type: 'warning' });
+  await ElMessageBox.confirm(`确认删除教师“${row.teacherName}”吗？`, '删除确认', { type: 'warning' });
   await deleteTeacher(row.id);
   ElMessage.success('教师删除成功');
   await loadTeachers();
@@ -1084,7 +1084,7 @@ async function submitStudent() {
 }
 
 async function removeStudent(row) {
-  await ElMessageBox.confirm(`确认删除学生“${row.realname}”吗？`, '删除确认', { type: 'warning' });
+  await ElMessageBox.confirm(`确认删除学生“${row.studentName}”吗？`, '删除确认', { type: 'warning' });
   await deleteStudent(row.id);
   ElMessage.success('学生删除成功');
   await loadStudents();
@@ -1256,7 +1256,7 @@ async function handleClassroomExport() {
   try {
     await exportClassroomExcel({
       keyword: classroomState.keyword,
-      teachbuildNo: classroomState.teachbuildFilter
+      buildingCode: classroomState.buildingFilter
     });
     ElMessage.success('教室数据导出中');
   } catch (error) {
@@ -1278,7 +1278,7 @@ async function handleClassroomImport(file) {
 
 async function handleTeachbuildTemplateDownload() {
   try {
-    await downloadTeachbuildTemplate();
+    await downloadBuildingTemplate();
   } catch (error) {
     ElMessage.error('教学楼模板下载失败');
   }
@@ -1286,8 +1286,8 @@ async function handleTeachbuildTemplateDownload() {
 
 async function handleTeachbuildExport() {
   try {
-    await exportTeachbuildExcel({
-      keyword: classroomState.teachbuildFilter || classroomState.keyword
+    await exportBuildingExcel({
+      keyword: classroomState.buildingFilter || classroomState.keyword
     });
     ElMessage.success('教学楼数据导出中');
   } catch (error) {
@@ -1297,9 +1297,9 @@ async function handleTeachbuildExport() {
 
 async function handleTeachbuildImport(file) {
   try {
-    const response = await importTeachbuildExcel(file);
+    const response = await importBuildingExcel(file);
     ElMessage.success(buildImportSummary('教学楼', response, '教学楼数据导入成功'));
-    await Promise.all([loadTeachbuildOptions(), loadClassrooms()]);
+    await Promise.all([loadBuildingOptions(), loadClassrooms()]);
   } catch (error) {
     await showImportErrors('教学楼导入失败明细', error);
     return false;
@@ -1307,13 +1307,13 @@ async function handleTeachbuildImport(file) {
   return false;
 }
 
-async function loadTeachbuildOptions() {
-  const response = await fetchTeachbuildList();
-  teachbuildOptions.value = response.data || [];
+async function loadBuildingOptions() {
+  const response = await fetchBuildingList();
+  buildingOptions.value = response.data || [];
 }
 
 onMounted(async () => {
-  await Promise.all([loadTeachers(), loadStudents(), loadCourses(), loadClassrooms(), loadTeachbuildOptions()]);
+  await Promise.all([loadTeachers(), loadStudents(), loadCourses(), loadClassrooms(), loadBuildingOptions()]);
 });
 </script>
 

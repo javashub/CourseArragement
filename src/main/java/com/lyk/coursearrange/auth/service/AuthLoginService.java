@@ -7,9 +7,5 @@ import com.lyk.coursearrange.system.rbac.entity.SysUser;
  */
 public interface AuthLoginService {
 
-    SysUser loginAdmin(String username, String password);
-
-    SysUser loginTeacher(String username, String password);
-
-    SysUser loginStudent(String username, String password);
+    SysUser login(String username, String password, String userType);
 }

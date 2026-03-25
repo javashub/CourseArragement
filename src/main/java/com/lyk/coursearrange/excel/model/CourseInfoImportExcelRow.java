@@ -21,8 +21,8 @@ public class CourseInfoImportExcelRow {
     @ExcelProperty("出版社")
     private String publisher;
 
-    @ExcelProperty("优先级")
-    private Integer piority;
+    @ExcelProperty("周课时")
+    private Integer weekHours;
 
     @ExcelProperty("状态")
     private String statusText;

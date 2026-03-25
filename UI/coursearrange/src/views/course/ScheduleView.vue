@@ -5,7 +5,7 @@
         <div class="eyebrow">Timetable Observer</div>
         <h1 class="hero-title">课表管理</h1>
         <p class="hero-description">
-          当前页面只展示和调度标准课表结果。legacy tb_course_plan 不再作为这里的查询或调课回退来源。
+          当前页面只展示和调度标准课表结果，查询与调课都以标准排课结果为准。
         </p>
       </div>
       <div class="hero-actions">
@@ -48,7 +48,7 @@
           <el-option
             v-for="item in teacherOptions"
             :key="item.teacherNo"
-            :label="`${item.teacherNo} ${item.realname || ''}`"
+            :label="`${item.teacherNo} ${item.teacherName || ''}`"
             :value="item.teacherNo"
           />
         </el-select>
@@ -146,7 +146,7 @@
               >
                 <div class="course-main">
                   <strong>{{ item.courseName || item.courseNo }}</strong>
-                  <span>{{ item.realname || item.teacherNo }}</span>
+                  <span>{{ item.teacherName || item.teacherNo }}</span>
                 </div>
                 <div class="course-meta">
                   <span>教室 {{ item.classroomNo || '--' }}</span>
@@ -165,7 +165,7 @@
         <div class="card-head">
           <div>
             <div class="card-title">原始排课结果</div>
-            <div class="card-caption">用于核对旧排课算法写入的数据结构，后续新课表组件会基于这份数据进一步规整。</div>
+            <div class="card-caption">用于核对当前排课结果的数据结构，后续新课表组件会基于这份数据进一步规整。</div>
           </div>
         </div>
       </template>
@@ -173,7 +173,7 @@
       <el-table :data="planList" size="small" stripe max-height="320">
         <el-table-column prop="classTime" label="时间编码" width="120" />
         <el-table-column prop="courseName" label="课程" min-width="150" />
-        <el-table-column prop="realname" label="教师" min-width="120" />
+        <el-table-column prop="teacherName" label="教师" min-width="120" />
         <el-table-column prop="classroomNo" label="教室" min-width="120" />
         <el-table-column prop="teacherNo" label="教师编号" min-width="120" />
       </el-table>

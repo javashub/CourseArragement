@@ -5,19 +5,21 @@ import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.lyk.coursearrange.entity.response.CoursePlanVo;
+import com.lyk.coursearrange.schedule.entity.SchScheduleAdjustLog;
 import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
 import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.SchScheduleAdjustLogService;
 import com.lyk.coursearrange.schedule.service.SchScheduleResultService;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
-import com.lyk.coursearrange.service.CoursePlanAdjustLogService;
 import com.lyk.coursearrange.service.CoursePlanService;
-import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
+import com.lyk.coursearrange.schedule.vo.ScheduleAdjustLogVO;
 import com.lyk.coursearrange.resource.entity.ResClassroom;
 import com.lyk.coursearrange.resource.service.ResClassroomService;
+import com.lyk.coursearrange.system.rbac.entity.SysUser;
+import com.lyk.coursearrange.system.rbac.service.SysUserService;
 import com.lyk.coursearrange.system.rbac.vo.CurrentUserVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,17 +43,17 @@ import java.util.stream.Collectors;
 public class CoursePlanServiceImpl implements CoursePlanService {
 
     @Resource
-    private CoursePlanAdjustLogService coursePlanAdjustLogService;
+    private SchScheduleAdjustLogService schScheduleAdjustLogService;
     @Resource
     private AuthFacadeService authFacadeService;
-    @Resource
-    private ScheduleLogMirrorService scheduleLogMirrorService;
     @Resource
     private SchScheduleResultService schScheduleResultService;
     @Resource
     private SchTaskService schTaskService;
     @Resource
     private ResClassroomService resClassroomService;
+    @Resource
+    private SysUserService sysUserService;
 
     /**
      * 根据班级编号查询课表
@@ -131,19 +133,43 @@ public class CoursePlanServiceImpl implements CoursePlanService {
     }
 
     @Override
-    public List<CoursePlanAdjustLog> listRecentAdjustLogs(String semester, String classNo, String teacherNo, Integer limit) {
-        LambdaQueryWrapper<CoursePlanAdjustLog> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CoursePlanAdjustLog::getDeleted, 0)
-                .eq(semester != null && !semester.isBlank(), CoursePlanAdjustLog::getSemester, semester)
-                .eq(classNo != null && !classNo.isBlank(), CoursePlanAdjustLog::getClassNo, classNo)
-                .eq(teacherNo != null && !teacherNo.isBlank(), CoursePlanAdjustLog::getTeacherNo, teacherNo)
-                .orderByDesc(CoursePlanAdjustLog::getCreateTime)
-                .last("limit " + (limit == null || limit <= 0 ? 10 : limit));
-        return coursePlanAdjustLogService.list(wrapper);
+    public List<ScheduleAdjustLogVO> listRecentAdjustLogs(String semester, String classNo, String teacherNo, Integer limit) {
+        int safeLimit = limit == null || limit <= 0 ? 10 : Math.min(limit, 50);
+        List<SchScheduleAdjustLog> adjustLogs = schScheduleAdjustLogService.list(new LambdaQueryWrapper<SchScheduleAdjustLog>()
+                .eq(SchScheduleAdjustLog::getDeleted, 0)
+                .eq(semester != null && !semester.isBlank(), SchScheduleAdjustLog::getRemark, semester)
+                .orderByDesc(SchScheduleAdjustLog::getCreatedAt)
+                .last("limit " + Math.max(safeLimit * 5, safeLimit)));
+        if (adjustLogs.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, SchScheduleResult> resultMap = schScheduleResultService.listByIds(adjustLogs.stream()
+                        .map(SchScheduleAdjustLog::getSourceResultId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList()).stream()
+                .collect(Collectors.toMap(SchScheduleResult::getId, item -> item, (left, right) -> left));
+        Map<Long, SchTask> taskMap = schTaskService.listByIds(resultMap.values().stream()
+                        .map(SchScheduleResult::getTaskId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList()).stream()
+                .collect(Collectors.toMap(SchTask::getId, item -> item, (left, right) -> left));
+        Map<Long, String> operatorNameMap = buildOperatorNameMap(adjustLogs.stream()
+                .map(SchScheduleAdjustLog::getOperatorUserId)
+                .filter(Objects::nonNull)
+                .toList());
+        return adjustLogs.stream()
+                .map(item -> toAdjustLogVO(item, resultMap.get(item.getSourceResultId()), taskMap, operatorNameMap))
+                .filter(Objects::nonNull)
+                .filter(item -> classNo == null || classNo.isBlank() || classNo.equals(item.getClassNo()))
+                .filter(item -> teacherNo == null || teacherNo.isBlank() || teacherNo.equals(item.getTeacherNo()))
+                .limit(safeLimit)
+                .toList();
     }
 
     @Override
-    public List<String> listOccupiedClassroomNos(String teachbuildNo) {
+    public List<String> listOccupiedClassroomNos(String buildingCode) {
         try {
             List<SchScheduleResult> standardResults = schScheduleResultService.list(new LambdaQueryWrapper<SchScheduleResult>()
                     .eq(SchScheduleResult::getDeleted, 0)
@@ -159,12 +185,12 @@ public class CoursePlanServiceImpl implements CoursePlanService {
                 }
                 return resClassroomService.listByIds(classroomIds).stream()
                         .map(ResClassroom::getClassroomCode)
-                        .filter(code -> code != null && code.startsWith(teachbuildNo))
+                        .filter(code -> code != null && code.startsWith(buildingCode))
                         .distinct()
                         .toList();
             }
         } catch (Exception exception) {
-            log.warn("查询标准课表占用教室失败，将返回空占用集合，teachbuildNo={}", teachbuildNo, exception);
+            log.warn("查询标准课表占用教室失败，将返回空占用集合，buildingCode={}", buildingCode, exception);
         }
         return List.of();
     }
@@ -175,34 +201,37 @@ public class CoursePlanServiceImpl implements CoursePlanService {
                                Integer beforePeriodNo,
                                Integer afterWeekdayNo,
                                Integer afterPeriodNo) {
-        CoursePlanAdjustLog logEntity = new CoursePlanAdjustLog();
-        logEntity.setCoursePlanId(null);
-        logEntity.setSemester(result.getRemark());
-        logEntity.setGradeNo(taskMeta.getOrDefault("gradeNo", ""));
-        logEntity.setClassNo(taskMeta.getOrDefault("classNo", ""));
-        logEntity.setCourseNo(taskMeta.getOrDefault("courseNo", ""));
-        logEntity.setTeacherNo(taskMeta.getOrDefault("teacherNo", ""));
-        logEntity.setBeforeClassTime(toLegacyClassTime(beforeWeekdayNo, beforePeriodNo));
-        logEntity.setAfterClassTime(toLegacyClassTime(afterWeekdayNo, afterPeriodNo));
-        logEntity.setBeforeClassroomNo(null);
-        logEntity.setAfterClassroomNo(null);
-        logEntity.setRemark("拖拽调课");
-        fillAdjustOperator(logEntity, result.getId().intValue());
-        coursePlanAdjustLogService.save(logEntity);
-        scheduleLogMirrorService.mirrorAdjustLog(logEntity);
+        SchScheduleAdjustLog logEntity = new SchScheduleAdjustLog();
+        logEntity.setAdjustCode("ADJ_" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase());
+        logEntity.setTermId(0L);
+        logEntity.setSourceResultId(result.getId());
+        logEntity.setAdjustType("MOVE");
+        logEntity.setBeforeWeekdayNo(beforeWeekdayNo);
+        logEntity.setBeforePeriodNo(beforePeriodNo);
+        logEntity.setAfterWeekdayNo(afterWeekdayNo);
+        logEntity.setAfterPeriodNo(afterPeriodNo);
+        logEntity.setAdjustReason(buildAdjustReason(taskMeta));
+        logEntity.setStatus(1);
+        logEntity.setRemark(result.getRemark());
+        fillAdjustOperator(logEntity, result.getId());
+        schScheduleAdjustLogService.save(logEntity);
     }
 
-    private void fillAdjustOperator(CoursePlanAdjustLog logEntity, Integer planId) {
+    private void fillAdjustOperator(SchScheduleAdjustLog logEntity, Long planId) {
         try {
             CurrentUserVO currentUser = authFacadeService.getCurrentUserView();
             if (currentUser != null) {
                 logEntity.setOperatorUserId(currentUser.getUserId());
-                logEntity.setOperatorName(currentUser.getDisplayName());
-                logEntity.setOperatorType(currentUser.getUserType());
             }
         } catch (Exception exception) {
             log.warn("记录调课日志时获取当前用户失败，planId={}", planId, exception);
         }
+    }
+
+    private String buildAdjustReason(Map<String, String> taskMeta) {
+        String courseName = taskMeta.getOrDefault("courseName", taskMeta.getOrDefault("courseNo", ""));
+        String classNo = taskMeta.getOrDefault("classNo", "");
+        return classNo.isBlank() ? "拖拽调课" : String.format("%s %s 拖拽调课", classNo, courseName).trim();
     }
 
     private String validateStandardAdjustConflict(SchScheduleResult currentResult,
@@ -304,7 +333,7 @@ public class CoursePlanServiceImpl implements CoursePlanService {
         vo.setCourseNo(courseNo);
         vo.setTeacherNo(teacherNo);
         vo.setCourseName(courseName);
-        vo.setRealname(teacherName);
+        vo.setTeacherName(teacherName);
         vo.setGradeNo(taskMeta.getOrDefault("gradeNo", ""));
         vo.setClassroomNo(classroomCodeMap.getOrDefault(result.getClassroomId(), ""));
         vo.setClassTime(toLegacyClassTime(result.getWeekdayNo(), result.getPeriodNo()));
@@ -328,6 +357,55 @@ public class CoursePlanServiceImpl implements CoursePlanService {
             return "";
         }
         return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
+    }
+
+    private ScheduleAdjustLogVO toAdjustLogVO(SchScheduleAdjustLog adjustLog,
+                                              SchScheduleResult result,
+                                              Map<Long, SchTask> taskMap,
+                                              Map<Long, String> operatorNameMap) {
+        if (adjustLog == null || result == null) {
+            return null;
+        }
+        SchTask task = taskMap.get(result.getTaskId());
+        Map<String, String> taskMeta = ScheduleTaskMetaUtils.parseTaskRemark(task == null ? "" : task.getRemark());
+        ScheduleAdjustLogVO vo = new ScheduleAdjustLogVO();
+        vo.setId(adjustLog.getId());
+        vo.setClassNo(taskMeta.getOrDefault("classNo", ""));
+        vo.setTeacherNo(taskMeta.getOrDefault("teacherNo", ""));
+        vo.setOperatorName(resolveOperatorName(operatorNameMap, adjustLog.getOperatorUserId()));
+        vo.setBeforeClassTime(toLegacyClassTime(adjustLog.getBeforeWeekdayNo(), adjustLog.getBeforePeriodNo()));
+        vo.setAfterClassTime(toLegacyClassTime(adjustLog.getAfterWeekdayNo(), adjustLog.getAfterPeriodNo()));
+        vo.setRemark(adjustLog.getAdjustReason());
+        vo.setCreateTime(adjustLog.getCreatedAt());
+        return vo;
+    }
+
+    private String resolveOperatorName(Map<Long, String> operatorNameMap, Long operatorUserId) {
+        if (operatorNameMap == null || operatorNameMap.isEmpty() || operatorUserId == null) {
+            return "--";
+        }
+        return operatorNameMap.getOrDefault(operatorUserId, "--");
+    }
+
+    private Map<Long, String> buildOperatorNameMap(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        return sysUserService.listByIds(userIds).stream()
+                .collect(Collectors.toMap(SysUser::getId, this::resolveOperatorName, (left, right) -> left));
+    }
+
+    private String resolveOperatorName(SysUser user) {
+        if (user == null) {
+            return "--";
+        }
+        if (user.getDisplayName() != null && !user.getDisplayName().isBlank()) {
+            return user.getDisplayName();
+        }
+        if (user.getRealName() != null && !user.getRealName().isBlank()) {
+            return user.getRealName();
+        }
+        return user.getUsername();
     }
 
 }

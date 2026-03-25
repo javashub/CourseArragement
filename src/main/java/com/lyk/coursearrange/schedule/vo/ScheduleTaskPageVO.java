@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.schedule.vo;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -29,7 +30,8 @@ public class ScheduleTaskPageVO implements Serializable {
 
     private String teacherNo;
 
-    private String realname;
+    @JsonAlias("realname")
+    private String teacherName;
 
     private String courseAttr;
 

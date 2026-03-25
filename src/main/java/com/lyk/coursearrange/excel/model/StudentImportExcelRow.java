@@ -16,7 +16,7 @@ public class StudentImportExcelRow {
     private String username;
 
     @ExcelProperty("姓名")
-    private String realname;
+    private String studentName;
 
     @ExcelProperty("年级")
     private String grade;

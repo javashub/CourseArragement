@@ -23,7 +23,7 @@ public class ClassTask implements Serializable {
     private String courseNo;
     private String courseName;
     private String teacherNo;
-    private String realname;
+    private String teacherName;
     private String courseAttr;
     private Integer studentNum;
     private Integer weeksSum;

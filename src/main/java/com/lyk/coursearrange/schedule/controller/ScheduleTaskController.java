@@ -6,17 +6,17 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.entity.ClassInfo;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.resource.util.ClassForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.resource.util.TeacherForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.AdminClassService;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
+import com.lyk.coursearrange.schedule.vo.AdminClassVO;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
-import com.lyk.coursearrange.service.ClassInfoService;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.system.config.query.ConfigScopeQuery;
 import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
@@ -41,9 +41,6 @@ import java.util.stream.Collectors;
 
 /**
  * 标准排课任务控制器。
- * 说明：
- * 1. 对前端提供统一的 /api/schedule 路径。
- * 2. 当前阶段先复用旧排课服务，逐步替换内部 tb_* 实现。
  */
 @Slf4j
 @RestController
@@ -54,18 +51,18 @@ public class ScheduleTaskController {
     private final SchTaskService schTaskService;
     private final ScheduleConfigFacadeService scheduleConfigFacadeService;
     private final ResTeacherService resTeacherService;
-    private final ClassInfoService classInfoService;
+    private final AdminClassService adminClassService;
 
     public ScheduleTaskController(ClassTaskService classTaskService,
                                   SchTaskService schTaskService,
                                   ScheduleConfigFacadeService scheduleConfigFacadeService,
                                   ResTeacherService resTeacherService,
-                                  ClassInfoService classInfoService) {
+                                  AdminClassService adminClassService) {
         this.classTaskService = classTaskService;
         this.schTaskService = schTaskService;
         this.scheduleConfigFacadeService = scheduleConfigFacadeService;
         this.resTeacherService = resTeacherService;
-        this.classInfoService = classInfoService;
+        this.adminClassService = adminClassService;
     }
 
     @GetMapping("/page")
@@ -172,7 +169,7 @@ public class ScheduleTaskController {
     /**
      * 步骤说明：
      * 1. 优先从标准 sch_task 中读取任务。
-     * 2. 再把标准任务转换成当前前端仍在使用的旧字段结构。
+     * 2. 再把标准任务转换成当前页面所需的表格字段结构。
      */
     private IPage<ScheduleTaskPageVO> queryStandardTaskPage(String semester,
                                                             Integer pageNum,
@@ -218,7 +215,7 @@ public class ScheduleTaskController {
         vo.setCourseNo(meta.getOrDefault("courseNo", ""));
         vo.setCourseName(meta.getOrDefault("courseName", ""));
         vo.setTeacherNo(meta.getOrDefault("teacherNo", ""));
-        vo.setRealname(meta.getOrDefault("teacherName", ""));
+        vo.setTeacherName(meta.getOrDefault("teacherName", ""));
         vo.setCourseAttr(meta.getOrDefault("courseAttr", ""));
         vo.setStudentNum(task.getStudentCount());
         vo.setWeeksNumber(task.getWeekHours());
@@ -299,7 +296,7 @@ public class ScheduleTaskController {
             if (forbiddenTimeSlots.contains(classTime)) {
                 throw new BusinessException(ResultCode.BUSINESS_ERROR,
                         String.format("教师 %s 在时间片 %s 已配置禁排，请调整固定时间或教师约束",
-                                request.getRealname() == null || request.getRealname().isBlank() ? request.getTeacherNo() : request.getRealname(),
+                                request.getTeacherName() == null || request.getTeacherName().isBlank() ? request.getTeacherNo() : request.getTeacherName(),
                                 classTime));
             }
         }
@@ -309,14 +306,11 @@ public class ScheduleTaskController {
         if (!Objects.equals("1", request.getIsFix()) || request.getClassNo() == null || request.getClassNo().isBlank()) {
             return;
         }
-        ClassInfo classInfo = classInfoService.getOne(new LambdaQueryWrapper<ClassInfo>()
-                .eq(ClassInfo::getDeleted, 0)
-                .eq(ClassInfo::getClassNo, request.getClassNo())
-                .last("limit 1"), false);
-        if (classInfo == null) {
+        AdminClassVO adminClass = adminClassService.getClassByCode(request.getClassNo());
+        if (adminClass == null) {
             return;
         }
-        List<String> forbiddenTimeSlots = ClassForbiddenTimeSlotUtils.parse(classInfo.getForbiddenTimeSlots());
+        List<String> forbiddenTimeSlots = ClassForbiddenTimeSlotUtils.parse(adminClass.getForbiddenTimeSlots());
         if (forbiddenTimeSlots.isEmpty()) {
             return;
         }
@@ -372,7 +366,7 @@ public class ScheduleTaskController {
                 + ",gradeNo=" + ScheduleTaskMetaUtils.safe(request.getGradeNo())
                 + ",courseName=" + ScheduleTaskMetaUtils.safe(request.getCourseName())
                 + ",courseAttr=" + ScheduleTaskMetaUtils.safe(request.getCourseAttr())
-                + ",teacherName=" + ScheduleTaskMetaUtils.safe(request.getRealname()));
+                + ",teacherName=" + ScheduleTaskMetaUtils.safe(request.getTeacherName()));
         return task;
     }
 

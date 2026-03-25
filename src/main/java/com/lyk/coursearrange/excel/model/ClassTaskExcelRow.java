@@ -28,7 +28,7 @@ public class ClassTaskExcelRow {
     private String teacherNo;
 
     @ExcelProperty("教师姓名")
-    private String realname;
+    private String teacherName;
 
     @ExcelProperty("课程属性")
     private String courseAttr;

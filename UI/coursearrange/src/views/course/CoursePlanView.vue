@@ -5,8 +5,8 @@
         <div class="hero-copy">
           <div class="eyebrow">Task Orchestrator</div>
           <h1 class="hero-title">排课任务</h1>
-          <p class="hero-description">
-            先把开课任务、学期切换和一键排课打通。当前页已经优先读取标准排课任务，排课执行仍兼容旧算法链路，后续会继续替换旧表实现。
+        <p class="hero-description">
+            先把开课任务、学期切换和一键排课打通。当前页已经统一读取标准排课任务、标准班级与标准执行日志，后续继续围绕标准表补齐数据和算法约束。
           </p>
         </div>
         <div class="hero-actions">
@@ -57,7 +57,7 @@
           </div>
         </div>
         <p class="config-note">
-          当前遗传排课算法仍运行在 legacy 25 格编码窗口内，因此只会消费工作日 1-5、节次 1-5 范围内的可教学时间片。
+          当前遗传排课算法仍运行在固定的 25 格编码窗口内，因此只会消费工作日 1-5、节次 1-5 范围内的可教学时间片。
         </p>
       </el-card>
 
@@ -169,7 +169,7 @@
             <el-option
               v-for="item in teacherOptions"
               :key="item.id"
-              :label="`${item.teacherNo} ${item.realname || ''}`"
+              :label="`${item.teacherNo} ${item.teacherName || ''}`"
               :value="item.teacherNo"
             />
           </el-select>
@@ -190,7 +190,7 @@
         <el-table :data="taskState.displayRecords" stripe v-loading="taskState.loading">
           <el-table-column prop="classNo" label="班级编号" min-width="120" />
           <el-table-column prop="courseName" label="课程名称" min-width="150" />
-          <el-table-column prop="realname" label="教师姓名" min-width="110" />
+          <el-table-column prop="teacherName" label="教师姓名" min-width="110" />
           <el-table-column prop="courseAttr" label="课程属性" min-width="120" />
           <el-table-column prop="studentNum" label="人数" width="80" />
           <el-table-column prop="weeksNumber" label="周学时" width="90" />
@@ -395,7 +395,7 @@
                 <el-option
                   v-for="item in teacherOptions"
                   :key="item.id"
-                  :label="`${item.teacherNo} ${item.realname || ''}`"
+                  :label="`${item.teacherNo} ${item.teacherName || ''}`"
                   :value="item.teacherNo"
                 />
               </el-select>
@@ -670,7 +670,7 @@ const formValidation = computed(() => {
   if (!taskForm.value.courseNo?.trim() || !taskForm.value.courseName?.trim()) {
     messages.push('课程编号和课程名称需要同时填写');
   }
-  if (!taskForm.value.teacherNo?.trim() || !taskForm.value.realname?.trim()) {
+  if (!taskForm.value.teacherNo?.trim() || !taskForm.value.teacherName?.trim()) {
     messages.push('教师编号和教师姓名需要同时填写');
   }
   if (!taskForm.value.weeksNumber || taskForm.value.weeksNumber < 1) {
@@ -796,7 +796,7 @@ function createTaskForm() {
     courseNo: '',
     courseName: '',
     teacherNo: '',
-    realname: '',
+    teacherName: '',
     courseAttr: '',
     studentNum: 40,
     weeksNumber: 4,
@@ -891,7 +891,7 @@ async function loadClassTasks(resetPage = false) {
 function applyTaskFilters() {
   const keyword = taskState.keyword.trim().toLowerCase();
   taskState.displayRecords = taskState.records.filter((item) => {
-    const matchKeyword = !keyword || [item.classNo, item.courseName, item.realname, item.courseNo, item.teacherNo]
+    const matchKeyword = !keyword || [item.classNo, item.courseName, item.teacherName, item.courseNo, item.teacherNo]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
@@ -994,11 +994,11 @@ function handleTeacherChange(teacherNo) {
     return;
   }
   taskForm.value.teacherNo = currentTeacher.teacherNo || '';
-  taskForm.value.realname = currentTeacher.realname || '';
+  taskForm.value.teacherName = currentTeacher.teacherName || '';
 }
 
 function clearTeacherSelection() {
-  taskForm.value.realname = '';
+  taskForm.value.teacherName = '';
 }
 
 function goToSchedule(classNo = '', semester = selectedSemester.value) {
@@ -1030,7 +1030,7 @@ function prefillTaskByClass() {
     needContinuous: Number(firstCourse?.needContinuous || 0) === 1 ? 1 : 0,
     continuousSize: Number(firstCourse?.needContinuous || 0) === 1 ? Math.max(2, Number(firstCourse?.continuousSize || 2)) : 2,
     teacherNo: firstTeacher?.teacherNo || '',
-    realname: firstTeacher?.realname || ''
+    teacherName: firstTeacher?.teacherName || ''
   };
   taskDialogVisible.value = true;
 }
@@ -1040,7 +1040,7 @@ async function submitTask() {
   const courseNo = taskForm.value.courseNo?.trim();
   const courseName = taskForm.value.courseName?.trim();
   const teacherNo = taskForm.value.teacherNo?.trim();
-  const realname = taskForm.value.realname?.trim();
+  const teacherName = taskForm.value.teacherName?.trim();
   const fixedTime = taskForm.value.classTime?.trim();
   if (!semester) {
     ElMessage.warning('请先填写学期');
@@ -1054,7 +1054,7 @@ async function submitTask() {
     ElMessage.warning('请完整填写课程编号和课程名称');
     return;
   }
-  if (!teacherNo || !realname) {
+  if (!teacherNo || !teacherName) {
     ElMessage.warning('请完整填写教师编号和教师姓名');
     return;
   }
@@ -1105,7 +1105,7 @@ async function submitTask() {
       courseNo,
       courseName,
       teacherNo,
-      realname,
+      teacherName,
       needContinuous: taskForm.value.needContinuous === 1 ? 1 : 0,
       continuousSize: taskForm.value.needContinuous === 1 ? Math.max(2, Number(taskForm.value.continuousSize || 2)) : 1,
       classTime: fixedTime || ''

@@ -77,68 +77,92 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="campusForm.id ? '编辑校区' : '新增校区'" width="640px" append-to-body>
-      <el-form ref="formRef" :model="campusForm" :rules="formRules" label-width="110px">
-        <el-form-item label="校区编码" prop="campusCode">
-          <el-input v-model="campusForm.campusCode" placeholder="例如 CAMPUS_MAIN、BJ_XC" />
-        </el-form-item>
-        <el-form-item label="校区名称" prop="campusName">
-          <el-input v-model="campusForm.campusName" placeholder="例如 主校区、西城校区" />
-        </el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="12">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="campusForm.id ? '编辑校区' : '新增校区'"
+      width="820px"
+      append-to-body
+      class="academy-form-dialog"
+    >
+      <div class="academy-form-intro">
+        <div class="academy-form-intro__eyebrow">Campus Registry</div>
+        <div class="academy-form-intro__title">{{ campusForm.id ? '更新校区档案' : '建立校区档案' }}</div>
+        <div class="academy-form-intro__text">
+          先确定校区编码、名称和类型，再补充区域编码与地址信息，后续学院、教学楼和资源配置会继续挂接到这里。
+        </div>
+      </div>
+
+      <el-form ref="formRef" :model="campusForm" :rules="formRules" label-position="top" class="academy-form">
+        <div class="academy-form-section">
+          <div class="academy-form-section__header">
+            <div class="academy-form-section__title">基础信息</div>
+            <div class="academy-form-section__desc">定义当前校区在系统中的唯一标识与启用状态。</div>
+          </div>
+          <div class="academy-form-grid academy-form-grid--two">
+            <el-form-item label="校区编码" prop="campusCode">
+              <el-input v-model="campusForm.campusCode" placeholder="例如 CAMPUS_MAIN、BJ_XC" />
+            </el-form-item>
+            <el-form-item label="校区名称" prop="campusName">
+              <el-input v-model="campusForm.campusName" placeholder="例如 主校区、西城校区" />
+            </el-form-item>
+          </div>
+          <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="校区类型" prop="campusType">
               <el-input v-model="campusForm.campusType" placeholder="例如 主校区、分校区、校外点" />
             </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="campusForm.status">
+              <el-radio-group v-model="campusForm.status" class="academy-radio-group">
                 <el-radio :value="1">启用</el-radio>
                 <el-radio :value="0">停用</el-radio>
               </el-radio-group>
             </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="8">
+          </div>
+        </div>
+
+        <div class="academy-form-section">
+          <div class="academy-form-section__header">
+            <div class="academy-form-section__title">区域与地址</div>
+            <div class="academy-form-section__desc">为后续跨校区资源统计、楼栋与教室归属预留统一地域信息。</div>
+          </div>
+          <div class="academy-form-grid academy-form-grid--three">
             <el-form-item label="省份编码">
               <el-input v-model="campusForm.provinceCode" placeholder="例如 110000" />
             </el-form-item>
-          </el-col>
-          <el-col :span="8">
             <el-form-item label="城市编码">
               <el-input v-model="campusForm.cityCode" placeholder="例如 110100" />
             </el-form-item>
-          </el-col>
-          <el-col :span="8">
             <el-form-item label="区县编码">
               <el-input v-model="campusForm.districtCode" placeholder="例如 110108" />
             </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="详细地址">
-          <el-input v-model="campusForm.address" placeholder="例如 北京市海淀区学院路 1 号" />
-        </el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="12">
+          </div>
+          <el-form-item label="详细地址">
+            <el-input v-model="campusForm.address" placeholder="例如 北京市海淀区学院路 1 号" />
+          </el-form-item>
+        </div>
+
+        <div class="academy-form-section">
+          <div class="academy-form-section__header">
+            <div class="academy-form-section__title">展示与备注</div>
+            <div class="academy-form-section__desc">排序决定列表呈现顺序，备注可记录承担学段或办学职责。</div>
+          </div>
+          <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="排序">
               <el-input-number v-model="campusForm.sortNo" :min="0" :max="9999" controls-position="right" />
             </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注">
-          <el-input
-            v-model="campusForm.remark"
-            type="textarea"
-            :rows="3"
-            placeholder="例如 承担高中部与大学部课程安排"
-          />
-        </el-form-item>
+          </div>
+          <el-form-item label="备注">
+            <el-input
+              v-model="campusForm.remark"
+              type="textarea"
+              :rows="3"
+              placeholder="例如 承担高中部与大学部课程安排"
+            />
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">保存</el-button>
+        <el-button class="academy-dialog__ghost" @click="dialogVisible = false">取消</el-button>
+        <el-button class="academy-dialog__primary" type="primary" :loading="saving" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
   </section>

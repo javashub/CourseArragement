@@ -5,17 +5,17 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.entity.CoursePlanAdjustLog;
 import com.lyk.coursearrange.entity.request.CoursePlanAdjustRequest;
 import com.lyk.coursearrange.entity.response.CoursePlanVo;
+import com.lyk.coursearrange.schedule.entity.SchScheduleAdjustLog;
 import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
 import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.SchScheduleAdjustLogService;
 import com.lyk.coursearrange.schedule.service.SchScheduleResultService;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
-import com.lyk.coursearrange.schedule.service.ScheduleLogMirrorService;
-import com.lyk.coursearrange.service.CoursePlanAdjustLogService;
 import com.lyk.coursearrange.resource.entity.ResClassroom;
 import com.lyk.coursearrange.resource.service.ResClassroomService;
+import com.lyk.coursearrange.system.rbac.service.SysUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,29 +41,29 @@ import static org.mockito.Mockito.when;
 class CoursePlanServiceImplTest {
 
     @Mock
-    private CoursePlanAdjustLogService coursePlanAdjustLogService;
+    private SchScheduleAdjustLogService schScheduleAdjustLogService;
     @Mock
     private AuthFacadeService authFacadeService;
-    @Mock
-    private ScheduleLogMirrorService scheduleLogMirrorService;
     @Mock
     private SchScheduleResultService schScheduleResultService;
     @Mock
     private SchTaskService schTaskService;
     @Mock
     private ResClassroomService resClassroomService;
+    @Mock
+    private SysUserService sysUserService;
 
     private CoursePlanServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new CoursePlanServiceImpl();
-        ReflectionTestUtils.setField(service, "coursePlanAdjustLogService", coursePlanAdjustLogService);
+        ReflectionTestUtils.setField(service, "schScheduleAdjustLogService", schScheduleAdjustLogService);
         ReflectionTestUtils.setField(service, "authFacadeService", authFacadeService);
-        ReflectionTestUtils.setField(service, "scheduleLogMirrorService", scheduleLogMirrorService);
         ReflectionTestUtils.setField(service, "schScheduleResultService", schScheduleResultService);
         ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
         ReflectionTestUtils.setField(service, "resClassroomService", resClassroomService);
+        ReflectionTestUtils.setField(service, "sysUserService", sysUserService);
     }
 
     @Test
@@ -99,7 +99,7 @@ class CoursePlanServiceImplTest {
         assertEquals(Long.valueOf(101L), plan.getStandardResultId());
         assertEquals("C1", plan.getClassNo());
         assertEquals("数学", plan.getCourseName());
-        assertEquals("张老师", plan.getRealname());
+        assertEquals("张老师", plan.getTeacherName());
         assertEquals("01-101", plan.getClassroomNo());
         assertEquals("08", plan.getClassTime());
     }
@@ -150,14 +150,15 @@ class CoursePlanServiceImplTest {
         ServerResponse<?> response = service.adjustCoursePlan(request);
 
         assertTrue(response.isSuccess());
-        ArgumentCaptor<CoursePlanAdjustLog> logCaptor = ArgumentCaptor.forClass(CoursePlanAdjustLog.class);
-        verify(coursePlanAdjustLogService).save(logCaptor.capture());
-        CoursePlanAdjustLog log = logCaptor.getValue();
+        ArgumentCaptor<SchScheduleAdjustLog> logCaptor = ArgumentCaptor.forClass(SchScheduleAdjustLog.class);
+        verify(schScheduleAdjustLogService).save(logCaptor.capture());
+        SchScheduleAdjustLog log = logCaptor.getValue();
         assertNotNull(log);
-        assertNull(log.getCoursePlanId());
-        assertEquals("08", log.getBeforeClassTime());
-        assertEquals("09", log.getAfterClassTime());
-        verify(scheduleLogMirrorService).mirrorAdjustLog(any(CoursePlanAdjustLog.class));
+        assertEquals(Long.valueOf(101L), log.getSourceResultId());
+        assertEquals(Integer.valueOf(2), log.getBeforeWeekdayNo());
+        assertEquals(Integer.valueOf(3), log.getBeforePeriodNo());
+        assertEquals(Integer.valueOf(2), log.getAfterWeekdayNo());
+        assertEquals(Integer.valueOf(4), log.getAfterPeriodNo());
     }
 
     @Test
@@ -229,5 +230,36 @@ class CoursePlanServiceImplTest {
         List<String> occupiedClassrooms = service.listOccupiedClassroomNos("01");
 
         assertEquals(List.of(), occupiedClassrooms);
+    }
+
+    @Test
+    void listRecentAdjustLogs_shouldReadStandardAdjustLogsOnly() {
+        SchScheduleAdjustLog adjustLog = new SchScheduleAdjustLog();
+        adjustLog.setId(1L);
+        adjustLog.setSourceResultId(101L);
+        adjustLog.setBeforeWeekdayNo(2);
+        adjustLog.setBeforePeriodNo(3);
+        adjustLog.setAfterWeekdayNo(2);
+        adjustLog.setAfterPeriodNo(4);
+        adjustLog.setAdjustReason("拖拽调课");
+        adjustLog.setRemark("2025-2026-1");
+        adjustLog.setCreatedAt(java.time.LocalDateTime.of(2026, 3, 25, 9, 30, 0));
+
+        SchScheduleResult result = new SchScheduleResult();
+        result.setId(101L);
+        result.setTaskId(201L);
+
+        SchTask task = new SchTask();
+        task.setId(201L);
+        task.setRemark("semester=2025-2026-1,classNo=C1,teacherNo=T1,courseNo=K1");
+
+        when(schScheduleAdjustLogService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.Wrapper<SchScheduleAdjustLog>>any()))
+                .thenReturn(List.of(adjustLog));
+        when(schScheduleResultService.listByIds(List.of(101L))).thenReturn(List.of(result));
+        when(schTaskService.listByIds(List.of(201L))).thenReturn(List.of(task));
+
+        List<?> logs = service.listRecentAdjustLogs("2025-2026-1", "C1", "T1", 10);
+
+        assertEquals(1, logs.size());
     }
 }

@@ -1,15 +1,8 @@
 package com.lyk.coursearrange.auth.service.impl;
 
-import com.lyk.coursearrange.auth.service.AuthAccountSyncService;
 import com.lyk.coursearrange.auth.service.AuthLoginService;
 import com.lyk.coursearrange.auth.service.PasswordService;
 import com.lyk.coursearrange.common.constants.SystemConstants;
-import com.lyk.coursearrange.entity.Admin;
-import com.lyk.coursearrange.entity.Student;
-import com.lyk.coursearrange.entity.Teacher;
-import com.lyk.coursearrange.service.AdminService;
-import com.lyk.coursearrange.service.StudentService;
-import com.lyk.coursearrange.service.TeacherService;
 import com.lyk.coursearrange.system.rbac.entity.SysUser;
 import com.lyk.coursearrange.system.rbac.service.SysUserService;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +12,6 @@ import java.time.LocalDateTime;
 
 /**
  * 统一登录服务实现。
- * 步骤说明：
- * 1. 优先使用 sys_user 作为认证源。
- * 2. 对于尚未迁移完成的旧账号，允许从旧业务表登录并自动同步到 sys_user。
  */
 @Slf4j
 @Service
@@ -29,68 +19,20 @@ public class AuthLoginServiceImpl implements AuthLoginService {
 
     private final SysUserService sysUserService;
     private final PasswordService passwordService;
-    private final AuthAccountSyncService authAccountSyncService;
-    private final AdminService adminService;
-    private final TeacherService teacherService;
-    private final StudentService studentService;
 
     public AuthLoginServiceImpl(SysUserService sysUserService,
-                                PasswordService passwordService,
-                                AuthAccountSyncService authAccountSyncService,
-                                AdminService adminService,
-                                TeacherService teacherService,
-                                StudentService studentService) {
+                                PasswordService passwordService) {
         this.sysUserService = sysUserService;
         this.passwordService = passwordService;
-        this.authAccountSyncService = authAccountSyncService;
-        this.adminService = adminService;
-        this.teacherService = teacherService;
-        this.studentService = studentService;
     }
 
     @Override
-    public SysUser loginAdmin(String username, String password) {
-        SysUser sysUser = tryLoginSysUser(username, password, SystemConstants.UserType.ADMIN);
-        if (sysUser != null) {
-            return sysUser;
-        }
-        Admin admin = adminService.adminLogin(username, password);
-        if (admin == null) {
+    public SysUser login(String username, String password, String userType) {
+        String normalizedUserType = normalizeUserType(userType);
+        if (normalizedUserType == null) {
             return null;
         }
-        SysUser synced = authAccountSyncService.syncAdminAccount(admin);
-        touchLoginSuccess(synced);
-        return synced;
-    }
-
-    @Override
-    public SysUser loginTeacher(String username, String password) {
-        SysUser sysUser = tryLoginSysUser(username, password, SystemConstants.UserType.TEACHER);
-        if (sysUser != null) {
-            return sysUser;
-        }
-        Teacher teacher = teacherService.teacherLogin(username, password);
-        if (teacher == null) {
-            return null;
-        }
-        SysUser synced = authAccountSyncService.syncTeacherAccount(teacher);
-        touchLoginSuccess(synced);
-        return synced;
-    }
-
-    @Override
-    public SysUser loginStudent(String username, String password) {
-        SysUser sysUser = tryLoginSysUser(username, password, SystemConstants.UserType.STUDENT);
-        if (sysUser != null) {
-            return sysUser;
-        }
-        Student student = studentService.studentLogin(username, password);
-        if (student == null) {
-            return null;
-        }
-        SysUser synced = authAccountSyncService.syncStudentAccount(student);
-        touchLoginSuccess(synced);
-        return synced;
+        return tryLoginSysUser(username, password, normalizedUserType);
     }
 
     private SysUser tryLoginSysUser(String username, String password, String userType) {
@@ -98,11 +40,15 @@ public class AuthLoginServiceImpl implements AuthLoginService {
         if (sysUser == null) {
             return null;
         }
-        if (passwordService.isEncoded(sysUser.getPasswordHash())) {
-            if (!passwordService.matches(password, sysUser.getPasswordHash())) {
+        String storedPassword = sysUser.getPasswordHash();
+        if (storedPassword == null || storedPassword.isBlank()) {
+            return null;
+        }
+        if (passwordService.isEncoded(storedPassword)) {
+            if (!passwordService.matches(password, storedPassword)) {
                 return null;
             }
-        } else if (!password.equals(sysUser.getPasswordHash())) {
+        } else if (!password.equals(storedPassword)) {
             return null;
         } else {
             sysUser.setPasswordHash(passwordService.encode(password));
@@ -116,5 +62,18 @@ public class AuthLoginServiceImpl implements AuthLoginService {
     private void touchLoginSuccess(SysUser sysUser) {
         sysUser.setLastLoginAt(LocalDateTime.now());
         sysUserService.updateById(sysUser);
+    }
+
+    private String normalizeUserType(String userType) {
+        if (userType == null || userType.isBlank()) {
+            return null;
+        }
+        String normalized = userType.trim().toUpperCase();
+        if (SystemConstants.UserType.ADMIN.equals(normalized)
+                || SystemConstants.UserType.TEACHER.equals(normalized)
+                || SystemConstants.UserType.STUDENT.equals(normalized)) {
+            return normalized;
+        }
+        return null;
     }
 }

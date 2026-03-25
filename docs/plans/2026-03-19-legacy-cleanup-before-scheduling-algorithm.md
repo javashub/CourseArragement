@@ -8,6 +8,16 @@
 
 **Tech Stack:** Spring Boot, MyBatis-Plus, Vue 2, Element UI, Maven, Vite
 
+## Progress Update (2026-03-25)
+
+- 排课算法入口已经显式停用，`/api/schedule/tasks/executions` 触发后将直接返回“等待标准重构完成后再启用”。
+- 登录链已统一到 `/api/auth/login` + `sys_user`，前端不再调用 `/legacy-api/admin|teacher|student/login`。
+- 旧 `Admin/Teacher/Student/CourseInfo/GradeInfo` 及历史 `Online/Doc/Exercise` 模块的 controller、service、entity、dao 已移除。
+- `CoursePlan` 已降级为纯内存排课结果模型，不再映射 `tb_course_plan`。
+- 迁移脚本已补齐：
+  - `docs/incremental_sql/20260311_03_seed_rbac_test_accounts.sql` 已改为标准 RBAC 账号初始化
+  - `docs/incremental_sql/20260325_02_drop_legacy_tb_tables.sql` / `docs/sql/2026-03-25-drop-legacy-tb-tables.sql` 可直接清理当前库中的 legacy `tb_*` 表
+
 ---
 
 ### Task 1: 清点并删除 `CoursePlan` 旧链路的最后运行时依赖
@@ -22,7 +32,7 @@
 
 覆盖：
 - 标准课表查询不再依赖任何 `CoursePlanLegacySupport`
-- 空教室查询失败时不再回退 `tb_course_plan`
+- 空教室查询失败时不再回退旧兼容课表
 
 **Step 2: 跑定向测试并确认失败**
 

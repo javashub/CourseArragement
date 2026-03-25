@@ -29,7 +29,7 @@ public interface BaseResourceExcelService {
 
     void exportTeachbuilds(String keyword, HttpServletResponse response) throws IOException;
 
-    void exportClassrooms(String keyword, String teachbuildNo, HttpServletResponse response) throws IOException;
+    void exportClassrooms(String keyword, String buildingCode, HttpServletResponse response) throws IOException;
 
     ServerResponse importTeachers(MultipartFile file);
 

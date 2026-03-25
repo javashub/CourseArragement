@@ -42,17 +42,17 @@ public interface ScheduleTaskMetaUtils {
     }
 
     /**
-     * 基于旧任务构造 remark 元数据。
+     * 基于排课输入对象构造任务 remark 元数据。
      */
-    static String buildTaskRemark(ClassTask legacyTask) {
-        return "semester=" + safe(legacyTask.getSemester())
-                + ",classNo=" + safe(legacyTask.getClassNo())
-                + ",courseNo=" + safe(legacyTask.getCourseNo())
-                + ",teacherNo=" + safe(legacyTask.getTeacherNo())
-                + ",gradeNo=" + safe(legacyTask.getGradeNo())
-                + ",courseName=" + safe(legacyTask.getCourseName())
-                + ",courseAttr=" + safe(legacyTask.getCourseAttr())
-                + ",teacherName=" + safe(legacyTask.getRealname());
+    static String buildTaskRemark(ClassTask schedulingTask) {
+        return "semester=" + safe(schedulingTask.getSemester())
+                + ",classNo=" + safe(schedulingTask.getClassNo())
+                + ",courseNo=" + safe(schedulingTask.getCourseNo())
+                + ",teacherNo=" + safe(schedulingTask.getTeacherNo())
+                + ",gradeNo=" + safe(schedulingTask.getGradeNo())
+                + ",courseName=" + safe(schedulingTask.getCourseName())
+                + ",courseAttr=" + safe(schedulingTask.getCourseAttr())
+                + ",teacherName=" + safe(schedulingTask.getTeacherName());
     }
 
     /**

@@ -16,6 +16,6 @@ public class AdminClassSaveRequest implements Serializable {
     private String classNo;
     private String className;
     private Integer num;
-    private Integer teacherId;
+    private Long teacherId;
     private String forbiddenTimeSlots;
 }

@@ -61,7 +61,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         List<TeacherImportExcelRow> rows = new ArrayList<>();
         TeacherImportExcelRow sample = new TeacherImportExcelRow();
         sample.setTeacherNo("T2026001");
-        sample.setRealname("张老师");
+        sample.setTeacherName("张老师");
         sample.setJobtitle("讲师");
         sample.setTeach("主授高等数学");
         sample.setTelephone("13800000000");
@@ -76,7 +76,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         List<StudentImportExcelRow> rows = new ArrayList<>();
         StudentImportExcelRow sample = new StudentImportExcelRow();
         sample.setStudentNo("2026020001");
-        sample.setRealname("李同学");
+        sample.setStudentName("李同学");
         sample.setGrade("2026级");
         sample.setClassNo("2501班");
         sample.setTelephone("13800000001");
@@ -95,7 +95,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         sample.setCourseName("高等数学");
         sample.setCourseAttr("REQUIRED");
         sample.setPublisher("高数");
-        sample.setPiority(2);
+        sample.setWeekHours(2);
         sample.setStatusText("启用");
         sample.setRemark("大一上学期核心课程");
         rows.add(sample);
@@ -106,9 +106,9 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     public void writeTeachbuildTemplate(HttpServletResponse response) throws IOException {
         List<TeachbuildImportExcelRow> rows = new ArrayList<>();
         TeachbuildImportExcelRow sample = new TeachbuildImportExcelRow();
-        sample.setTeachBuildNo("B08");
-        sample.setTeachBuildName("实验楼");
-        sample.setTeachBuildLocation("主校区东区，默认公共教学楼");
+        sample.setBuildingCode("B08");
+        sample.setBuildingName("实验楼");
+        sample.setBuildingLocation("主校区东区，默认公共教学楼");
         rows.add(sample);
         writeExcel(response, "教学楼导入模板.xlsx", "教学楼导入模板", TeachbuildImportExcelRow.class, rows);
     }
@@ -119,7 +119,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         ClassroomImportExcelRow sample = new ClassroomImportExcelRow();
         sample.setClassroomNo("B08-302");
         sample.setClassroomName("实验楼 302");
-        sample.setTeachbuildNo("B08");
+        sample.setBuildingCode("B08");
         sample.setCapacity(60);
         sample.setAttr("LAB");
         sample.setRemark("支持投影和实验台");
@@ -190,7 +190,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     }
 
     @Override
-    public void exportClassrooms(String keyword, String teachbuildNo, HttpServletResponse response) throws IOException {
+    public void exportClassrooms(String keyword, String buildingCode, HttpServletResponse response) throws IOException {
         List<ClassroomExcelRow> rows = classroomService.list(new LambdaQueryWrapper<ResClassroom>()
                         .eq(ResClassroom::getDeleted, 0)
                         .and(StringUtils.isNotBlank(keyword), wrapper -> wrapper
@@ -200,11 +200,11 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
                         .orderByAsc(ResClassroom::getClassroomCode))
                 .stream()
                 .filter(item -> {
-                    if (StringUtils.isBlank(teachbuildNo)) {
+                    if (StringUtils.isBlank(buildingCode)) {
                         return true;
                     }
                     ResBuilding building = teachbuildInfoService.getById(item.getBuildingId());
-                    return building != null && StringUtils.equals(building.getBuildingCode(), teachbuildNo);
+                    return building != null && StringUtils.equals(building.getBuildingCode(), buildingCode);
                 })
                 .map(this::toClassroomRow)
                 .collect(Collectors.toList());
@@ -240,7 +240,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
                 teacher = new ResTeacher();
                 teacher.setTeacherCode(trim(row.getTeacherNo()));
             }
-            teacher.setTeacherName(trim(row.getRealname()));
+            teacher.setTeacherName(trim(row.getTeacherName()));
             teacher.setTitleName(trim(row.getJobtitle()));
             teacher.setRemark(trim(row.getTeach()));
             teacher.setMobile(trim(row.getTelephone()));
@@ -285,7 +285,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
                 student = new ResStudent();
                 student.setStudentCode(trim(row.getStudentNo()));
             }
-            student.setStudentName(trim(row.getRealname()));
+            student.setStudentName(trim(row.getStudentName()));
             student.setRemark(StringUtils.defaultIfBlank(trim(row.getAddress()), trim(row.getClassNo())));
             student.setEntryYear(parseEntryYear(row.getGrade(), row.getStudentNo()));
             student.setMobile(trim(row.getTelephone()));
@@ -331,8 +331,8 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
             courseInfo.setCourseName(trim(row.getCourseName()));
             courseInfo.setCourseType(StringUtils.defaultIfBlank(trim(row.getCourseAttr()), "REQUIRED"));
             courseInfo.setCourseShortName(trim(row.getPublisher()));
-            courseInfo.setWeekHours(row.getPiority() == null ? 0 : row.getPiority());
-            courseInfo.setTotalHours((row.getPiority() == null ? 0 : row.getPiority()) * 16);
+            courseInfo.setWeekHours(row.getWeekHours() == null ? 0 : row.getWeekHours());
+            courseInfo.setTotalHours((row.getWeekHours() == null ? 0 : row.getWeekHours()) * 16);
             courseInfo.setNeedSpecialRoom(0);
             courseInfo.setRoomType("NORMAL");
             courseInfo.setStatus(parseResourceStatus(trim(row.getStatusText()), 1));
@@ -366,14 +366,14 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
                 continue;
             }
             ResBuilding teachbuildInfo = teachbuildInfoService.getOne(new LambdaQueryWrapper<ResBuilding>()
-                    .eq(ResBuilding::getBuildingCode, trim(row.getTeachBuildNo()))
+                    .eq(ResBuilding::getBuildingCode, trim(row.getBuildingCode()))
                     .eq(ResBuilding::getDeleted, 0));
             if (teachbuildInfo == null) {
                 teachbuildInfo = new ResBuilding();
-                teachbuildInfo.setBuildingCode(trim(row.getTeachBuildNo()));
+                teachbuildInfo.setBuildingCode(trim(row.getBuildingCode()));
             }
-            teachbuildInfo.setBuildingName(trim(row.getTeachBuildName()));
-            teachbuildInfo.setRemark(trim(row.getTeachBuildLocation()));
+            teachbuildInfo.setBuildingName(trim(row.getBuildingName()));
+            teachbuildInfo.setRemark(trim(row.getBuildingLocation()));
             teachbuildInfo.setBuildingType("TEACHING");
             teachbuildInfo.setCampusId(defaultCampusId());
             teachbuildInfo.setStatus(1);
@@ -406,7 +406,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
                 continue;
             }
             ResBuilding building = teachbuildInfoService.getOne(new LambdaQueryWrapper<ResBuilding>()
-                    .eq(ResBuilding::getBuildingCode, trim(row.getTeachbuildNo()))
+                    .eq(ResBuilding::getBuildingCode, trim(row.getBuildingCode()))
                     .eq(ResBuilding::getDeleted, 0)
                     .last("limit 1"));
             if (building == null) {
@@ -439,7 +439,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         TeacherExcelRow row = new TeacherExcelRow();
         row.setTeacherNo(teacher.getTeacherCode());
         row.setUsername(teacher.getTeacherCode());
-        row.setRealname(teacher.getTeacherName());
+        row.setTeacherName(teacher.getTeacherName());
         row.setJobtitle(teacher.getTitleName());
         row.setTeach(teacher.getRemark());
         row.setAge(null);
@@ -454,7 +454,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         StudentExcelRow row = new StudentExcelRow();
         row.setStudentNo(student.getStudentCode());
         row.setUsername(student.getStudentCode());
-        row.setRealname(student.getStudentName());
+        row.setStudentName(student.getStudentName());
         row.setGrade(student.getEntryYear() == null ? "" : student.getEntryYear() + "级");
         row.setClassNo(student.getRemark());
         row.setAge(null);
@@ -471,7 +471,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         row.setCourseName(course.getCourseName());
         row.setCourseAttr(course.getCourseType());
         row.setPublisher(course.getCourseShortName());
-        row.setPiority(course.getWeekHours());
+        row.setWeekHours(course.getWeekHours());
         row.setStatusText(course.getStatus() != null && course.getStatus() == 1 ? "启用" : "停用");
         row.setRemark(course.getRemark());
         return row;
@@ -479,9 +479,9 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
 
     private TeachbuildExcelRow toTeachbuildRow(ResBuilding teachbuildInfo) {
         TeachbuildExcelRow row = new TeachbuildExcelRow();
-        row.setTeachBuildNo(teachbuildInfo.getBuildingCode());
-        row.setTeachBuildName(teachbuildInfo.getBuildingName());
-        row.setTeachBuildLocation(teachbuildInfo.getRemark());
+        row.setBuildingCode(teachbuildInfo.getBuildingCode());
+        row.setBuildingName(teachbuildInfo.getBuildingName());
+        row.setBuildingLocation(teachbuildInfo.getRemark());
         return row;
     }
 
@@ -490,7 +490,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         row.setClassroomNo(classroom.getClassroomCode());
         row.setClassroomName(classroom.getClassroomName());
         ResBuilding building = teachbuildInfoService.getById(classroom.getBuildingId());
-        row.setTeachbuildNo(building == null ? "" : building.getBuildingCode());
+        row.setBuildingCode(building == null ? "" : building.getBuildingCode());
         row.setCapacity(classroom.getSeatCount());
         row.setAttr(classroom.getRoomType());
         row.setRemark(classroom.getRemark());
@@ -501,7 +501,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         if (StringUtils.isBlank(trim(row.getTeacherNo()))) {
             errors.add("第 " + rowNum + " 行缺少教师编号");
         }
-        if (StringUtils.isBlank(trim(row.getRealname()))) {
+        if (StringUtils.isBlank(trim(row.getTeacherName()))) {
             errors.add("第 " + rowNum + " 行缺少教师姓名");
         }
     }
@@ -510,7 +510,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         if (StringUtils.isBlank(trim(row.getStudentNo()))) {
             errors.add("第 " + rowNum + " 行缺少学号");
         }
-        if (StringUtils.isBlank(trim(row.getRealname()))) {
+        if (StringUtils.isBlank(trim(row.getStudentName()))) {
             errors.add("第 " + rowNum + " 行缺少学生姓名");
         }
     }
@@ -525,10 +525,10 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
     }
 
     private void validateTeachbuildRow(TeachbuildImportExcelRow row, int rowNum, List<String> errors) {
-        if (StringUtils.isBlank(trim(row.getTeachBuildNo()))) {
+        if (StringUtils.isBlank(trim(row.getBuildingCode()))) {
             errors.add("第 " + rowNum + " 行缺少教学楼编号");
         }
-        if (StringUtils.isBlank(trim(row.getTeachBuildName()))) {
+        if (StringUtils.isBlank(trim(row.getBuildingName()))) {
             errors.add("第 " + rowNum + " 行缺少教学楼名称");
         }
     }
@@ -540,7 +540,7 @@ public class BaseResourceExcelServiceImpl implements BaseResourceExcelService {
         if (StringUtils.isBlank(trim(row.getClassroomName()))) {
             errors.add("第 " + rowNum + " 行缺少教室名称");
         }
-        if (StringUtils.isBlank(trim(row.getTeachbuildNo()))) {
+        if (StringUtils.isBlank(trim(row.getBuildingCode()))) {
             errors.add("第 " + rowNum + " 行缺少教学楼编号");
         }
     }

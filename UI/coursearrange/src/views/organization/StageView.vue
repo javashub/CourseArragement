@@ -48,41 +48,66 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="stageForm.id ? '编辑学段' : '新增学段'" width="620px" append-to-body>
-      <el-form ref="formRef" :model="stageForm" :rules="formRules" label-width="100px">
-        <el-form-item label="学段编码" prop="stageCode">
-          <el-input v-model="stageForm.stageCode" placeholder="例如 PRIMARY、JUNIOR_HIGH、UNIVERSITY" />
-        </el-form-item>
-        <el-form-item label="学段名称" prop="stageName">
-          <el-input v-model="stageForm.stageName" placeholder="例如 小学、初中、大学" />
-        </el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="12">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="stageForm.id ? '编辑学段' : '新增学段'"
+      width="760px"
+      append-to-body
+      class="academy-form-dialog"
+    >
+      <div class="academy-form-intro">
+        <div class="academy-form-intro__eyebrow">Stage Taxonomy</div>
+        <div class="academy-form-intro__title">{{ stageForm.id ? '更新学段定义' : '建立学段定义' }}</div>
+        <div class="academy-form-intro__text">
+          学段会参与排课规则分层、资源过滤和范围配置，建议保持编码清晰、层级稳定，便于后续扩展更多教学场景。
+        </div>
+      </div>
+
+      <el-form ref="formRef" :model="stageForm" :rules="formRules" label-position="top" class="academy-form">
+        <div class="academy-form-section">
+          <div class="academy-form-section__header">
+            <div class="academy-form-section__title">分类信息</div>
+            <div class="academy-form-section__desc">先定义学段编码、名称和层级，用于系统内统一识别。</div>
+          </div>
+          <div class="academy-form-grid academy-form-grid--two">
+            <el-form-item label="学段编码" prop="stageCode">
+              <el-input v-model="stageForm.stageCode" placeholder="例如 PRIMARY、JUNIOR_HIGH、UNIVERSITY" />
+            </el-form-item>
+            <el-form-item label="学段名称" prop="stageName">
+              <el-input v-model="stageForm.stageName" placeholder="例如 小学、初中、大学" />
+            </el-form-item>
+          </div>
+        </div>
+
+        <div class="academy-form-section">
+          <div class="academy-form-section__header">
+            <div class="academy-form-section__title">排序与状态</div>
+            <div class="academy-form-section__desc">层级用于表达学段顺序，状态决定是否参与范围配置与规则下发。</div>
+          </div>
+          <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="学段层级" prop="stageLevel">
               <el-input-number v-model="stageForm.stageLevel" :min="1" :max="20" controls-position="right" />
             </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="stageForm.status">
+              <el-radio-group v-model="stageForm.status" class="academy-radio-group">
                 <el-radio :value="1">启用</el-radio>
                 <el-radio :value="0">停用</el-radio>
               </el-radio-group>
             </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注">
-          <el-input
-            v-model="stageForm.remark"
-            type="textarea"
-            :rows="3"
-            placeholder="例如 大学学段支持多学院、多专业排课"
-          />
-        </el-form-item>
+          </div>
+          <el-form-item label="备注">
+            <el-input
+              v-model="stageForm.remark"
+              type="textarea"
+              :rows="3"
+              placeholder="例如 大学学段支持多学院、多专业排课"
+            />
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">保存</el-button>
+        <el-button class="academy-dialog__ghost" @click="dialogVisible = false">取消</el-button>
+        <el-button class="academy-dialog__primary" type="primary" :loading="saving" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
   </section>

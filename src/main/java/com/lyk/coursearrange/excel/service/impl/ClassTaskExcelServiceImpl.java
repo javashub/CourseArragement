@@ -129,7 +129,7 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
         sample.setCourseNo("10001");
         sample.setCourseName("高等数学");
         sample.setTeacherNo("T2026001");
-        sample.setRealname("张老师");
+        sample.setTeacherName("张老师");
         sample.setCourseAttr("必修");
         sample.setStudentNum(45);
         sample.setWeeksNumber(4);
@@ -146,7 +146,7 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
         String courseNo = trim(row.getCourseNo());
         String courseName = trim(row.getCourseName());
         String teacherNo = trim(row.getTeacherNo());
-        String realname = trim(row.getRealname());
+        String teacherName = trim(row.getTeacherName());
         String isFix = StringUtils.defaultIfBlank(trim(row.getIsFix()), "0");
         String classTime = trim(row.getClassTime());
 
@@ -159,7 +159,7 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
         if (StringUtils.isBlank(courseNo) || StringUtils.isBlank(courseName)) {
             errors.add("第 " + excelRowNum + " 行课程编号和课程名称必须同时填写");
         }
-        if (StringUtils.isBlank(teacherNo) || StringUtils.isBlank(realname)) {
+        if (StringUtils.isBlank(teacherNo) || StringUtils.isBlank(teacherName)) {
             errors.add("第 " + excelRowNum + " 行教师编号和教师姓名必须同时填写");
         }
         if (row.getWeeksNumber() == null || row.getWeeksNumber() < 1) {
@@ -187,7 +187,7 @@ public class ClassTaskExcelServiceImpl implements ClassTaskExcelService {
         String teacherNo = trim(row.getTeacherNo());
         String gradeNo = trim(row.getGradeNo());
         String courseName = trim(row.getCourseName());
-        String teacherName = trim(row.getRealname());
+        String teacherName = trim(row.getTeacherName());
         String courseAttr = trim(row.getCourseAttr());
         String isFix = StringUtils.defaultIfBlank(trim(row.getIsFix()), "0");
         String classTime = "1".equals(isFix) ? trim(row.getClassTime()) : "";

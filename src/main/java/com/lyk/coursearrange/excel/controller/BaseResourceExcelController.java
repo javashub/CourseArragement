@@ -97,9 +97,12 @@ public class BaseResourceExcelController {
 
     @GetMapping("/classrooms/export")
     public void exportClassrooms(@RequestParam(required = false) String keyword,
+                                 @RequestParam(required = false) String buildingCode,
                                  @RequestParam(required = false) String teachbuildNo,
                                  HttpServletResponse response) throws IOException {
-        baseResourceExcelService.exportClassrooms(keyword, teachbuildNo, response);
+        baseResourceExcelService.exportClassrooms(keyword,
+                buildingCode != null && !buildingCode.isBlank() ? buildingCode : teachbuildNo,
+                response);
     }
 
     @PostMapping("/classrooms/import")

@@ -57,4 +57,18 @@ class LegacyCleanupGuardTest {
         assertFalse(Files.exists(Path.of("src/main/java/com/lyk/coursearrange/controller/ClassTaskController.java")));
         assertFalse(Files.exists(Path.of("src/test/java/com/lyk/coursearrange/controller/ClassTaskControllerTest.java")));
     }
+
+    @Test
+    void shouldRemoveLegacyMapperXmlResources() {
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/AdminMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/TeacherMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/StudentMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/ClassInfoMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/ClassTaskMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/ClassroomMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/CourseInfoMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/CoursePlanMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/GradeInfoMapper.xml")));
+        assertFalse(Files.exists(Path.of("src/main/resources/mapper/TeachBuildInfoDao.xml")));
+    }
 }

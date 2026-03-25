@@ -2,10 +2,6 @@ import axios from 'axios';
 import request from '@/api/request';
 import { TOKEN_KEY } from '@/constants/storage';
 
-const legacyOptions = {
-  baseURL: ''
-};
-
 function normalizeForbiddenTimeSlots(rawValue) {
   const values = Array.isArray(rawValue)
     ? rawValue
@@ -27,7 +23,6 @@ function normalizeCourseRecord(record = {}) {
     courseType: record.courseType ?? record.courseAttr ?? '',
     publisher: record.publisher ?? record.courseShortName ?? '',
     courseShortName: record.courseShortName ?? record.publisher ?? '',
-    piority: record.piority ?? record.weekHours ?? 0,
     weekHours: record.weekHours ?? record.piority ?? 0,
     needContinuous: Number(record.needContinuous ?? 0) || 0,
     continuousSize: Number(record.continuousSize ?? 1) || 1
@@ -40,7 +35,6 @@ function normalizeTeacherRecord(record = {}) {
     ...record,
     teacherNo: record.teacherNo ?? record.teacherCode ?? '',
     teacherCode: record.teacherCode ?? record.teacherNo ?? '',
-    realname: record.realname ?? record.teacherName ?? '',
     teacherName: record.teacherName ?? record.realname ?? '',
     telephone: record.telephone ?? record.mobile ?? '',
     mobile: record.mobile ?? record.telephone ?? '',
@@ -58,7 +52,6 @@ function normalizeStudentRecord(record = {}) {
     ...record,
     studentNo: record.studentNo ?? record.studentCode ?? '',
     studentCode: record.studentCode ?? record.studentNo ?? '',
-    realname: record.realname ?? record.studentName ?? '',
     studentName: record.studentName ?? record.realname ?? '',
     telephone: record.telephone ?? record.mobile ?? '',
     mobile: record.mobile ?? record.telephone ?? '',
@@ -103,9 +96,7 @@ function normalizeClassroomRecord(record = {}) {
     ...record,
     classroomNo: record.classroomNo ?? record.classroomCode ?? '',
     classroomCode: record.classroomCode ?? record.classroomNo ?? '',
-    teachbuildNo: record.teachbuildNo ?? record.buildingCode ?? '',
     buildingCode: record.buildingCode ?? record.teachbuildNo ?? '',
-    teachbuildName: record.teachbuildName ?? record.buildingName ?? '',
     buildingName: record.buildingName ?? record.teachbuildName ?? '',
     capacity: record.capacity ?? record.seatCount ?? 0,
     seatCount: record.seatCount ?? record.capacity ?? 0
@@ -314,7 +305,7 @@ export function deleteClassroom(id) {
   return request.delete(`/resources/classrooms/${id}`);
 }
 
-export function fetchTeachbuildList() {
+export function fetchBuildingList() {
   return request.get('/resources/buildings/options');
 }
 
@@ -425,7 +416,7 @@ export function importCourseExcel(file) {
   });
 }
 
-export function downloadTeachbuildTemplate() {
+export function downloadBuildingTemplate() {
   const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
   return downloadExcel(`${baseURL}/excel/base/teachbuilds/template`, '教学楼导入模板.xlsx');
 }
@@ -435,7 +426,7 @@ export function downloadClassroomTemplate() {
   return downloadExcel(`${baseURL}/excel/base/classrooms/template`, '教室导入模板.xlsx');
 }
 
-export function exportTeachbuildExcel(params = {}) {
+export function exportBuildingExcel(params = {}) {
   const query = new URLSearchParams();
   if (params.keyword) {
     query.set('keyword', params.keyword);
@@ -449,14 +440,14 @@ export function exportClassroomExcel(params = {}) {
   if (params.keyword) {
     query.set('keyword', params.keyword);
   }
-  if (params.teachbuildNo) {
-    query.set('teachbuildNo', params.teachbuildNo);
+  if (params.buildingCode ?? params.teachbuildNo) {
+    query.set('buildingCode', params.buildingCode ?? params.teachbuildNo);
   }
   const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
   return downloadExcel(`${baseURL}/excel/base/classrooms/export${query.toString() ? `?${query.toString()}` : ''}`, '教室数据导出.xlsx');
 }
 
-export function importTeachbuildExcel(file) {
+export function importBuildingExcel(file) {
   const formData = new FormData();
   formData.append('file', file);
   return request.post('/excel/base/teachbuilds/import', formData, {

@@ -82,16 +82,43 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="collegeForm.id ? '编辑学院' : '新增学院'" width="640px" append-to-body>
-      <el-form ref="formRef" :model="collegeForm" :rules="formRules" label-width="110px">
-        <el-form-item label="学院编码" prop="collegeCode">
-          <el-input v-model="collegeForm.collegeCode" placeholder="例如 COLLEGE_CS、ARTS_SCHOOL" />
-        </el-form-item>
-        <el-form-item label="学院名称" prop="collegeName">
-          <el-input v-model="collegeForm.collegeName" placeholder="例如 信息工程学院、文学院" />
-        </el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="12">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="collegeForm.id ? '编辑学院' : '新增学院'"
+      width="860px"
+      append-to-body
+      class="academy-form-dialog"
+    >
+      <div class="academy-form-intro">
+        <div class="academy-form-intro__eyebrow">College Registry</div>
+        <div class="academy-form-intro__title">{{ collegeForm.id ? '更新学院档案' : '建立学院档案' }}</div>
+        <div class="academy-form-intro__text">
+          学院会作为教师归属、课程组织和跨学院排课范围的基础节点，建议先明确所属校区与管理责任人。
+        </div>
+      </div>
+
+      <el-form ref="formRef" :model="collegeForm" :rules="formRules" label-position="top" class="academy-form">
+        <div class="academy-form-section">
+          <div class="academy-form-section__header">
+            <div class="academy-form-section__title">学院身份</div>
+            <div class="academy-form-section__desc">维护学院在系统内的唯一编号、名称与可用状态。</div>
+          </div>
+          <div class="academy-form-grid academy-form-grid--two">
+            <el-form-item label="学院编码" prop="collegeCode">
+              <el-input v-model="collegeForm.collegeCode" placeholder="例如 COLLEGE_CS、ARTS_SCHOOL" />
+            </el-form-item>
+            <el-form-item label="学院名称" prop="collegeName">
+              <el-input v-model="collegeForm.collegeName" placeholder="例如 信息工程学院、文学院" />
+            </el-form-item>
+          </div>
+        </div>
+
+        <div class="academy-form-section">
+          <div class="academy-form-section__header">
+            <div class="academy-form-section__title">归属关系</div>
+            <div class="academy-form-section__desc">指定学院挂接的校区与负责人，便于后续组织权限和资源汇总。</div>
+          </div>
+          <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="所属校区">
               <el-select v-model="collegeForm.campusId" clearable placeholder="例如 主校区">
                 <el-option
@@ -102,40 +129,41 @@
                 />
               </el-select>
             </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="负责人用户ID">
               <el-input-number v-model="collegeForm.deanUserId" :min="0" :max="999999999" controls-position="right" />
             </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
+          </div>
+        </div>
+
+        <div class="academy-form-section">
+          <div class="academy-form-section__header">
+            <div class="academy-form-section__title">展示与说明</div>
+            <div class="academy-form-section__desc">通过排序和备注补充学院的业务定位与组织边界。</div>
+          </div>
+          <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="排序">
               <el-input-number v-model="collegeForm.sortNo" :min="0" :max="9999" controls-position="right" />
             </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="collegeForm.status">
+              <el-radio-group v-model="collegeForm.status" class="academy-radio-group">
                 <el-radio :value="1">启用</el-radio>
                 <el-radio :value="0">停用</el-radio>
               </el-radio-group>
             </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注">
-          <el-input
-            v-model="collegeForm.remark"
-            type="textarea"
-            :rows="3"
-            placeholder="例如 允许教师跨学院授课，需要后续开启跨学院开关"
-          />
-        </el-form-item>
+          </div>
+          <el-form-item label="备注">
+            <el-input
+              v-model="collegeForm.remark"
+              type="textarea"
+              :rows="3"
+              placeholder="例如 允许教师跨学院授课，需要后续开启跨学院开关"
+            />
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">保存</el-button>
+        <el-button class="academy-dialog__ghost" @click="dialogVisible = false">取消</el-button>
+        <el-button class="academy-dialog__primary" type="primary" :loading="saving" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
   </section>

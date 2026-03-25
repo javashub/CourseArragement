@@ -65,8 +65,8 @@ public class ClassUtil {
                 // 上课时间
                 return source.substring(24, 26);
             case ConstantInfo.CLASSROOM_NO:
-                // 教室编号
-                return source.substring(26, 32);
+                // 教室编号位于基因尾部，长度由标准教室编码决定
+                return source.length() <= 26 ? "" : source.substring(26);
             default:
                 return "";
         }

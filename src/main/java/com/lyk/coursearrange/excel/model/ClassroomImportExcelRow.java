@@ -16,7 +16,7 @@ public class ClassroomImportExcelRow {
     private String classroomName;
 
     @ExcelProperty("教学楼编号")
-    private String teachbuildNo;
+    private String buildingCode;
 
     @ExcelProperty("容量")
     private Integer capacity;

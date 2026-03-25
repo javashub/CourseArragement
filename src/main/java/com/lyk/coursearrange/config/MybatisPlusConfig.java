@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @MapperScan({
-        "com.lyk.coursearrange.dao",
         "com.lyk.coursearrange.resource.mapper",
         "com.lyk.coursearrange.schedule.mapper",
         "com.lyk.coursearrange.organization.mapper",

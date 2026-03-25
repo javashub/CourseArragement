@@ -2,10 +2,6 @@ import axios from 'axios';
 import request from '@/api/request';
 import { TOKEN_KEY } from '@/constants/storage';
 
-const legacyOptions = {
-  baseURL: ''
-};
-
 const MAX_PAGE_SIZE = 100;
 
 function normalizeForbiddenTimeSlots(rawValue) {
@@ -104,7 +100,7 @@ export function fetchArrangeLogs(params = {}) {
   return request.get('/schedule/tasks/executions', { params });
 }
 
-export function fetchClassInfoPage(page = 1, limit = 200, gradeNo = '') {
+export function fetchAdminClassPage(page = 1, limit = 200, gradeNo = '') {
   return request.get('/resources/admin-classes/page', {
     params: {
       pageNum: page,

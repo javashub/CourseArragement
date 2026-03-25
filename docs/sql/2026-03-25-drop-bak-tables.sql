@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS bak_tb_class_task_20260313;
+DROP TABLE IF EXISTS bak_tb_course_plan_20260313;
