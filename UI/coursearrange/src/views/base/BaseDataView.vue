@@ -22,7 +22,7 @@
     </div>
 
     <el-card shadow="never" class="resource-card">
-      <el-tabs v-model="activeTab" class="resource-tabs">
+      <el-tabs v-model="activeTab" class="resource-tabs" @tab-change="handleTabChange">
         <el-tab-pane label="教师管理" name="teacher">
           <div class="toolbar-row">
             <el-input
@@ -589,7 +589,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getErrorMessage } from '@/utils/http';
 import {
@@ -636,6 +637,20 @@ import {
   updateStudent,
   updateTeacher
 } from '@/api/modules/base';
+
+const route = useRoute();
+const router = useRouter();
+
+const TAB_ROUTE_MAP = {
+  teacher: '/base-data/teachers',
+  student: '/base-data/students',
+  course: '/base-data/courses',
+  classroom: '/base-data/classrooms'
+};
+
+const ROUTE_TAB_MAP = Object.fromEntries(
+  Object.entries(TAB_ROUTE_MAP).map(([tab, path]) => [path, tab])
+);
 
 const activeTab = ref('teacher');
 const teacherDialogVisible = ref(false);
@@ -777,6 +792,18 @@ const activeTabLabel = computed(() => {
   };
   return map[activeTab.value] || '基础数据';
 });
+
+function syncActiveTabByRoute(routePath) {
+  activeTab.value = ROUTE_TAB_MAP[routePath] || 'teacher';
+}
+
+function handleTabChange(tabName) {
+  const nextPath = TAB_ROUTE_MAP[String(tabName)] || TAB_ROUTE_MAP.teacher;
+  if (route.path === nextPath) {
+    return;
+  }
+  router.push(nextPath).catch(() => {});
+}
 
 function applyPageData(state, pageData) {
   state.records = pageData?.records || [];
@@ -1315,6 +1342,16 @@ async function loadBuildingOptions() {
 onMounted(async () => {
   await Promise.all([loadTeachers(), loadStudents(), loadCourses(), loadClassrooms(), loadBuildingOptions()]);
 });
+
+watch(
+  () => route.path,
+  (routePath) => {
+    syncActiveTabByRoute(routePath);
+  },
+  {
+    immediate: true
+  }
+);
 </script>
 
 <style scoped>

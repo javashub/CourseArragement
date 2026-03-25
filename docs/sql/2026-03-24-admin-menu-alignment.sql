@@ -14,7 +14,7 @@
 --    /dashboard
 --    /course-plan
 --    /schedule
---    /base-data
+--    /base-data/*
 --    /organization/*
 --    /system/config
 --    /system/rbac
@@ -87,6 +87,54 @@ SELECT
 FROM dual
 WHERE NOT EXISTS (
     SELECT 1 FROM sys_permission WHERE permission_code = 'page:base-data:view' AND deleted = 0
+);
+
+INSERT INTO sys_permission (
+    permission_code, permission_name, permission_type, resource_path, http_method, status,
+    remark, created_at, updated_at, deleted
+)
+SELECT
+    'page:teacher:view', '查看教师管理', 'PAGE', '/base-data/teachers', 'GET', 1,
+    '管理员教师管理页面权限', NOW(), NOW(), 0
+FROM dual
+WHERE NOT EXISTS (
+    SELECT 1 FROM sys_permission WHERE permission_code = 'page:teacher:view' AND deleted = 0
+);
+
+INSERT INTO sys_permission (
+    permission_code, permission_name, permission_type, resource_path, http_method, status,
+    remark, created_at, updated_at, deleted
+)
+SELECT
+    'page:student:view', '查看学生管理', 'PAGE', '/base-data/students', 'GET', 1,
+    '管理员学生管理页面权限', NOW(), NOW(), 0
+FROM dual
+WHERE NOT EXISTS (
+    SELECT 1 FROM sys_permission WHERE permission_code = 'page:student:view' AND deleted = 0
+);
+
+INSERT INTO sys_permission (
+    permission_code, permission_name, permission_type, resource_path, http_method, status,
+    remark, created_at, updated_at, deleted
+)
+SELECT
+    'page:course:view', '查看课程管理', 'PAGE', '/base-data/courses', 'GET', 1,
+    '管理员课程管理页面权限', NOW(), NOW(), 0
+FROM dual
+WHERE NOT EXISTS (
+    SELECT 1 FROM sys_permission WHERE permission_code = 'page:course:view' AND deleted = 0
+);
+
+INSERT INTO sys_permission (
+    permission_code, permission_name, permission_type, resource_path, http_method, status,
+    remark, created_at, updated_at, deleted
+)
+SELECT
+    'page:classroom:view', '查看教室管理', 'PAGE', '/base-data/classrooms', 'GET', 1,
+    '管理员教室管理页面权限', NOW(), NOW(), 0
+FROM dual
+WHERE NOT EXISTS (
+    SELECT 1 FROM sys_permission WHERE permission_code = 'page:classroom:view' AND deleted = 0
 );
 
 INSERT INTO sys_permission (
@@ -174,6 +222,84 @@ FROM dual
 WHERE NOT EXISTS (
     SELECT 1 FROM sys_menu WHERE menu_code = 'dashboard' AND deleted = 0
 );
+
+INSERT INTO sys_menu (
+    menu_code, parent_id, menu_name, menu_type, route_name, route_path, component_path,
+    icon, permission_code, is_hidden, is_keep_alive, sort_no, status,
+    created_by, updated_by, created_at, updated_at, deleted, remark
+)
+SELECT
+    'base-data', 0, '基础数据', 'CATALOG', 'BaseDataCatalog', '/base-data', 'layouts/BasicLayout.vue',
+    'Collection', NULL, 0, 0, 4, 1,
+    1, 1, NOW(), NOW(), 0, '管理员基础数据目录'
+FROM dual
+WHERE NOT EXISTS (
+    SELECT 1 FROM sys_menu WHERE menu_code = 'base-data' AND deleted = 0
+);
+
+INSERT INTO sys_menu (
+    menu_code, parent_id, menu_name, menu_type, route_name, route_path, component_path,
+    icon, permission_code, is_hidden, is_keep_alive, sort_no, status,
+    created_by, updated_by, created_at, updated_at, deleted, remark
+)
+SELECT
+    'base-teacher', parent_menu.id, '教师管理', 'MENU', 'TeacherManagePage', '/base-data/teachers', 'views/base/BaseDataView.vue',
+    'User', 'page:teacher:view', 0, 0, 1, 1,
+    1, 1, NOW(), NOW(), 0, '管理员教师管理菜单'
+FROM sys_menu parent_menu
+WHERE parent_menu.menu_code = 'base-data'
+  AND parent_menu.deleted = 0
+  AND NOT EXISTS (
+      SELECT 1 FROM sys_menu WHERE menu_code = 'base-teacher' AND deleted = 0
+  );
+
+INSERT INTO sys_menu (
+    menu_code, parent_id, menu_name, menu_type, route_name, route_path, component_path,
+    icon, permission_code, is_hidden, is_keep_alive, sort_no, status,
+    created_by, updated_by, created_at, updated_at, deleted, remark
+)
+SELECT
+    'base-student', parent_menu.id, '学生管理', 'MENU', 'StudentManagePage', '/base-data/students', 'views/base/BaseDataView.vue',
+    'UserFilled', 'page:student:view', 0, 0, 2, 1,
+    1, 1, NOW(), NOW(), 0, '管理员学生管理菜单'
+FROM sys_menu parent_menu
+WHERE parent_menu.menu_code = 'base-data'
+  AND parent_menu.deleted = 0
+  AND NOT EXISTS (
+      SELECT 1 FROM sys_menu WHERE menu_code = 'base-student' AND deleted = 0
+  );
+
+INSERT INTO sys_menu (
+    menu_code, parent_id, menu_name, menu_type, route_name, route_path, component_path,
+    icon, permission_code, is_hidden, is_keep_alive, sort_no, status,
+    created_by, updated_by, created_at, updated_at, deleted, remark
+)
+SELECT
+    'base-course', parent_menu.id, '课程管理', 'MENU', 'CourseManagePage', '/base-data/courses', 'views/base/BaseDataView.vue',
+    'Reading', 'page:course:view', 0, 0, 3, 1,
+    1, 1, NOW(), NOW(), 0, '管理员课程管理菜单'
+FROM sys_menu parent_menu
+WHERE parent_menu.menu_code = 'base-data'
+  AND parent_menu.deleted = 0
+  AND NOT EXISTS (
+      SELECT 1 FROM sys_menu WHERE menu_code = 'base-course' AND deleted = 0
+  );
+
+INSERT INTO sys_menu (
+    menu_code, parent_id, menu_name, menu_type, route_name, route_path, component_path,
+    icon, permission_code, is_hidden, is_keep_alive, sort_no, status,
+    created_by, updated_by, created_at, updated_at, deleted, remark
+)
+SELECT
+    'base-classroom', parent_menu.id, '教室管理', 'MENU', 'ClassroomManagePage', '/base-data/classrooms', 'views/base/BaseDataView.vue',
+    'OfficeBuilding', 'page:classroom:view', 0, 0, 4, 1,
+    1, 1, NOW(), NOW(), 0, '管理员教室管理菜单'
+FROM sys_menu parent_menu
+WHERE parent_menu.menu_code = 'base-data'
+  AND parent_menu.deleted = 0
+  AND NOT EXISTS (
+      SELECT 1 FROM sys_menu WHERE menu_code = 'base-classroom' AND deleted = 0
+  );
 
 INSERT INTO sys_menu (
     menu_code, parent_id, menu_name, menu_type, route_name, route_path, component_path,
@@ -349,6 +475,22 @@ SET permission_name = '查看基础数据', resource_path = '/base-data', update
 WHERE permission_code = 'page:base-data:view' AND deleted = 0;
 
 UPDATE sys_permission
+SET permission_name = '查看教师管理', resource_path = '/base-data/teachers', updated_at = NOW()
+WHERE permission_code = 'page:teacher:view' AND deleted = 0;
+
+UPDATE sys_permission
+SET permission_name = '查看学生管理', resource_path = '/base-data/students', updated_at = NOW()
+WHERE permission_code = 'page:student:view' AND deleted = 0;
+
+UPDATE sys_permission
+SET permission_name = '查看课程管理', resource_path = '/base-data/courses', updated_at = NOW()
+WHERE permission_code = 'page:course:view' AND deleted = 0;
+
+UPDATE sys_permission
+SET permission_name = '查看教室管理', resource_path = '/base-data/classrooms', updated_at = NOW()
+WHERE permission_code = 'page:classroom:view' AND deleted = 0;
+
+UPDATE sys_permission
 SET permission_name = '查看校区管理', resource_path = '/organization/campus', updated_at = NOW()
 WHERE permission_code = 'page:campus:view' AND deleted = 0;
 
@@ -421,18 +563,90 @@ UPDATE sys_menu
 SET
     parent_id = 0,
     menu_name = '基础数据',
-    menu_type = 'MENU',
-    route_name = 'BaseData',
+    menu_type = 'CATALOG',
+    route_name = 'BaseDataCatalog',
     route_path = '/base-data',
-    component_path = 'views/base/BaseDataView.vue',
+    component_path = 'layouts/BasicLayout.vue',
     icon = 'Collection',
-    permission_code = 'page:base-data:view',
+    permission_code = NULL,
     is_hidden = 0,
     is_keep_alive = 0,
     sort_no = 4,
     status = 1,
     updated_at = NOW()
 WHERE menu_code = 'base-data'
+  AND deleted = 0;
+
+UPDATE sys_menu
+SET
+    parent_id = (SELECT id FROM (SELECT id FROM sys_menu WHERE menu_code = 'base-data' AND deleted = 0 LIMIT 1) tmp),
+    menu_name = '教师管理',
+    menu_type = 'MENU',
+    route_name = 'TeacherManagePage',
+    route_path = '/base-data/teachers',
+    component_path = 'views/base/BaseDataView.vue',
+    icon = 'User',
+    permission_code = 'page:teacher:view',
+    is_hidden = 0,
+    is_keep_alive = 0,
+    sort_no = 1,
+    status = 1,
+    updated_at = NOW()
+WHERE menu_code = 'base-teacher'
+  AND deleted = 0;
+
+UPDATE sys_menu
+SET
+    parent_id = (SELECT id FROM (SELECT id FROM sys_menu WHERE menu_code = 'base-data' AND deleted = 0 LIMIT 1) tmp),
+    menu_name = '学生管理',
+    menu_type = 'MENU',
+    route_name = 'StudentManagePage',
+    route_path = '/base-data/students',
+    component_path = 'views/base/BaseDataView.vue',
+    icon = 'UserFilled',
+    permission_code = 'page:student:view',
+    is_hidden = 0,
+    is_keep_alive = 0,
+    sort_no = 2,
+    status = 1,
+    updated_at = NOW()
+WHERE menu_code = 'base-student'
+  AND deleted = 0;
+
+UPDATE sys_menu
+SET
+    parent_id = (SELECT id FROM (SELECT id FROM sys_menu WHERE menu_code = 'base-data' AND deleted = 0 LIMIT 1) tmp),
+    menu_name = '课程管理',
+    menu_type = 'MENU',
+    route_name = 'CourseManagePage',
+    route_path = '/base-data/courses',
+    component_path = 'views/base/BaseDataView.vue',
+    icon = 'Reading',
+    permission_code = 'page:course:view',
+    is_hidden = 0,
+    is_keep_alive = 0,
+    sort_no = 3,
+    status = 1,
+    updated_at = NOW()
+WHERE menu_code = 'base-course'
+  AND deleted = 0;
+
+UPDATE sys_menu
+SET
+    parent_id = (SELECT id FROM (SELECT id FROM sys_menu WHERE menu_code = 'base-data' AND deleted = 0 LIMIT 1) tmp),
+    menu_name = '教室管理',
+    menu_type = 'MENU',
+    route_name = 'ClassroomManagePage',
+    route_path = '/base-data/classrooms',
+    component_path = 'views/base/BaseDataView.vue',
+    icon = 'OfficeBuilding',
+    permission_code = 'page:classroom:view',
+    is_hidden = 0,
+    is_keep_alive = 0,
+    sort_no = 4,
+    status = 1,
+    updated_at = NOW()
+WHERE menu_code = 'base-classroom'
   AND deleted = 0;
 
 UPDATE sys_menu
@@ -606,6 +820,10 @@ WHERE r.role_code = 'ADMIN'
       'course-plan',
       'schedule',
       'base-data',
+      'base-teacher',
+      'base-student',
+      'base-course',
+      'base-classroom',
       'organization',
       'campus',
       'college',
@@ -633,6 +851,10 @@ WHERE r.role_code = 'ADMIN'
       'page:course-plan:view',
       'page:schedule:view',
       'page:base-data:view',
+      'page:teacher:view',
+      'page:student:view',
+      'page:course:view',
+      'page:classroom:view',
       'page:campus:view',
       'page:college:view',
       'page:stage:view',

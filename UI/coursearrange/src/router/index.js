@@ -61,11 +61,49 @@ const routes = [
       },
       {
         path: 'base-data',
-        name: 'BaseData',
+        redirect: '/base-data/teachers',
+        meta: {
+          title: '基础数据'
+        }
+      },
+      {
+        path: 'base-data/teachers',
+        name: 'TeacherManagePage',
         component: BaseDataView,
         meta: {
-          title: '基础数据',
-          permission: 'page:base-data:view'
+          title: '教师管理',
+          permission: 'page:teacher:view',
+          resourceTab: 'teacher'
+        }
+      },
+      {
+        path: 'base-data/students',
+        name: 'StudentManagePage',
+        component: BaseDataView,
+        meta: {
+          title: '学生管理',
+          permission: 'page:student:view',
+          resourceTab: 'student'
+        }
+      },
+      {
+        path: 'base-data/courses',
+        name: 'CourseManagePage',
+        component: BaseDataView,
+        meta: {
+          title: '课程管理',
+          permission: 'page:course:view',
+          resourceTab: 'course'
+        }
+      },
+      {
+        path: 'base-data/classrooms',
+        name: 'ClassroomManagePage',
+        component: BaseDataView,
+        meta: {
+          title: '教室管理',
+          permission: 'page:classroom:view',
+          resourceTab: 'classroom'
         }
       },
       {
