@@ -32,6 +32,16 @@ public class SchedulingTaskInput implements Serializable {
     private Integer weeksSum;
     private Integer weeksNumber;
     private Integer priorityLevel;
+    private String taskCode;
+    private Long standardTaskId;
+    private Long campusId;
+    private Long collegeId;
+    private Integer needContinuous;
+    private Integer continuousSize;
+    private Integer needFixedRoom;
+    private Long fixedRoomId;
+    private Integer needSpecialRoom;
+    private String roomType;
     private Integer maxWeekHours;
     private Integer maxDayHours;
     private List<String> teacherForbiddenTimeSlots;

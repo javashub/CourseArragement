@@ -57,7 +57,7 @@
           </div>
         </div>
         <p class="config-note">
-          当前遗传排课算法仍运行在固定的 25 格编码窗口内，因此只会消费工作日 1-5、节次 1-5 范围内的可教学时间片。
+          当前独立排课引擎会优先消费工作日 1-5、节次 1-5 范围内的可教学时间片，并输出可解释的失败原因与执行详情。
         </p>
       </el-card>
 
@@ -81,10 +81,29 @@
           </article>
         </div>
         <div v-if="latestArrangeSummary.unscheduledTasks.length" class="reason-board">
-          <div class="reason-title">未排成功任务与原因</div>
+          <div class="reason-head">
+            <div class="reason-title">未排成功任务与原因</div>
+            <el-select
+              v-model="summaryReasonFilter"
+              clearable
+              class="reason-filter"
+              placeholder="按原因筛选"
+            >
+              <el-option
+                v-for="item in summaryReasonOptions"
+                :key="item.reasonCode"
+                :label="`${item.reasonLabel} (${item.count})`"
+                :value="item.reasonCode"
+              />
+            </el-select>
+          </div>
           <div class="reason-list">
-            <div v-for="item in latestArrangeSummary.unscheduledTasks" :key="item" class="reason-item">
-              {{ item }}
+            <div v-for="item in filteredSummaryUnscheduledTasks" :key="`${item.taskCode}-${item.reasonCode}`" class="reason-item">
+              <div class="reason-item__meta">
+                <strong>{{ item.classNo }} / {{ item.courseNo }} / {{ item.teacherNo }}</strong>
+                <el-tag type="warning" effect="plain" round>{{ item.reasonCode }}</el-tag>
+              </div>
+              <div class="reason-item__message">{{ item.reasonMessage }}</div>
             </div>
           </div>
         </div>
@@ -287,9 +306,12 @@
             </template>
           </el-table-column>
           <el-table-column prop="message" label="执行结果" min-width="260" show-overflow-tooltip />
-          <el-table-column label="操作" width="100" fixed="right">
+          <el-table-column label="操作" width="150" fixed="right">
             <template #default="{ row }">
-              <el-button link type="primary" @click="goToSchedule('', row.semester)">查看课表</el-button>
+              <el-space>
+                <el-button link type="primary" @click="openExecutionDetail(row)">执行详情</el-button>
+                <el-button link type="primary" @click="goToSchedule('', row.semester)">查看课表</el-button>
+              </el-space>
             </template>
           </el-table-column>
         </el-table>
@@ -306,7 +328,7 @@
           </div>
           <div class="tip-item">
             <strong>执行排课</strong>
-            <span>当前统一通过标准排课接口触发排课，内部仍复用现有算法实现，后续会继续替换旧表逻辑。</span>
+            <span>当前统一通过标准排课接口触发独立排课引擎，先生成可行解，再保留优化扩展位与失败原因明细。</span>
           </div>
           <div class="tip-item">
             <strong>查看课表</strong>
@@ -533,6 +555,49 @@
           <el-button class="primary-action" type="primary" :loading="taskSubmitting" @click="submitTask">保存任务</el-button>
         </template>
       </el-dialog>
+
+      <el-dialog v-model="executionDetailVisible" title="排课执行详情" width="920px" append-to-body>
+        <template v-if="selectedExecutionDetail">
+          <div class="execution-detail-summary">
+            <div class="summary-chip">
+              <span class="summary-label">执行批次</span>
+              <strong>#{{ selectedExecutionDetail.runLogId }}</strong>
+            </div>
+            <div class="summary-chip">
+              <span class="summary-label">生成结果</span>
+              <strong>{{ selectedExecutionDetail.generatedResultCount }}</strong>
+            </div>
+            <div class="summary-chip accent-chip">
+              <span class="summary-label">成功率</span>
+              <strong>{{ formatSuccessRate(selectedExecutionDetail.successRate) }}</strong>
+            </div>
+          </div>
+          <div class="reason-head reason-head--detail">
+            <div class="reason-title">失败任务明细</div>
+            <el-select
+              v-model="detailReasonFilter"
+              clearable
+              class="reason-filter"
+              placeholder="按原因筛选"
+            >
+              <el-option
+                v-for="item in detailReasonOptions"
+                :key="item.reasonCode"
+                :label="`${item.reasonLabel} (${item.count})`"
+                :value="item.reasonCode"
+              />
+            </el-select>
+          </div>
+          <el-table :data="filteredExecutionDetails" stripe max-height="420">
+            <el-table-column prop="taskCode" label="任务编码" min-width="130" />
+            <el-table-column prop="classNo" label="班级" min-width="110" />
+            <el-table-column prop="courseNo" label="课程" min-width="110" />
+            <el-table-column prop="teacherNo" label="教师" min-width="110" />
+            <el-table-column prop="reasonCode" label="原因编码" min-width="180" />
+            <el-table-column prop="reasonMessage" label="原因说明" min-width="260" show-overflow-tooltip />
+          </el-table>
+        </template>
+      </el-dialog>
     </section>
   </div>
 </template>
@@ -544,10 +609,12 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { fetchCoursePage, fetchTeacherPage } from '@/api/modules/base';
 import { getErrorMessage } from '@/utils/http';
 import { fetchScheduleConfig } from '@/api/modules/system';
+import { formatDuration } from './coursePlanHelpers';
 import {
   arrangeClassTask,
   createClassTask,
   deleteStandardClassTask,
+  fetchArrangeExecutionDetail,
   downloadClassTaskTemplate,
   fetchArrangeLogs,
   fetchClassOptions,
@@ -567,6 +634,10 @@ const courseOptions = ref([]);
 const teacherOptions = ref([]);
 const executionLogs = ref([]);
 const executionLogsLoading = ref(false);
+const executionDetailVisible = ref(false);
+const selectedExecutionDetail = ref(null);
+const summaryReasonFilter = ref('');
+const detailReasonFilter = ref('');
 const taskLoadError = ref('');
 const executionLogError = ref('');
 const executionLogLimit = 8;
@@ -643,6 +714,26 @@ const arrangeSummaryCards = computed(() => {
       note: '成功任务数 / 任务总数'
     }
   ];
+});
+
+const filteredSummaryUnscheduledTasks = computed(() => {
+  const tasks = latestArrangeSummary.value?.unscheduledTasks || [];
+  if (!summaryReasonFilter.value) {
+    return tasks;
+  }
+  return tasks.filter((item) => item.reasonCode === summaryReasonFilter.value);
+});
+
+const summaryReasonOptions = computed(() => latestArrangeSummary.value?.constraintSummary || []);
+
+const detailReasonOptions = computed(() => selectedExecutionDetail.value?.constraintSummary || []);
+
+const filteredExecutionDetails = computed(() => {
+  const tasks = selectedExecutionDetail.value?.unscheduledTasks || [];
+  if (!detailReasonFilter.value) {
+    return tasks;
+  }
+  return tasks.filter((item) => item.reasonCode === detailReasonFilter.value);
 });
 
 const selectedTeacherProfile = computed(() => {
@@ -755,6 +846,7 @@ function normalizeArrangeSummary(payload) {
     return null;
   }
   return {
+    runLogId: Number(payload.runLogId || 0),
     durationMs: Number(payload.durationMs || 0),
     generatedPlanCount: Number(payload.generatedPlanCount || 0),
     taskCount: Number(payload.taskCount || 0),
@@ -763,6 +855,7 @@ function normalizeArrangeSummary(payload) {
     conflictTaskCount: Number(payload.conflictTaskCount || 0),
     successRate: Number(payload.successRate || 0),
     unscheduledTasks: Array.isArray(payload.unscheduledTasks) ? payload.unscheduledTasks : [],
+    constraintSummary: Array.isArray(payload.constraintSummary) ? payload.constraintSummary : [],
     effectiveScheduleRuleName: payload.effectiveScheduleRuleName || '',
     effectiveTimeSlotCount: Number(payload.effectiveTimeSlotCount || 0),
     timeSlotConfigApplied: Boolean(payload.timeSlotConfigApplied)
@@ -941,6 +1034,7 @@ function handleTaskPageChange(page) {
 
 async function handleSemesterChange() {
   latestArrangeSummary.value = null;
+  summaryReasonFilter.value = '';
   await Promise.all([loadClassTasks(true), loadExecutionLogs()]);
 }
 
@@ -1139,6 +1233,7 @@ async function handleArrange() {
   try {
     const response = await arrangeClassTask(selectedSemester.value);
     latestArrangeSummary.value = normalizeArrangeSummary(response.data);
+    summaryReasonFilter.value = '';
     if (latestArrangeSummary.value) {
       runtimeConfig.ruleName = latestArrangeSummary.value.effectiveScheduleRuleName || runtimeConfig.ruleName;
       runtimeConfig.effectiveTimeSlotCount = latestArrangeSummary.value.effectiveTimeSlotCount || runtimeConfig.effectiveTimeSlotCount;
@@ -1152,6 +1247,13 @@ async function handleArrange() {
   } finally {
     arranging.value = false;
   }
+}
+
+async function openExecutionDetail(row) {
+  const response = await fetchArrangeExecutionDetail(row.id);
+  selectedExecutionDetail.value = response.data || null;
+  detailReasonFilter.value = '';
+  executionDetailVisible.value = true;
 }
 
 onMounted(async () => {
@@ -1424,10 +1526,25 @@ onMounted(async () => {
 }
 
 .reason-title {
-  margin-bottom: 12px;
   font-size: 14px;
   font-weight: 700;
   color: #694f18;
+}
+
+.reason-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.reason-head--detail {
+  margin: 18px 0 14px;
+}
+
+.reason-filter {
+  width: 220px;
 }
 
 .reason-list {
@@ -1443,6 +1560,25 @@ onMounted(async () => {
   color: #6b5d40;
   font-size: 13px;
   line-height: 1.65;
+}
+
+.reason-item__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  color: #473611;
+}
+
+.reason-item__message {
+  color: #6b5d40;
+}
+
+.execution-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .tips-grid {
@@ -1648,7 +1784,8 @@ onMounted(async () => {
   .hero-panel,
   .toolbar-row,
   .log-header,
-  .summary-header {
+  .summary-header,
+  .reason-head {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -1669,7 +1806,8 @@ onMounted(async () => {
   .compact-grid,
   .config-strip,
   .summary-metrics,
-  .reason-list {
+  .reason-list,
+  .execution-detail-summary {
     grid-template-columns: 1fr;
   }
 }

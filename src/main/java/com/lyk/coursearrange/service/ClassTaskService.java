@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.service;
 
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.schedule.vo.ScheduleExecutionDetailVO;
 import com.lyk.coursearrange.schedule.vo.ScheduleRunLogVO;
 import org.apache.ibatis.annotations.Param;
 
@@ -17,5 +18,7 @@ public interface ClassTaskService {
     long countScheduleTasks();
 
     List<ScheduleRunLogVO> listRecentExecuteLogs(String semester, Integer limit);
+
+    ScheduleExecutionDetailVO getExecutionDetail(Long runLogId);
 
 }

@@ -5,15 +5,26 @@ import com.lyk.coursearrange.common.ConstantInfo;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.entity.CoursePlan;
+import com.lyk.coursearrange.resource.entity.ResCourse;
 import com.lyk.coursearrange.resource.entity.ResClassroom;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
+import com.lyk.coursearrange.resource.service.ResCourseService;
 import com.lyk.coursearrange.resource.service.ResClassroomService;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
+import com.lyk.coursearrange.schedule.engine.SchedulingEngine;
+import com.lyk.coursearrange.schedule.engine.model.SchedulingAssignment;
+import com.lyk.coursearrange.schedule.engine.model.SchedulingConstraintSummary;
+import com.lyk.coursearrange.schedule.engine.model.SchedulingExecutionResult;
+import com.lyk.coursearrange.schedule.engine.model.UnscheduledTaskDetail;
 import com.lyk.coursearrange.schedule.service.AdminClassService;
+import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
 import com.lyk.coursearrange.schedule.entity.SchScheduleRunLog;
 import com.lyk.coursearrange.schedule.entity.SchTask;
+import com.lyk.coursearrange.schedule.service.SchScheduleResultService;
 import com.lyk.coursearrange.schedule.service.SchScheduleRunLogService;
+import com.lyk.coursearrange.schedule.service.SchScheduleRunDetailService;
 import com.lyk.coursearrange.schedule.vo.AdminClassVO;
+import com.lyk.coursearrange.schedule.vo.ScheduleExecutionDetailVO;
 import com.lyk.coursearrange.schedule.vo.ScheduleRunLogVO;
 import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
@@ -30,6 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -59,7 +72,17 @@ class ClassTaskServiceImplTest {
     @Mock
     private SchScheduleRunLogService schScheduleRunLogService;
     @Mock
+    private SchScheduleRunDetailService schScheduleRunDetailService;
+    @Mock
+    private SchScheduleResultService schScheduleResultService;
+    @Mock
     private SysUserService sysUserService;
+    @Mock
+    private ResCourseService resCourseService;
+    @Mock
+    private SchedulingEngine schedulingEngine;
+    @Mock
+    private com.lyk.coursearrange.schedule.service.ScheduleResultWriteService scheduleResultWriteService;
 
     @Test
     void buildSchedulingSuccessResponse_shouldExposeStandardOnlyStatus() {
@@ -74,13 +97,86 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
-    void classScheduling_shouldReturnDisabledMessageBeforeExecutingAlgorithm() {
+    void classScheduling_shouldReturnExecutionSummaryAndPersistRunDetails() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
+        ReflectionTestUtils.setField(service, "resCourseService", resCourseService);
+        ReflectionTestUtils.setField(service, "resClassroomService", resClassroomService);
+        ReflectionTestUtils.setField(service, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(service, "scheduleResultWriteService", scheduleResultWriteService);
+        ReflectionTestUtils.setField(service, "schScheduleRunLogService", schScheduleRunLogService);
+        ReflectionTestUtils.setField(service, "schScheduleRunDetailService", schScheduleRunDetailService);
+        ReflectionTestUtils.setField(service, "schedulingEngine", schedulingEngine);
+
+        SchTask task1 = buildSchTask(101L, "TK-101", "C1", "K1", "T1", "数学", "张老师");
+        SchTask task2 = buildSchTask(102L, "TK-102", "C2", "K2", "T2", "英语", "李老师");
+
+        ResCourse course = new ResCourse();
+        course.setCourseCode("K1");
+        course.setNeedSpecialRoom(0);
+        course.setRoomType("NORMAL");
+
+        SchedulingAssignment assignment = SchedulingAssignment.builder()
+                .taskId(101L)
+                .taskCode("TK-101")
+                .classNo("C1")
+                .courseNo("K1")
+                .teacherNo("T1")
+                .classroomCode("A101")
+                .weekdayNo(1)
+                .periodNo(1)
+                .timeSlotCode("01")
+                .build();
+
+        UnscheduledTaskDetail unscheduledTask = UnscheduledTaskDetail.builder()
+                .taskId(102L)
+                .taskCode("TK-102")
+                .classNo("C2")
+                .courseNo("K2")
+                .teacherNo("T2")
+                .reasonCode("TEACHER_FORBIDDEN_TIME")
+                .reasonMessage("教师禁排时间已覆盖全部可用时间片")
+                .build();
+
+        SchedulingExecutionResult executionResult = SchedulingExecutionResult.builder()
+                .taskCount(2)
+                .scheduledTaskCount(1)
+                .unscheduledTaskCount(1)
+                .successRate(50.0d)
+                .assignments(List.of(assignment))
+                .unscheduledTasks(List.of(unscheduledTask))
+                .constraintSummary(List.of(new SchedulingConstraintSummary("TEACHER_FORBIDDEN_TIME", "教师禁排时间", 1)))
+                .build();
+
+        when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
+                .thenReturn(List.of(task1, task2));
+        when(resTeacherService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResTeacher>>any()))
+                .thenReturn(List.of());
+        when(resCourseService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResCourse>>any()))
+                .thenReturn(List.of(course));
+        when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(ScheduleConfigVO.builder().timeSlots(List.of()).build());
+        when(schedulingEngine.execute(any())).thenReturn(executionResult);
+        when(schScheduleRunLogService.save(any())).thenAnswer(invocation -> {
+            SchScheduleRunLog runLog = invocation.getArgument(0);
+            runLog.setId(9001L);
+            if (runLog.getCreatedAt() == null) {
+                runLog.setCreatedAt(LocalDateTime.of(2026, 3, 25, 10, 0, 0));
+            }
+            return true;
+        });
 
         ServerResponse<?> response = service.classScheduling("2025-2026-1");
 
-        assertEquals(1, response.getCode());
-        assertEquals("排课算法已停用，等待标准重构完成后再启用", response.getMessage());
+        assertTrue(response.isSuccess());
+        assertTrue(response.getMessage().contains("排课完成，但仍有 1 个任务未生成标准课表"));
+        assertEquals(9001L, ((Map<?, ?>) response.getData()).get("runLogId"));
+        assertEquals(2, ((Map<?, ?>) response.getData()).get("taskCount"));
+        assertEquals(1, ((Map<?, ?>) response.getData()).get("scheduledTaskCount"));
+        assertEquals(1, ((Map<?, ?>) response.getData()).get("unscheduledTaskCount"));
+        assertEquals(50.0d, ((Map<?, ?>) response.getData()).get("successRate"));
+        verify(scheduleResultWriteService).replaceScheduleResults(eq("2025-2026-1"), eq(9001L), any(), eq(List.of(assignment)));
+        verify(schScheduleRunDetailService).replaceRunDetails(9001L, List.of(unscheduledTask));
     }
 
     @Test
@@ -298,6 +394,67 @@ class ClassTaskServiceImplTest {
         assertEquals(1, logs.get(0).getStatus());
         assertEquals("管理员", logs.get(0).getOperatorName());
         assertEquals(3000L, logs.get(0).getDurationMs());
+    }
+
+    @Test
+    void getExecutionDetail_shouldAggregateRunDetailAndGeneratedResultCount() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schScheduleRunLogService", schScheduleRunLogService);
+        ReflectionTestUtils.setField(service, "schScheduleRunDetailService", schScheduleRunDetailService);
+        ReflectionTestUtils.setField(service, "schScheduleResultService", schScheduleResultService);
+
+        SchScheduleRunLog runLog = new SchScheduleRunLog();
+        runLog.setId(9001L);
+        runLog.setRemark("2025-2026-1");
+        runLog.setTaskTotal(10);
+        runLog.setTaskSuccess(8);
+        runLog.setTaskFailed(2);
+        runLog.setRunStatus("PARTIAL");
+        runLog.setFailureReason("排课完成，2 个任务未排成");
+        runLog.setStartedAt(LocalDateTime.of(2026, 3, 25, 10, 0, 0));
+        runLog.setFinishedAt(LocalDateTime.of(2026, 3, 25, 10, 0, 5));
+
+        UnscheduledTaskDetail detail1 = UnscheduledTaskDetail.builder()
+                .taskId(11L)
+                .taskCode("TK-11")
+                .classNo("C1")
+                .courseNo("K1")
+                .teacherNo("T1")
+                .reasonCode("TEACHER_CONFLICT")
+                .reasonMessage("教师时间冲突")
+                .build();
+        UnscheduledTaskDetail detail2 = UnscheduledTaskDetail.builder()
+                .taskId(12L)
+                .taskCode("TK-12")
+                .classNo("C2")
+                .courseNo("K2")
+                .teacherNo("T2")
+                .reasonCode("TEACHER_CONFLICT")
+                .reasonMessage("教师时间冲突")
+                .build();
+
+        SchScheduleResult result1 = new SchScheduleResult();
+        result1.setId(1L);
+        SchScheduleResult result2 = new SchScheduleResult();
+        result2.setId(2L);
+
+        when(schScheduleRunLogService.getById(9001L)).thenReturn(runLog);
+        when(schScheduleRunDetailService.listByRunLogId(9001L)).thenReturn(List.of(detail1, detail2));
+        when(schScheduleResultService.list(org.mockito.ArgumentMatchers.<Wrapper<SchScheduleResult>>any()))
+                .thenReturn(List.of(result1, result2));
+
+        ScheduleExecutionDetailVO detail = service.getExecutionDetail(9001L);
+
+        assertEquals(9001L, detail.getRunLogId());
+        assertEquals("2025-2026-1", detail.getSemester());
+        assertEquals(10, detail.getTaskCount());
+        assertEquals(8, detail.getScheduledTaskCount());
+        assertEquals(2, detail.getUnscheduledTaskCount());
+        assertEquals(2, detail.getGeneratedResultCount());
+        assertEquals(1, detail.getConstraintSummary().size());
+        assertEquals("TEACHER_CONFLICT", detail.getConstraintSummary().get(0).getReasonCode());
+        assertEquals(2, detail.getConstraintSummary().get(0).getCount());
+        assertEquals(2, detail.getUnscheduledTasks().size());
     }
 
     @Test
@@ -594,5 +751,25 @@ class ClassTaskServiceImplTest {
         timeSlot.setIsTeaching(isTeaching);
         timeSlot.setIsFixedBreak(isFixedBreak);
         return timeSlot;
+    }
+
+    private SchTask buildSchTask(Long id,
+                                 String taskCode,
+                                 String classNo,
+                                 String courseNo,
+                                 String teacherNo,
+                                 String courseName,
+                                 String teacherName) {
+        SchTask task = new SchTask();
+        task.setId(id);
+        task.setTaskCode(taskCode);
+        task.setStudentCount(45);
+        task.setWeekHours(2);
+        task.setTotalHours(16);
+        task.setRemark(String.format(
+                "semester=2025-2026-1,classNo=%s,courseNo=%s,teacherNo=%s,gradeNo=G1,courseName=%s,courseAttr=必修,teacherName=%s",
+                classNo, courseNo, teacherNo, courseName, teacherName
+        ));
+        return task;
     }
 }

@@ -9,13 +9,14 @@
         <div class="brand-badge">RBAC3 + 多校区 + 多学段</div>
       </div>
       <el-menu
+        :key="menuRenderKey"
         :default-active="activeMenu"
+        :default-openeds="openMenuIndexes"
         class="layout-menu"
         background-color="transparent"
         text-color="#d0d9e8"
         active-text-color="#ffffff"
         :collapse="isCollapsed"
-        @select="handleMenuSelect"
       >
         <template v-for="menu in visibleMenus" :key="menu.id || menu.menuCode">
           <el-sub-menu
@@ -23,23 +24,18 @@
             :index="menu.routePath || menu.menuCode"
           >
             <template #title>
-              <span
-                class="menu-title"
-                :class="{ 'menu-title--link': hasRegisteredRoute(menu.routePath) }"
-                @click="handleCatalogClick(menu)"
-              >
-                {{ menu.menuName }}
-              </span>
+              <span class="menu-title">{{ menu.menuName }}</span>
             </template>
             <el-menu-item
               v-for="child in menu.children"
               :key="child.id || child.menuCode"
               :index="child.routePath"
+              @click="navigateToMenu(child.routePath)"
             >
               <span class="menu-leaf">{{ child.menuName }}</span>
             </el-menu-item>
           </el-sub-menu>
-          <el-menu-item v-else :index="menu.routePath">
+          <el-menu-item v-else :index="menu.routePath" @click="navigateToMenu(menu.routePath)">
             <span class="menu-leaf">{{ menu.menuName }}</span>
           </el-menu-item>
         </template>
@@ -66,7 +62,9 @@
         </div>
       </header>
       <main class="layout-content">
-        <router-view />
+        <router-view v-slot="{ Component, route: currentRoute }">
+          <component :is="Component" :key="buildLayoutViewKey(currentRoute)" />
+        </router-view>
       </main>
     </div>
   </div>
@@ -78,14 +76,17 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { ElMessage } from 'element-plus';
 import { Fold, Expand } from '@element-plus/icons-vue';
+import { buildLayoutViewKey, resolveActiveMenuPath, resolveOpenMenuIndexes } from './layoutNavigation';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const isCollapsed = ref(false);
 
-const activeMenu = computed(() => route.path);
 const visibleMenus = computed(() => normalizeMenus(authStore.menus || []));
+const activeMenu = computed(() => resolveActiveMenuPath(route.path, visibleMenus.value));
+const openMenuIndexes = computed(() => resolveOpenMenuIndexes(route.path, visibleMenus.value));
+const menuRenderKey = computed(() => `${activeMenu.value}::${openMenuIndexes.value.join('|')}`);
 
 function toggleSidebar() {
   isCollapsed.value = !isCollapsed.value;
@@ -94,17 +95,6 @@ function toggleSidebar() {
 function handleLogout() {
   authStore.clearLoginState();
   router.push('/login');
-}
-
-function handleMenuSelect(index) {
-  navigateToMenu(index);
-}
-
-function handleCatalogClick(menu) {
-  if (!hasRegisteredRoute(menu?.routePath)) {
-    return;
-  }
-  navigateToMenu(menu.routePath);
 }
 
 function hasRegisteredRoute(routePath) {
@@ -285,10 +275,6 @@ function sortMenus(a, b) {
 .menu-title {
   font-weight: 700;
   letter-spacing: 0.04em;
-}
-
-.menu-title--link {
-  cursor: pointer;
 }
 
 .menu-leaf {

@@ -155,6 +155,11 @@ public class ScheduleTaskController {
         return ServerResponse.ofSuccess(classTaskService.listRecentExecuteLogs(semester, limit));
     }
 
+    @GetMapping("/executions/{runLogId}")
+    public ServerResponse<?> getExecutionDetail(@PathVariable Long runLogId) {
+        return ServerResponse.ofSuccess(classTaskService.getExecutionDetail(runLogId));
+    }
+
     @PostMapping("/arrange")
     public ServerResponse<?> arrange(@RequestParam String semester) {
         return createExecution(semester);

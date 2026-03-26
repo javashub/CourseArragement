@@ -12,6 +12,7 @@ import com.lyk.coursearrange.schedule.service.AdminClassService;
 import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.vo.AdminClassVO;
+import com.lyk.coursearrange.schedule.vo.ScheduleExecutionDetailVO;
 import com.lyk.coursearrange.schedule.vo.ScheduleTaskPageVO;
 import com.lyk.coursearrange.service.ClassTaskService;
 import com.lyk.coursearrange.system.config.entity.CfgScheduleRule;
@@ -24,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -253,7 +255,12 @@ class ScheduleTaskControllerTest {
     @Test
     void createExecution_shouldDelegateToSchedulingService() {
         ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, adminClassService);
-        ServerResponse<?> expected = ServerResponse.ofError("排课算法已停用，等待标准重构完成后再启用");
+        ServerResponse<?> expected = ServerResponse.ofSuccess(Map.of(
+                "runLogId", 9001L,
+                "taskCount", 10,
+                "scheduledTaskCount", 8,
+                "unscheduledTaskCount", 2
+        ));
         when(classTaskService.classScheduling("2025-2026-1")).thenReturn(expected);
 
         ServerResponse<?> response = controller.createExecution("2025-2026-1");
@@ -270,6 +277,21 @@ class ScheduleTaskControllerTest {
 
         assertTrue(response.isSuccess());
         assertEquals(List.of(), response.getData());
+    }
+
+    @Test
+    void executionDetail_shouldReturnRunSummaryAndFailureDetails() {
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, adminClassService);
+        ScheduleExecutionDetailVO detail = new ScheduleExecutionDetailVO();
+        detail.setRunLogId(9001L);
+        detail.setSemester("2025-2026-1");
+
+        when(classTaskService.getExecutionDetail(9001L)).thenReturn(detail);
+
+        ServerResponse<?> response = controller.getExecutionDetail(9001L);
+
+        assertTrue(response.isSuccess());
+        assertEquals(detail, response.getData());
     }
 
     @Test

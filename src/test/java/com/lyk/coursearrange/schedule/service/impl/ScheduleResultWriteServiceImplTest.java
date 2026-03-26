@@ -1,13 +1,10 @@
 package com.lyk.coursearrange.schedule.service.impl;
 
-import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.resource.entity.ResClassroom;
 import com.lyk.coursearrange.resource.service.ResClassroomService;
+import com.lyk.coursearrange.schedule.engine.model.SchedulingAssignment;
 import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
-import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchScheduleResultService;
-import com.lyk.coursearrange.schedule.service.SchTaskService;
-import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,8 +23,6 @@ import static org.mockito.Mockito.when;
 class ScheduleResultWriteServiceImplTest {
 
     @Mock
-    private SchTaskService schTaskService;
-    @Mock
     private SchScheduleResultService resultService;
     @Mock
     private ResClassroomService resClassroomService;
@@ -35,41 +30,35 @@ class ScheduleResultWriteServiceImplTest {
     @Test
     void replaceScheduleResults_shouldResolveClassroomIdFromStandardClassroomCode() {
         ScheduleResultWriteServiceImpl service = new ScheduleResultWriteServiceImpl(
-                schTaskService,
                 resultService,
                 resClassroomService
         );
 
-        SchedulingTaskInput taskInput = new SchedulingTaskInput();
-        taskInput.setSemester("2025-2026-1");
-        taskInput.setClassNo("25010001");
-        taskInput.setCourseNo("100001");
-        taskInput.setTeacherNo("T0001");
-
-        CoursePlan coursePlan = new CoursePlan();
-        coursePlan.setClassNo("25010001");
-        coursePlan.setCourseNo("100001");
-        coursePlan.setTeacherNo("T0001");
-        coursePlan.setClassTime("01");
-        coursePlan.setClassroomNo("A101");
-
-        SchTask schTask = new SchTask();
-        schTask.setId(11L);
+        SchedulingAssignment assignment = SchedulingAssignment.builder()
+                .taskId(11L)
+                .taskCode("TK-11")
+                .classNo("25010001")
+                .courseNo("100001")
+                .teacherNo("T0001")
+                .timeSlotCode("01")
+                .weekdayNo(1)
+                .periodNo(1)
+                .classroomCode("A101")
+                .build();
 
         ResClassroom classroom = new ResClassroom();
         classroom.setId(21L);
         classroom.setClassroomCode("A101");
 
-        when(schTaskService.getOne(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any(), eq(false)))
-                .thenReturn(schTask);
         when(resClassroomService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResClassroom>>any()))
                 .thenReturn(List.of(classroom));
 
-        service.replaceScheduleResults("2025-2026-1", List.of(taskInput), List.of(coursePlan));
+        service.replaceScheduleResults("2025-2026-1", 9001L, List.of(), List.of(assignment));
 
         ArgumentCaptor<SchScheduleResult> captor = ArgumentCaptor.forClass(SchScheduleResult.class);
         verify(resultService).save(captor.capture());
         assertEquals(11L, captor.getValue().getTaskId());
         assertEquals(21L, captor.getValue().getClassroomId());
+        assertEquals(9001L, captor.getValue().getRunLogId());
     }
 }

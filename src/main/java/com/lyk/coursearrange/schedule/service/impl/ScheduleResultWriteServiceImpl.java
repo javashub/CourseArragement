@@ -1,19 +1,15 @@
 package com.lyk.coursearrange.schedule.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.resource.entity.ResClassroom;
 import com.lyk.coursearrange.resource.service.ResClassroomService;
+import com.lyk.coursearrange.schedule.engine.model.SchedulingAssignment;
 import com.lyk.coursearrange.schedule.entity.SchScheduleResult;
-import com.lyk.coursearrange.schedule.entity.SchTask;
 import com.lyk.coursearrange.schedule.service.SchScheduleResultService;
-import com.lyk.coursearrange.schedule.service.SchTaskService;
 import com.lyk.coursearrange.schedule.service.ScheduleResultWriteService;
-import com.lyk.coursearrange.schedule.util.ScheduleTaskMetaUtils;
 import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,45 +19,37 @@ import java.util.Map;
 @Service
 public class ScheduleResultWriteServiceImpl implements ScheduleResultWriteService {
 
-    private final SchTaskService taskService;
     private final SchScheduleResultService resultService;
     private final ResClassroomService resClassroomService;
 
-    public ScheduleResultWriteServiceImpl(SchTaskService taskService,
-                                          SchScheduleResultService resultService,
+    public ScheduleResultWriteServiceImpl(SchScheduleResultService resultService,
                                           ResClassroomService resClassroomService) {
-        this.taskService = taskService;
         this.resultService = resultService;
         this.resClassroomService = resClassroomService;
     }
 
     @Override
-    public void replaceScheduleResults(String semester, List<SchedulingTaskInput> schedulingTasks, List<CoursePlan> coursePlans) {
-        Map<String, Long> taskIdMap = new HashMap<>();
-        for (SchedulingTaskInput schedulingTask : schedulingTasks) {
-            SchTask schTask = findTaskByCode(buildTaskCode(schedulingTask));
-            if (schTask != null) {
-                taskIdMap.put(buildTaskKey(schedulingTask.getClassNo(), schedulingTask.getCourseNo(), schedulingTask.getTeacherNo()), schTask.getId());
-            }
-        }
-        Map<String, Long> classroomIdMap = buildClassroomIdMap(coursePlans);
+    public void replaceScheduleResults(String semester,
+                                       Long runLogId,
+                                       List<SchedulingTaskInput> schedulingTasks,
+                                       List<SchedulingAssignment> assignments) {
+        Map<String, Long> classroomIdMap = buildClassroomIdMap(assignments);
 
         resultService.remove(new LambdaQueryWrapper<SchScheduleResult>()
                 .eq(SchScheduleResult::getRemark, semester));
 
-        for (CoursePlan coursePlan : coursePlans) {
+        for (SchedulingAssignment assignment : assignments) {
             SchScheduleResult result = new SchScheduleResult();
-            result.setRunLogId(null);
-            result.setTaskId(taskIdMap.getOrDefault(
-                    buildTaskKey(coursePlan.getClassNo(), coursePlan.getCourseNo(), coursePlan.getTeacherNo()), 0L));
+            result.setRunLogId(runLogId);
+            result.setTaskId(assignment.getTaskId());
             result.setSchoolYearId(0L);
             result.setTermId(0L);
             result.setStageId(0L);
             result.setCourseId(0L);
             result.setTeacherId(0L);
-            result.setClassroomId(classroomIdMap.getOrDefault(coursePlan.getClassroomNo(), 0L));
-            result.setWeekdayNo(ScheduleTaskMetaUtils.resolveWeekdayNo(coursePlan.getClassTime()));
-            result.setPeriodNo(ScheduleTaskMetaUtils.resolvePeriodNo(coursePlan.getClassTime()));
+            result.setClassroomId(classroomIdMap.getOrDefault(assignment.getClassroomCode(), 0L));
+            result.setWeekdayNo(assignment.getWeekdayNo());
+            result.setPeriodNo(assignment.getPeriodNo());
             result.setWeekRangeType("ALL");
             result.setIsLocked(0);
             result.setSourceType("AUTO");
@@ -72,12 +60,12 @@ public class ScheduleResultWriteServiceImpl implements ScheduleResultWriteServic
         }
     }
 
-    private Map<String, Long> buildClassroomIdMap(List<CoursePlan> coursePlans) {
-        if (coursePlans == null || coursePlans.isEmpty()) {
+    private Map<String, Long> buildClassroomIdMap(List<SchedulingAssignment> assignments) {
+        if (assignments == null || assignments.isEmpty()) {
             return Map.of();
         }
-        List<String> classroomCodes = coursePlans.stream()
-                .map(CoursePlan::getClassroomNo)
+        List<String> classroomCodes = assignments.stream()
+                .map(SchedulingAssignment::getClassroomCode)
                 .filter(code -> code != null && !code.isBlank())
                 .distinct()
                 .toList();
@@ -89,25 +77,5 @@ public class ScheduleResultWriteServiceImpl implements ScheduleResultWriteServic
                         .in(ResClassroom::getClassroomCode, classroomCodes))
                 .stream()
                 .collect(java.util.stream.Collectors.toMap(ResClassroom::getClassroomCode, ResClassroom::getId, (left, right) -> left));
-    }
-
-    private SchTask findTaskByCode(String taskCode) {
-        return taskService.getOne(new LambdaQueryWrapper<SchTask>()
-                .eq(SchTask::getTaskCode, taskCode)
-                .eq(SchTask::getDeleted, 0)
-                .last("limit 1"), false);
-    }
-
-    private String buildTaskCode(SchedulingTaskInput schedulingTask) {
-        return ScheduleTaskMetaUtils.buildTaskCode(
-                schedulingTask.getSemester(),
-                schedulingTask.getClassNo(),
-                schedulingTask.getCourseNo(),
-                schedulingTask.getTeacherNo()
-        );
-    }
-
-    private String buildTaskKey(String classNo, String courseNo, String teacherNo) {
-        return (classNo == null ? "" : classNo) + "_" + (courseNo == null ? "" : courseNo) + "_" + (teacherNo == null ? "" : teacherNo);
     }
 }

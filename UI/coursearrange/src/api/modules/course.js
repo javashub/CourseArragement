@@ -100,6 +100,10 @@ export function fetchArrangeLogs(params = {}) {
   return request.get('/schedule/tasks/executions', { params });
 }
 
+export function fetchArrangeExecutionDetail(runLogId) {
+  return request.get(`/schedule/tasks/executions/${runLogId}`);
+}
+
 export function fetchAdminClassPage(page = 1, limit = 200, gradeNo = '') {
   return request.get('/resources/admin-classes/page', {
     params: {

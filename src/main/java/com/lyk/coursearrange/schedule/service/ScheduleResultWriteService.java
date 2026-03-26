@@ -1,6 +1,6 @@
 package com.lyk.coursearrange.schedule.service;
 
-import com.lyk.coursearrange.entity.CoursePlan;
+import com.lyk.coursearrange.schedule.engine.model.SchedulingAssignment;
 import com.lyk.coursearrange.schedule.vo.SchedulingTaskInput;
 
 import java.util.List;
@@ -10,5 +10,8 @@ import java.util.List;
  */
 public interface ScheduleResultWriteService {
 
-    void replaceScheduleResults(String semester, List<SchedulingTaskInput> schedulingTasks, List<CoursePlan> coursePlans);
+    void replaceScheduleResults(String semester,
+                                Long runLogId,
+                                List<SchedulingTaskInput> schedulingTasks,
+                                List<SchedulingAssignment> assignments);
 }
