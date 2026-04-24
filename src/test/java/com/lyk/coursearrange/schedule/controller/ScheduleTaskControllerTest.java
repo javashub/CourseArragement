@@ -29,6 +29,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -265,7 +266,25 @@ class ScheduleTaskControllerTest {
 
         ServerResponse<?> response = controller.createExecution("2025-2026-1");
 
-        assertEquals(expected, response);
+        assertSame(expected, response);
+        verify(classTaskService).classScheduling("2025-2026-1");
+    }
+
+    @Test
+    void arrange_shouldDirectlyReturnSchedulingServiceResponse() {
+        ScheduleTaskController controller = new ScheduleTaskController(classTaskService, schTaskService, scheduleConfigFacadeService, resTeacherService, adminClassService);
+        ServerResponse<?> expected = ServerResponse.ofSuccess(Map.of(
+                "runLogId", 9002L,
+                "taskCount", 12,
+                "scheduledTaskCount", 12,
+                "unscheduledTaskCount", 0
+        ));
+        when(classTaskService.classScheduling("2025-2026-2")).thenReturn(expected);
+
+        ServerResponse<?> response = controller.arrange("2025-2026-2");
+
+        assertSame(expected, response);
+        verify(classTaskService).classScheduling("2025-2026-2");
     }
 
     @Test

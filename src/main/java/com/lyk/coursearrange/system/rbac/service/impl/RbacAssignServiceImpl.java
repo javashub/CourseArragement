@@ -13,6 +13,7 @@ import com.lyk.coursearrange.system.rbac.entity.SysUserRole;
 import com.lyk.coursearrange.system.rbac.mapper.SysRoleMenuMapper;
 import com.lyk.coursearrange.system.rbac.mapper.SysRolePermissionMapper;
 import com.lyk.coursearrange.system.rbac.mapper.SysUserRoleMapper;
+import com.lyk.coursearrange.system.rbac.request.BatchUserRoleAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.RoleMenuAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.RolePermissionAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.UserRoleAssignRequest;
@@ -88,6 +89,29 @@ public class RbacAssignServiceImpl implements RbacAssignService {
         }
         sysUserRoleService.saveBatch(entities);
         log.info("分配用户角色成功，userId={}, username={}, roleCount={}", user.getId(), user.getUsername(), entities.size());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchAssignRolesToUsers(BatchUserRoleAssignRequest request) {
+        validateRoles(request.getRoleIds());
+        for (Long userId : request.getUserIds()) {
+            getUserOrThrow(userId);
+            // 先删除该用户原有角色
+            LambdaQueryWrapper<SysUserRole> removeWrapper = new LambdaQueryWrapper<>();
+            removeWrapper.eq(SysUserRole::getUserId, userId);
+            sysUserRoleService.remove(removeWrapper);
+            // 追加新角色
+            List<SysUserRole> entities = new ArrayList<>();
+            for (Long roleId : request.getRoleIds()) {
+                SysUserRole relation = new SysUserRole();
+                relation.setUserId(userId);
+                relation.setRoleId(roleId);
+                entities.add(relation);
+            }
+            sysUserRoleService.saveBatch(entities);
+        }
+        log.info("批量分配角色成功，userCount={}, roleIds={}", request.getUserIds().size(), request.getRoleIds());
     }
 
     @Override

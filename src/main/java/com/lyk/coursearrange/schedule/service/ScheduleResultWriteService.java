@@ -15,3 +15,4 @@ public interface ScheduleResultWriteService {
                                 List<SchedulingTaskInput> schedulingTasks,
                                 List<SchedulingAssignment> assignments);
 }
+

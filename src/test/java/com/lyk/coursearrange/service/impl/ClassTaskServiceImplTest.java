@@ -155,7 +155,22 @@ class ClassTaskServiceImplTest {
                 .thenReturn(List.of());
         when(resCourseService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResCourse>>any()))
                 .thenReturn(List.of(course));
-        when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(ScheduleConfigVO.builder().timeSlots(List.of()).build());
+        CfgScheduleRule scheduleRule = new CfgScheduleRule();
+        scheduleRule.setRuleName("2025秋季规则");
+        CfgTimeSlot slot1 = new CfgTimeSlot();
+        slot1.setWeekdayNo(1);
+        slot1.setPeriodNo(1);
+        slot1.setIsTeaching(1);
+        slot1.setIsFixedBreak(0);
+        CfgTimeSlot slot2 = new CfgTimeSlot();
+        slot2.setWeekdayNo(1);
+        slot2.setPeriodNo(2);
+        slot2.setIsTeaching(1);
+        slot2.setIsFixedBreak(0);
+        when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(ScheduleConfigVO.builder()
+                .scheduleRule(scheduleRule)
+                .timeSlots(List.of(slot1, slot2))
+                .build());
         when(schedulingEngine.execute(any())).thenReturn(executionResult);
         when(schScheduleRunLogService.save(any())).thenAnswer(invocation -> {
             SchScheduleRunLog runLog = invocation.getArgument(0);
@@ -169,14 +184,95 @@ class ClassTaskServiceImplTest {
         ServerResponse<?> response = service.classScheduling("2025-2026-1");
 
         assertTrue(response.isSuccess());
-        assertTrue(response.getMessage().contains("排课完成，但仍有 1 个任务未生成标准课表"));
-        assertEquals(9001L, ((Map<?, ?>) response.getData()).get("runLogId"));
-        assertEquals(2, ((Map<?, ?>) response.getData()).get("taskCount"));
-        assertEquals(1, ((Map<?, ?>) response.getData()).get("scheduledTaskCount"));
-        assertEquals(1, ((Map<?, ?>) response.getData()).get("unscheduledTaskCount"));
-        assertEquals(50.0d, ((Map<?, ?>) response.getData()).get("successRate"));
+        Map<?, ?> responseData = (Map<?, ?>) response.getData();
+        assertEquals(String.format("排课完成，但仍有 1 个任务未生成标准课表，耗时：%sms", responseData.get("durationMs")), response.getMessage());
+        assertEquals(9001L, responseData.get("runLogId"));
+        assertEquals(2, responseData.get("taskCount"));
+        assertEquals(1, responseData.get("scheduledTaskCount"));
+        assertEquals(1, responseData.get("unscheduledTaskCount"));
+        assertEquals(1, responseData.get("conflictTaskCount"));
+        assertEquals(50.0d, responseData.get("successRate"));
+        assertEquals(List.of(unscheduledTask), responseData.get("unscheduledTasks"));
+        assertEquals(
+                List.of(new SchedulingConstraintSummary("TEACHER_FORBIDDEN_TIME", "教师禁排时间", 1)),
+                responseData.get("constraintSummary")
+        );
+        assertEquals("2025秋季规则", responseData.get("effectiveScheduleRuleName"));
+        assertEquals(2, responseData.get("effectiveTimeSlotCount"));
+        assertEquals(true, responseData.get("timeSlotConfigApplied"));
         verify(scheduleResultWriteService).replaceScheduleResults(eq("2025-2026-1"), eq(9001L), any(), eq(List.of(assignment)));
         verify(schScheduleRunDetailService).replaceRunDetails(9001L, List.of(unscheduledTask));
+    }
+
+    @Test
+    void classScheduling_shouldReturnSuccessMessageWhenAllTasksScheduled() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schTaskService", schTaskService);
+        ReflectionTestUtils.setField(service, "resTeacherService", resTeacherService);
+        ReflectionTestUtils.setField(service, "resCourseService", resCourseService);
+        ReflectionTestUtils.setField(service, "resClassroomService", resClassroomService);
+        ReflectionTestUtils.setField(service, "scheduleConfigFacadeService", scheduleConfigFacadeService);
+        ReflectionTestUtils.setField(service, "scheduleResultWriteService", scheduleResultWriteService);
+        ReflectionTestUtils.setField(service, "schScheduleRunLogService", schScheduleRunLogService);
+        ReflectionTestUtils.setField(service, "schScheduleRunDetailService", schScheduleRunDetailService);
+        ReflectionTestUtils.setField(service, "schedulingEngine", schedulingEngine);
+
+        SchTask task = buildSchTask(101L, "TK-101", "C1", "K1", "T1", "数学", "张老师");
+
+        ResCourse course = new ResCourse();
+        course.setCourseCode("K1");
+        course.setNeedSpecialRoom(0);
+        course.setRoomType("NORMAL");
+
+        SchedulingAssignment assignment = SchedulingAssignment.builder()
+                .taskId(101L)
+                .taskCode("TK-101")
+                .classNo("C1")
+                .courseNo("K1")
+                .teacherNo("T1")
+                .classroomCode("A101")
+                .weekdayNo(1)
+                .periodNo(1)
+                .timeSlotCode("01")
+                .build();
+
+        SchedulingExecutionResult executionResult = SchedulingExecutionResult.builder()
+                .taskCount(1)
+                .scheduledTaskCount(1)
+                .unscheduledTaskCount(0)
+                .successRate(100.0d)
+                .assignments(List.of(assignment))
+                .unscheduledTasks(List.of())
+                .constraintSummary(List.of())
+                .build();
+
+        when(schTaskService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SchTask>>any()))
+                .thenReturn(List.of(task));
+        when(resTeacherService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResTeacher>>any()))
+                .thenReturn(List.of());
+        when(resCourseService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResCourse>>any()))
+                .thenReturn(List.of(course));
+        when(scheduleConfigFacadeService.getScheduleConfig(any())).thenReturn(ScheduleConfigVO.builder().timeSlots(List.of()).build());
+        when(schedulingEngine.execute(any())).thenReturn(executionResult);
+        when(schScheduleRunLogService.save(any())).thenAnswer(invocation -> {
+            SchScheduleRunLog runLog = invocation.getArgument(0);
+            runLog.setId(9002L);
+            if (runLog.getCreatedAt() == null) {
+                runLog.setCreatedAt(LocalDateTime.of(2026, 3, 25, 11, 0, 0));
+            }
+            return true;
+        });
+
+        ServerResponse<?> response = service.classScheduling("2025-2026-1");
+
+        assertTrue(response.isSuccess());
+        Map<?, ?> responseData = (Map<?, ?>) response.getData();
+        assertEquals(String.format("排课成功，标准课表已生成，耗时：%sms", responseData.get("durationMs")), response.getMessage());
+        assertEquals(9002L, responseData.get("runLogId"));
+        assertEquals(1, responseData.get("taskCount"));
+        assertEquals(1, responseData.get("scheduledTaskCount"));
+        assertEquals(0, responseData.get("unscheduledTaskCount"));
+        assertEquals(List.of(), responseData.get("constraintSummary"));
     }
 
     @Test
@@ -228,7 +324,7 @@ class ClassTaskServiceImplTest {
         assertEquals(4, task.getWeeksNumber());
         assertEquals(16, task.getWeeksSum());
         assertEquals("1", task.getIsFix());
-        assertEquals("08", task.getClassTime());
+        assertEquals("0203", task.getClassTime());
         assertEquals(8, task.getPriorityLevel());
     }
 
@@ -397,6 +493,34 @@ class ClassTaskServiceImplTest {
     }
 
     @Test
+    void listRecentExecuteLogs_shouldFallbackOperatorNameWhenOperatorUserIdIsNull() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+        ReflectionTestUtils.setField(service, "schScheduleRunLogService", schScheduleRunLogService);
+        ReflectionTestUtils.setField(service, "sysUserService", sysUserService);
+
+        SchScheduleRunLog log = new SchScheduleRunLog();
+        log.setId(2L);
+        log.setRemark("2025-2026-1");
+        log.setTaskTotal(6);
+        log.setTaskSuccess(20);
+        log.setRunStatus("PARTIAL");
+        log.setFailureReason("部分任务未排成");
+        log.setOperatorUserId(null);
+        log.setStartedAt(LocalDateTime.of(2026, 4, 24, 20, 30, 0));
+        log.setFinishedAt(LocalDateTime.of(2026, 4, 24, 20, 30, 2));
+        log.setCreatedAt(LocalDateTime.of(2026, 4, 24, 20, 30, 2));
+
+        when(schScheduleRunLogService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.Wrapper<SchScheduleRunLog>>any()))
+                .thenReturn(List.of(log));
+
+        List<ScheduleRunLogVO> logs = service.listRecentExecuteLogs("2025-2026-1", 10);
+
+        assertEquals(1, logs.size());
+        assertEquals("--", logs.get(0).getOperatorName());
+        assertEquals(2000L, logs.get(0).getDurationMs());
+    }
+
+    @Test
     void getExecutionDetail_shouldAggregateRunDetailAndGeneratedResultCount() {
         ClassTaskServiceImpl service = new ClassTaskServiceImpl();
         ReflectionTestUtils.setField(service, "schScheduleRunLogService", schScheduleRunLogService);
@@ -521,7 +645,7 @@ class ClassTaskServiceImplTest {
 
         assertEquals("全局默认规则", context.scheduleRuleName());
         assertTrue(context.configApplied());
-        assertEquals(List.of("01", "07"), context.availableClassTimes());
+        assertEquals(List.of("0101", "0202", "0601"), context.availableClassTimes());
     }
 
     @Test
@@ -534,7 +658,7 @@ class ClassTaskServiceImplTest {
         fixedTask.setTeacherNo("T0001");
         fixedTask.setCourseNo("100001");
         fixedTask.setCourseAttr("01");
-        fixedTask.setWeeksNumber(2);
+        fixedTask.setWeeksNumber(1);
         fixedTask.setClassTime("06");
 
         BusinessException exception = assertThrows(BusinessException.class,
@@ -554,7 +678,7 @@ class ClassTaskServiceImplTest {
         unfixedTask.setTeacherNo("T0001");
         unfixedTask.setCourseNo("100001");
         unfixedTask.setCourseAttr("01");
-        unfixedTask.setWeeksNumber(2);
+        unfixedTask.setWeeksNumber(1);
 
         SchedulingTaskInput fixedTask = new SchedulingTaskInput();
         fixedTask.setIsFix("1");
@@ -563,7 +687,7 @@ class ClassTaskServiceImplTest {
         fixedTask.setTeacherNo("T0002");
         fixedTask.setCourseNo("100002");
         fixedTask.setCourseAttr("01");
-        fixedTask.setWeeksNumber(2);
+        fixedTask.setWeeksNumber(1);
         fixedTask.setClassTime("01");
 
         Map<String, List<String>> geneMap = service.coding(List.of(unfixedTask, fixedTask), List.of("01", "02", "03"));
@@ -572,6 +696,35 @@ class ClassTaskServiceImplTest {
         assertEquals(1, geneMap.get("isFixedTime").size());
         assertTrue(geneMap.get("unFixedTime").get(0).startsWith("1"));
         assertTrue(geneMap.get("isFixedTime").get(0).startsWith("2"));
+    }
+
+    @Test
+    void coding_shouldUseWeeksNumberAsExactGeneCount() {
+        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
+
+        SchedulingTaskInput unfixedTask = new SchedulingTaskInput();
+        unfixedTask.setIsFix("0");
+        unfixedTask.setGradeNo("25");
+        unfixedTask.setClassNo("25010001");
+        unfixedTask.setTeacherNo("T0001");
+        unfixedTask.setCourseNo("100001");
+        unfixedTask.setCourseAttr("01");
+        unfixedTask.setWeeksNumber(3);
+
+        SchedulingTaskInput fixedTask = new SchedulingTaskInput();
+        fixedTask.setIsFix("1");
+        fixedTask.setGradeNo("25");
+        fixedTask.setClassNo("25010002");
+        fixedTask.setTeacherNo("T0002");
+        fixedTask.setCourseNo("100002");
+        fixedTask.setCourseAttr("01");
+        fixedTask.setWeeksNumber(3);
+        fixedTask.setClassTime("01,02,03");
+
+        Map<String, List<String>> geneMap = service.coding(List.of(unfixedTask, fixedTask), List.of("01", "02", "03"));
+
+        assertEquals(3, geneMap.get("unFixedTime").size());
+        assertEquals(3, geneMap.get("isFixedTime").size());
     }
 
     @Test

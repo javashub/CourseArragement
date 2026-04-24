@@ -1,5 +1,6 @@
 package com.lyk.coursearrange.system.rbac.service;
 
+import com.lyk.coursearrange.system.rbac.request.BatchUserRoleAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.RoleMenuAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.RolePermissionAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.UserRoleAssignRequest;
@@ -13,6 +14,8 @@ import com.lyk.coursearrange.system.rbac.request.UserRoleAssignRequest;
 public interface RbacAssignService {
 
     void assignRolesToUser(UserRoleAssignRequest request);
+
+    void batchAssignRolesToUsers(BatchUserRoleAssignRequest request);
 
     void assignMenusToRole(RoleMenuAssignRequest request);
 

@@ -83,7 +83,12 @@ public class SchedulingConstraintEvaluator {
 
     private boolean matchesFixedSlots(SchedulingTask task, List<String> slotCodes) {
         List<String> fixedSlots = normalizeSlotCodes(task.getFixedTimeSlots());
-        return !fixedSlots.isEmpty() && fixedSlots.equals(normalizeSlotCodes(slotCodes));
+        List<String> candidateSlots = normalizeSlotCodes(slotCodes);
+        if (fixedSlots.isEmpty() || candidateSlots.isEmpty()) {
+            return false;
+        }
+        Set<String> fixedSet = new LinkedHashSet<>(fixedSlots);
+        return candidateSlots.stream().allMatch(fixedSet::contains);
     }
 
     private List<String> normalizeSlotCodes(List<String> slotCodes) {
@@ -200,11 +205,17 @@ public class SchedulingConstraintEvaluator {
 
     int resolveWeekday(String slotCode) {
         int code = parseSlotCode(slotCode);
+        if (code >= 100) {
+            return code / 100;
+        }
         return ((code - 1) / 5) + 1;
     }
 
     int resolvePeriod(String slotCode) {
         int code = parseSlotCode(slotCode);
+        if (code >= 100) {
+            return code % 100;
+        }
         return ((code - 1) % 5) + 1;
     }
 
@@ -227,6 +238,7 @@ public class SchedulingConstraintEvaluator {
         private final Set<String> teacherSlots = new LinkedHashSet<>();
         private final Set<String> classroomSlots = new LinkedHashSet<>();
         private final Map<String, Integer> teacherDayLoads = new java.util.HashMap<>();
+        private final Map<String, Integer> classDayLoads = new java.util.HashMap<>();
 
         void reserve(SchedulingTask task, SchedulingClassroom classroom, List<String> slotCodes, SchedulingConstraintEvaluator evaluator) {
             for (String slotCode : slotCodes) {
@@ -236,8 +248,10 @@ public class SchedulingConstraintEvaluator {
                     classroomSlots.add(classroom.getClassroomCode() + "::" + slotCode);
                 }
                 int weekday = evaluator.resolveWeekday(slotCode);
-                String dayKey = task.getTeacherNo() + "::" + weekday;
-                teacherDayLoads.put(dayKey, teacherDayLoads.getOrDefault(dayKey, 0) + 1);
+                String teacherDayKey = task.getTeacherNo() + "::" + weekday;
+                teacherDayLoads.put(teacherDayKey, teacherDayLoads.getOrDefault(teacherDayKey, 0) + 1);
+                String classDayKey = task.getClassNo() + "::" + weekday;
+                classDayLoads.put(classDayKey, classDayLoads.getOrDefault(classDayKey, 0) + 1);
             }
         }
 
@@ -249,12 +263,19 @@ public class SchedulingConstraintEvaluator {
                     classroomSlots.remove(classroom.getClassroomCode() + "::" + slotCode);
                 }
                 int weekday = evaluator.resolveWeekday(slotCode);
-                String dayKey = task.getTeacherNo() + "::" + weekday;
-                int current = teacherDayLoads.getOrDefault(dayKey, 0);
+                String teacherDayKey = task.getTeacherNo() + "::" + weekday;
+                int current = teacherDayLoads.getOrDefault(teacherDayKey, 0);
                 if (current <= 1) {
-                    teacherDayLoads.remove(dayKey);
+                    teacherDayLoads.remove(teacherDayKey);
                 } else {
-                    teacherDayLoads.put(dayKey, current - 1);
+                    teacherDayLoads.put(teacherDayKey, current - 1);
+                }
+                String classDayKey = task.getClassNo() + "::" + weekday;
+                int classCurrent = classDayLoads.getOrDefault(classDayKey, 0);
+                if (classCurrent <= 1) {
+                    classDayLoads.remove(classDayKey);
+                } else {
+                    classDayLoads.put(classDayKey, classCurrent - 1);
                 }
             }
         }
@@ -273,6 +294,28 @@ public class SchedulingConstraintEvaluator {
 
         int teacherDayLoad(String teacherNo, int weekday) {
             return teacherDayLoads.getOrDefault(teacherNo + "::" + weekday, 0);
+        }
+
+        int classDayLoad(String classNo, int weekday) {
+            return classDayLoads.getOrDefault(classNo + "::" + weekday, 0);
+        }
+
+        /**
+         * 供第一阶段候选评分使用：判断班级是否已在其它天占用课时。
+         */
+        boolean classHasLoadOnOtherDay(String classNo, int weekday, Set<Integer> weekdays) {
+            if (classNo == null || classNo.isBlank() || weekdays == null || weekdays.isEmpty()) {
+                return false;
+            }
+            for (Integer day : weekdays) {
+                if (day == null || day == weekday) {
+                    continue;
+                }
+                if (classDayLoad(classNo, day) > 0) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

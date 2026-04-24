@@ -70,6 +70,9 @@ public interface ScheduleTaskMetaUtils {
         if (slot == null || slot < 1) {
             return null;
         }
+        if (slot >= 100) {
+            return slot / 100;
+        }
         return ((slot - 1) / 5) + 1;
     }
 
@@ -81,7 +84,24 @@ public interface ScheduleTaskMetaUtils {
         if (slot == null || slot < 1) {
             return null;
         }
+        if (slot >= 100) {
+            return slot % 100;
+        }
         return ((slot - 1) % 5) + 1;
+    }
+
+    /**
+     * 把星期/节次转换成统一时间片编码。
+     *
+     * <p>新编码采用四位数字：前两位是星期，后两位是节次。
+     * 例如周一第七节编码为 0107，周六第二节编码为 0602。
+     * 对旧数据仍保留兼容解析能力。</p>
+     */
+    static String buildClassTime(Integer weekdayNo, Integer periodNo) {
+        if (weekdayNo == null || periodNo == null || weekdayNo <= 0 || periodNo <= 0) {
+            return "";
+        }
+        return String.format("%02d%02d", weekdayNo, periodNo);
     }
 
     static String buildTaskKey(String classNo, String courseNo, String teacherNo) {

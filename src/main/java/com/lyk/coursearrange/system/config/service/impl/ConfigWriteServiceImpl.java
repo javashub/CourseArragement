@@ -19,8 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -84,10 +86,27 @@ public class ConfigWriteServiceImpl implements ConfigWriteService {
         existingWrapper.eq(CfgTimeSlot::getScheduleRuleId, request.getScheduleRuleId())
                 .eq(CfgTimeSlot::getDeleted, 0);
         List<CfgTimeSlot> existingSlots = timeSlotService.list(existingWrapper);
+        Map<String, CfgTimeSlot> existingSlotMap = existingSlots.stream()
+                .collect(Collectors.toMap(
+                        item -> buildSlotKey(item.getWeekdayNo(), item.getPeriodNo()),
+                        item -> item,
+                        (left, right) -> left,
+                        LinkedHashMap::new
+                ));
         Set<Long> keepIds = request.getItems().stream()
                 .map(CfgTimeSlotBatchSaveRequest.Item::getId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
+        for (CfgTimeSlotBatchSaveRequest.Item item : request.getItems()) {
+            if (item.getId() != null) {
+                continue;
+            }
+            CfgTimeSlot existingSlot = existingSlotMap.get(buildSlotKey(item.getWeekdayNo(), item.getPeriodNo()));
+            if (existingSlot != null) {
+                item.setId(existingSlot.getId());
+                keepIds.add(existingSlot.getId());
+            }
+        }
         List<CfgTimeSlot> deleteSlots = existingSlots.stream()
                 .filter(item -> !keepIds.contains(item.getId()))
                 .toList();
@@ -95,7 +114,7 @@ public class ConfigWriteServiceImpl implements ConfigWriteService {
             List<Long> deleteIds = deleteSlots.stream()
                     .map(CfgTimeSlot::getId)
                     .toList();
-            timeSlotService.removeByIds(deleteIds);
+            timeSlotService.removePhysicallyByIds(deleteIds);
             log.info("移除旧时间片成功，scheduleRuleId={}, deleteCount={}", request.getScheduleRuleId(), deleteIds.size());
         }
         List<CfgTimeSlot> result = new ArrayList<>();
@@ -109,6 +128,10 @@ public class ConfigWriteServiceImpl implements ConfigWriteService {
         }
         log.info("批量保存时间片成功，scheduleRuleId={}, count={}", request.getScheduleRuleId(), result.size());
         return result;
+    }
+
+    private String buildSlotKey(Integer weekdayNo, Integer periodNo) {
+        return weekdayNo + "-" + periodNo;
     }
 
     private void validateScheduleRuleStructure(CfgScheduleRuleSaveRequest request) {

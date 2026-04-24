@@ -1,5 +1,5 @@
 <template>
-  <section class="config-shell" v-loading="loading">
+  <section v-loading="loading" class="config-shell">
     <div class="hero-panel">
       <div class="hero-copy">
         <div class="eyebrow">Scheduling Control Deck</div>
@@ -10,6 +10,16 @@
       </div>
       <div class="hero-actions">
         <el-button class="ghost-action" @click="loadConfig">重新加载</el-button>
+        <el-button
+          class="soft-action"
+          type="primary"
+          plain
+          :loading="saveAllLoading"
+          :disabled="!canSaveAllConfig"
+          @click="saveAllConfig"
+        >
+          手动保存全部配置
+        </el-button>
         <el-button class="primary-action" type="primary" :loading="scheduleSaving" @click="saveRuleSection">
           保存排课规则
         </el-button>
@@ -282,11 +292,21 @@ import {
   saveScheduleConfig,
   saveTimeSlots
 } from '@/api/modules/system';
+import {
+  buildTimeSlotTemplate,
+  canManuallySaveConfig,
+  createDefaultRuleFormData,
+  createEmptyTimeSlotData,
+  normalizeTimeSlotList,
+  validateScheduleRuleForm,
+  validateTimeSlotTemplate
+} from './systemConfigHelpers.js';
 
 const loading = ref(false);
 const scheduleSaving = ref(false);
 const featureSaving = ref(false);
 const timeSlotSaving = ref(false);
+const saveAllLoading = ref(false);
 
 const campuses = ref([]);
 const colleges = ref([]);
@@ -310,95 +330,18 @@ const scope = reactive({
   stageId: null
 });
 
-const scheduleForm = reactive(createDefaultRuleForm());
+const scheduleForm = reactive(createDefaultRuleFormData());
 
-const scheduleValidation = computed(() => {
-  const messages = [];
-  const segmentSum = Number(scheduleForm.morningPeriods || 0) + Number(scheduleForm.afternoonPeriods || 0) + Number(scheduleForm.nightPeriods || 0);
-  if (segmentSum !== Number(scheduleForm.dayPeriods || 0)) {
-    messages.push('上午、下午、晚间节次数之和必须等于每天总节数');
-  }
-  if (Number(scheduleForm.allowWeekend || 0) === 0 && Number(scheduleForm.weekDays || 0) > 5) {
-    messages.push('未开启周末排课时，每周上课天数不能超过 5 天');
-  }
-  if (Number(scheduleForm.defaultContinuousLimit || 0) > Number(scheduleForm.dayPeriods || 0)) {
-    messages.push('默认连堂上限不能大于每天总节数');
-  }
-  return {
-    isValid: messages.length === 0,
-    messages: messages.length ? messages : ['结构校验通过，规则可直接保存']
-  };
-});
+const scheduleValidation = computed(() => validateScheduleRuleForm(scheduleForm));
 
-const timeSlotValidation = computed(() => {
-  const messages = [];
-  const duplicateKeys = new Set();
-  for (const item of timeSlots.value) {
-    const slotKey = `${item.weekdayNo}-${item.periodNo}`;
-    if (duplicateKeys.has(slotKey)) {
-      messages.push('同一星期和节次不能重复保存时间片');
-      break;
-    }
-    duplicateKeys.add(slotKey);
-    if (Number(item.weekdayNo || 0) > Number(scheduleForm.weekDays || 0)) {
-      messages.push('存在超出每周上课天数范围的时间片');
-      break;
-    }
-    if (Number(scheduleForm.allowWeekend || 0) === 0 && Number(item.weekdayNo || 0) > 5) {
-      messages.push('未开启周末排课时，不能保存周末时间片');
-      break;
-    }
-    if (Number(item.periodNo || 0) > Number(scheduleForm.dayPeriods || 0)) {
-      messages.push('存在超出每天总节数范围的时间片');
-      break;
-    }
-    if (Number(item.isTeaching || 0) === 1 && Number(item.isFixedBreak || 0) === 1) {
-      messages.push('固定休息时间片不能同时标记为可上课');
-      break;
-    }
-  }
-  return {
-    isValid: messages.length === 0,
-    messages: messages.length ? messages : ['时间片结构校验通过，可直接保存']
-  };
-});
+const timeSlotValidation = computed(() => validateTimeSlotTemplate(timeSlots.value, scheduleForm));
 
-function createDefaultRuleForm() {
-  return {
-    id: null,
-    ruleCode: 'RULE_GLOBAL_DEFAULT',
-    ruleName: '全局默认排课规则',
-    weekDays: 5,
-    dayPeriods: 8,
-    morningPeriods: 4,
-    afternoonPeriods: 4,
-    nightPeriods: 0,
-    allowWeekend: 0,
-    defaultContinuousLimit: 2,
-    status: 1,
-    isDefault: 1,
-    remark: ''
-  };
-}
-
-function createEmptyTimeSlot() {
-  return {
-    id: null,
-    weekdayNo: 1,
-    periodNo: 1,
-    periodName: '第1节',
-    timeGroup: 'MORNING',
-    startTimeText: '08:00',
-    endTimeText: '08:45',
-    isTeaching: 1,
-    isFixedBreak: 0,
-    sortNo: 1,
-    remark: ''
-  };
-}
+const canSaveAllConfig = computed(() =>
+  canManuallySaveConfig(scheduleValidation.value, timeSlotValidation.value, timeSlots.value)
+);
 
 function applyScheduleData(scheduleRule) {
-  Object.assign(scheduleForm, createDefaultRuleForm(), scheduleRule || {});
+  Object.assign(scheduleForm, createDefaultRuleFormData(), scheduleRule || {});
   if (!scheduleForm.ruleCode) {
     scheduleForm.ruleCode = buildRuleCode();
   }
@@ -438,15 +381,6 @@ function buildRuleName() {
   return `${labels.filter(Boolean).join(' / ') || '全局默认'}排课规则`;
 }
 
-function normalizeTimeSlots(list = []) {
-  return list
-    .map((item) => ({
-      ...createEmptyTimeSlot(),
-      ...item
-    }))
-    .sort((a, b) => (a.weekdayNo - b.weekdayNo) || (a.periodNo - b.periodNo));
-}
-
 async function loadScopeOptions() {
   const [campusRes, stageRes] = await Promise.all([fetchCampusList(), fetchStageList()]);
   campuses.value = campusRes.data || [];
@@ -482,7 +416,7 @@ async function loadConfig() {
       status: item.status ?? 1,
       remark: item.remark || ''
     }));
-    timeSlots.value = normalizeTimeSlots(schedulePayload.timeSlots || []);
+    timeSlots.value = normalizeTimeSlotList(schedulePayload.timeSlots || []);
   } finally {
     loading.value = false;
   }
@@ -505,10 +439,13 @@ async function handleScopeReset() {
   await loadConfig();
 }
 
-async function saveRuleSection() {
+async function saveRuleSection(options = {}) {
+  const { silent = false } = options;
   if (!scheduleValidation.value.isValid) {
-    ElMessage.warning(scheduleValidation.value.messages[0]);
-    return;
+    if (!silent) {
+      ElMessage.warning(scheduleValidation.value.messages[0]);
+    }
+    return false;
   }
   scheduleSaving.value = true;
   try {
@@ -522,7 +459,10 @@ async function saveRuleSection() {
       termId: null
     });
     applyScheduleData(response.data || scheduleForm);
-    ElMessage.success('排课规则保存成功');
+    if (!silent) {
+      ElMessage.success('排课规则保存成功');
+    }
+    return true;
   } finally {
     scheduleSaving.value = false;
   }
@@ -553,20 +493,28 @@ async function saveFeatureSection() {
   }
 }
 
-async function saveTimeSlotSection() {
+async function saveTimeSlotSection(options = {}) {
+  const { silent = false, reload = true } = options;
   if (!scheduleForm.id) {
-    await saveRuleSection();
+    const ruleSaved = await saveRuleSection({ silent });
+    if (!ruleSaved) {
+      return false;
+    }
   }
   if (!scheduleForm.id) {
-    return;
+    return false;
   }
   if (!timeSlots.value.length) {
-    ElMessage.warning('请先生成或新增至少一条时间片');
-    return;
+    if (!silent) {
+      ElMessage.warning('请先生成或新增至少一条时间片');
+    }
+    return false;
   }
   if (!timeSlotValidation.value.isValid) {
-    ElMessage.warning(timeSlotValidation.value.messages[0]);
-    return;
+    if (!silent) {
+      ElMessage.warning(timeSlotValidation.value.messages[0]);
+    }
+    return false;
   }
   timeSlotSaving.value = true;
   try {
@@ -586,10 +534,40 @@ async function saveTimeSlotSection() {
         remark: item.remark || ''
       }))
     });
-    ElMessage.success('时间片保存成功');
-    await loadConfig();
+    if (reload) {
+      await loadConfig();
+    }
+    if (!silent) {
+      ElMessage.success('时间片保存成功');
+    }
+    return true;
   } finally {
     timeSlotSaving.value = false;
+  }
+}
+
+async function saveAllConfig() {
+  if (!canSaveAllConfig.value) {
+    const firstMessage = !scheduleValidation.value.isValid
+      ? scheduleValidation.value.messages[0]
+      : timeSlotValidation.value.messages[0];
+    ElMessage.warning(firstMessage);
+    return;
+  }
+  saveAllLoading.value = true;
+  try {
+    const ruleSaved = await saveRuleSection({ silent: true });
+    if (!ruleSaved) {
+      return;
+    }
+    const slotSaved = await saveTimeSlotSection({ silent: true, reload: false });
+    if (!slotSaved) {
+      return;
+    }
+    await loadConfig();
+    ElMessage.success('系统配置已手动保存并同步到数据库');
+  } finally {
+    saveAllLoading.value = false;
   }
 }
 
@@ -597,7 +575,7 @@ function appendTimeSlot() {
   const lastItem = timeSlots.value[timeSlots.value.length - 1];
   const nextPeriod = lastItem ? lastItem.periodNo + 1 : 1;
   timeSlots.value.push({
-    ...createEmptyTimeSlot(),
+    ...createEmptyTimeSlotData(),
     periodNo: nextPeriod,
     periodName: `第${nextPeriod}节`,
     sortNo: timeSlots.value.length + 1
@@ -609,60 +587,8 @@ function removeTimeSlot(index) {
 }
 
 function generateTemplate() {
-  const totalPeriods = scheduleForm.dayPeriods || 0;
-  const weekDays = scheduleForm.weekDays || 0;
-  const rows = [];
-  const morningStart = 8 * 60;
-  const afternoonStart = 14 * 60;
-  const nightStart = 19 * 60;
-
-  for (let day = 1; day <= weekDays; day += 1) {
-    for (let period = 1; period <= totalPeriods; period += 1) {
-      const timeGroup = resolveTimeGroup(period);
-      const startMinutes = calculateStartMinutes(period, timeGroup, morningStart, afternoonStart, nightStart);
-      rows.push({
-        id: null,
-        weekdayNo: day,
-        periodNo: period,
-        periodName: `第${period}节`,
-        timeGroup,
-        startTimeText: formatMinutes(startMinutes),
-        endTimeText: formatMinutes(startMinutes + 45),
-        isTeaching: 1,
-        isFixedBreak: 0,
-        sortNo: rows.length + 1,
-        remark: ''
-      });
-    }
-  }
-  timeSlots.value = rows;
+  timeSlots.value = buildTimeSlotTemplate(scheduleForm);
   ElMessage.success('已按当前规则生成默认时间片模板');
-}
-
-function resolveTimeGroup(periodNo) {
-  if (periodNo <= scheduleForm.morningPeriods) {
-    return 'MORNING';
-  }
-  if (periodNo <= scheduleForm.morningPeriods + scheduleForm.afternoonPeriods) {
-    return 'AFTERNOON';
-  }
-  return 'NIGHT';
-}
-
-function calculateStartMinutes(periodNo, timeGroup, morningStart, afternoonStart, nightStart) {
-  if (timeGroup === 'MORNING') {
-    return morningStart + (periodNo - 1) * 55;
-  }
-  if (timeGroup === 'AFTERNOON') {
-    return afternoonStart + (periodNo - scheduleForm.morningPeriods - 1) * 55;
-  }
-  return nightStart + (periodNo - scheduleForm.morningPeriods - scheduleForm.afternoonPeriods - 1) * 55;
-}
-
-function formatMinutes(totalMinutes) {
-  const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
-  const minutes = String(totalMinutes % 60).padStart(2, '0');
-  return `${hours}:${minutes}`;
 }
 
 onMounted(async () => {

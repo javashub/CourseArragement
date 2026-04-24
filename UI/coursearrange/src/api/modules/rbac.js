@@ -76,6 +76,10 @@ export function assignUserRoles(payload) {
   return request.post('/rbac/assign/user-roles', payload);
 }
 
+export function batchAssignUserRoles(payload) {
+  return request.post('/rbac/assign/user-roles/batch', payload);
+}
+
 export function assignRoleMenus(payload) {
   return request.post('/rbac/assign/role-menus', payload);
 }

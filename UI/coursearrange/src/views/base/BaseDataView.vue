@@ -4,20 +4,7 @@
       <div class="hero-copy">
         <div class="eyebrow">Base Resource Studio</div>
         <h1 class="hero-title">基础数据</h1>
-        <p class="hero-description">
-          先把教师、学生、课程、教室这些基础资源做成统一后台入口。当前页面已经按标准资源表读写，后续联调和演示数据也只维护
-          `res_*` 标准模型。
-        </p>
-      </div>
-      <div class="hero-stats">
-        <div class="stat-chip">
-          <span class="stat-label">当前页签</span>
-          <strong>{{ activeTabLabel }}</strong>
-        </div>
-        <div class="stat-chip">
-          <span class="stat-label">联调状态</span>
-          <strong>可新增 / 可编辑 / 可删除</strong>
-        </div>
+        <p class="hero-description">{{ BASE_DATA_HERO_COPY }}</p>
       </div>
     </div>
 
@@ -593,6 +580,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getErrorMessage } from '@/utils/http';
+import { BASE_DATA_HERO_COPY } from './baseDataHero';
 import {
   createClassroom,
   createCourse,

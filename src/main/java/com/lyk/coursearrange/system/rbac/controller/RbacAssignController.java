@@ -1,6 +1,7 @@
 package com.lyk.coursearrange.system.rbac.controller;
 
 import com.lyk.coursearrange.common.ServerResponse;
+import com.lyk.coursearrange.system.rbac.request.BatchUserRoleAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.RoleMenuAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.RolePermissionAssignRequest;
 import com.lyk.coursearrange.system.rbac.request.UserRoleAssignRequest;
@@ -30,6 +31,12 @@ public class RbacAssignController {
     public ServerResponse<?> assignUserRoles(@Validated @RequestBody UserRoleAssignRequest request) {
         rbacAssignService.assignRolesToUser(request);
         return ServerResponse.ofSuccess("分配用户角色成功");
+    }
+
+    @PostMapping("/user-roles/batch")
+    public ServerResponse<?> batchAssignUserRoles(@Validated @RequestBody BatchUserRoleAssignRequest request) {
+        rbacAssignService.batchAssignRolesToUsers(request);
+        return ServerResponse.ofSuccess("批量分配角色成功");
     }
 
     @PostMapping("/role-menus")

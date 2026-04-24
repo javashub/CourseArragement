@@ -264,10 +264,7 @@ public class ScheduleTaskController {
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {
-        if (weekdayNo == null || periodNo == null || weekdayNo <= 0 || periodNo <= 0) {
-            return "";
-        }
-        return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
+        return ScheduleTaskMetaUtils.buildClassTime(weekdayNo, periodNo);
     }
 
     private void validateTaskDuplicate(ClassTaskDTO request, Long currentTaskId) {
@@ -332,9 +329,26 @@ public class ScheduleTaskController {
         if (classTime == null || classTime.isBlank()) {
             return List.of();
         }
-        return java.util.stream.IntStream.range(0, classTime.length() / 2)
-                .mapToObj(index -> classTime.substring(index * 2, index * 2 + 2))
-                .toList();
+        if (classTime.contains(",") || classTime.contains("，")) {
+            return java.util.Arrays.stream(classTime.split("[,，]"))
+                    .map(String::trim)
+                    .filter(item -> !item.isBlank())
+                    .toList();
+        }
+        if (classTime.length() <= 4) {
+            return List.of(classTime);
+        }
+        List<String> result = new java.util.ArrayList<>();
+        if (classTime.length() % 4 == 0) {
+            for (int i = 0; i + 3 < classTime.length(); i += 4) {
+                result.add(classTime.substring(i, i + 4));
+            }
+            return result;
+        }
+        for (int i = 0; i + 1 < classTime.length(); i += 2) {
+            result.add(classTime.substring(i, i + 2));
+        }
+        return result;
     }
 
     private SchTask buildStandardTask(ClassTaskDTO request, SchTask task) {

@@ -143,17 +143,23 @@ public class CoursePlanServiceImpl implements CoursePlanService {
         if (adjustLogs.isEmpty()) {
             return List.of();
         }
-        Map<Long, SchScheduleResult> resultMap = schScheduleResultService.listByIds(adjustLogs.stream()
-                        .map(SchScheduleAdjustLog::getSourceResultId)
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .toList()).stream()
+        List<Long> resultIds = adjustLogs.stream()
+                .map(SchScheduleAdjustLog::getSourceResultId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, SchScheduleResult> resultMap = resultIds.isEmpty()
+                ? new HashMap<>()
+                : schScheduleResultService.listByIds(resultIds).stream()
                 .collect(Collectors.toMap(SchScheduleResult::getId, item -> item, (left, right) -> left));
-        Map<Long, SchTask> taskMap = schTaskService.listByIds(resultMap.values().stream()
-                        .map(SchScheduleResult::getTaskId)
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .toList()).stream()
+        List<Long> taskIds = resultMap.values().stream()
+                .map(SchScheduleResult::getTaskId)
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+        Map<Long, SchTask> taskMap = taskIds.isEmpty()
+                ? new HashMap<>()
+                : schTaskService.listByIds(taskIds).stream()
                 .collect(Collectors.toMap(SchTask::getId, item -> item, (left, right) -> left));
         Map<Long, String> operatorNameMap = buildOperatorNameMap(adjustLogs.stream()
                 .map(SchScheduleAdjustLog::getOperatorUserId)
@@ -254,7 +260,9 @@ public class CoursePlanServiceImpl implements CoursePlanService {
                 .filter(id -> id != null && id > 0)
                 .distinct()
                 .toList();
-        Map<Long, SchTask> taskMap = schTaskService.listByIds(taskIds).stream()
+        Map<Long, SchTask> taskMap = taskIds.isEmpty()
+                ? new HashMap<>()
+                : schTaskService.listByIds(taskIds).stream()
                 .collect(Collectors.toMap(SchTask::getId, item -> item));
         for (SchScheduleResult conflict : conflicts) {
             Map<String, String> meta = ScheduleTaskMetaUtils.parseTaskRemark(
@@ -336,6 +344,8 @@ public class CoursePlanServiceImpl implements CoursePlanService {
         vo.setTeacherName(teacherName);
         vo.setGradeNo(taskMeta.getOrDefault("gradeNo", ""));
         vo.setClassroomNo(classroomCodeMap.getOrDefault(result.getClassroomId(), ""));
+        vo.setWeekdayNo(result.getWeekdayNo());
+        vo.setPeriodNo(result.getPeriodNo());
         vo.setClassTime(toLegacyClassTime(result.getWeekdayNo(), result.getPeriodNo()));
         return vo;
     }
@@ -353,10 +363,7 @@ public class CoursePlanServiceImpl implements CoursePlanService {
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {
-        if (weekdayNo == null || periodNo == null) {
-            return "";
-        }
-        return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
+        return ScheduleTaskMetaUtils.buildClassTime(weekdayNo, periodNo);
     }
 
     private ScheduleAdjustLogVO toAdjustLogVO(SchScheduleAdjustLog adjustLog,

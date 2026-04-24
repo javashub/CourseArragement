@@ -101,7 +101,7 @@ class CoursePlanServiceImplTest {
         assertEquals("数学", plan.getCourseName());
         assertEquals("张老师", plan.getTeacherName());
         assertEquals("01-101", plan.getClassroomNo());
-        assertEquals("08", plan.getClassTime());
+        assertEquals("0203", plan.getClassTime());
     }
 
     @Test
@@ -261,5 +261,43 @@ class CoursePlanServiceImplTest {
         List<?> logs = service.listRecentAdjustLogs("2025-2026-1", "C1", "T1", 10);
 
         assertEquals(1, logs.size());
+    }
+
+    @Test
+    void listRecentAdjustLogs_shouldNotCallListByIdsWhenScheduleResultsMissing() {
+        SchScheduleAdjustLog adjustLog = new SchScheduleAdjustLog();
+        adjustLog.setId(1L);
+        adjustLog.setSourceResultId(101L);
+        adjustLog.setRemark("2025-2026-1");
+
+        when(schScheduleAdjustLogService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.Wrapper<SchScheduleAdjustLog>>any()))
+                .thenReturn(List.of(adjustLog));
+        when(schScheduleResultService.listByIds(List.of(101L))).thenReturn(List.of());
+
+        List<?> logs = service.listRecentAdjustLogs("2025-2026-1", "C1", "T1", 10);
+
+        assertEquals(List.of(), logs);
+        verify(schTaskService, never()).listByIds(anyCollection());
+    }
+
+    @Test
+    void listRecentAdjustLogs_shouldNotCallTaskQueryWhenTaskIdsAreEmpty() {
+        SchScheduleAdjustLog adjustLog = new SchScheduleAdjustLog();
+        adjustLog.setId(1L);
+        adjustLog.setSourceResultId(101L);
+        adjustLog.setRemark("2025-2026-1");
+
+        SchScheduleResult result = new SchScheduleResult();
+        result.setId(101L);
+        result.setTaskId(null);
+
+        when(schScheduleAdjustLogService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.Wrapper<SchScheduleAdjustLog>>any()))
+                .thenReturn(List.of(adjustLog));
+        when(schScheduleResultService.listByIds(List.of(101L))).thenReturn(List.of(result));
+
+        List<?> logs = service.listRecentAdjustLogs("2025-2026-1", "C1", "T1", 10);
+
+        assertEquals(List.of(), logs);
+        verify(schTaskService, never()).listByIds(anyCollection());
     }
 }

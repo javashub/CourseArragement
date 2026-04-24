@@ -62,6 +62,7 @@ export function deleteStandardClassTask(id) {
 
 export function arrangeClassTask(semester) {
   return request.post('/schedule/tasks/executions', null, {
+    timeout: 180000,
     params: { semester }
   });
 }

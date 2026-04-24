@@ -6,9 +6,19 @@ import com.lyk.coursearrange.system.config.mapper.CfgTimeSlotMapper;
 import com.lyk.coursearrange.system.config.service.CfgTimeSlotService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * 时间片服务实现。
  */
 @Service
 public class CfgTimeSlotServiceImpl extends ServiceImpl<CfgTimeSlotMapper, CfgTimeSlot> implements CfgTimeSlotService {
+
+    @Override
+    public void removePhysicallyByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        baseMapper.deletePhysicallyByIds(ids);
+    }
 }

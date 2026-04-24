@@ -69,7 +69,15 @@ public class CoursePlanVo implements Serializable {
      */
     private String classroomNo;
 
+    /**
+     * 星期编号。
+     */
+    private Integer weekdayNo;
 
+    /**
+     * 节次编号。
+     */
+    private Integer periodNo;
 
     /**
      * 学期

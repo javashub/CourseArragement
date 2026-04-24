@@ -17,6 +17,7 @@ import com.lyk.coursearrange.resource.entity.ResTeacher;
 import com.lyk.coursearrange.resource.service.ResTeacherService;
 import com.lyk.coursearrange.resource.util.ClassForbiddenTimeSlotUtils;
 import com.lyk.coursearrange.resource.util.TeacherForbiddenTimeSlotUtils;
+import com.lyk.coursearrange.schedule.engine.AdministrativeClassSchedulingPreCheck;
 import com.lyk.coursearrange.schedule.engine.SchedulingEngine;
 import com.lyk.coursearrange.schedule.engine.model.SchedulingAssignment;
 import com.lyk.coursearrange.schedule.engine.model.SchedulingClassroom;
@@ -89,6 +90,8 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     @Resource
     private SchedulingEngine schedulingEngine;
     @Resource
+    private AdministrativeClassSchedulingPreCheck administrativeClassSchedulingPreCheck;
+    @Resource
     private SchScheduleRunDetailService schScheduleRunDetailService;
     @Resource
     private SchScheduleResultService schScheduleResultService;
@@ -114,10 +117,13 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             validateTeacherForbiddenTimeSlots(schedulingTasks);
             validateClassForbiddenTimeSlots(schedulingTasks);
             validateTeacherDayHourLimit(schedulingTasks);
+            List<SchedulingTask> engineTasks = buildEngineTasks(schedulingTasks);
+            validateAdministrativeClassFixedConstraints(start, semester, taskCount,
+                    engineTasks, runtimeContext.availableClassTimes());
             SchedulingExecutionResult executionResult = schedulingEngine.execute(SchedulingEngineRequest.builder()
                     .semester(semester)
                     .timeSlotCodes(runtimeContext.availableClassTimes())
-                    .tasks(buildEngineTasks(schedulingTasks))
+                    .tasks(engineTasks)
                     .classrooms(buildSchedulingClassrooms())
                     .build());
 
@@ -223,6 +229,26 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                         .collegeId(task.getCollegeId())
                         .build())
                 .toList();
+    }
+
+    private void validateAdministrativeClassFixedConstraints(long start,
+                                                             String semester,
+                                                             int taskCount,
+                                                             List<SchedulingTask> engineTasks,
+                                                             List<String> availableClassTimes) {
+        if (administrativeClassSchedulingPreCheck == null) {
+            return;
+        }
+        List<AdministrativeClassSchedulingPreCheck.PreCheckIssue> issues =
+                administrativeClassSchedulingPreCheck.validate(engineTasks, availableClassTimes);
+        if (issues.isEmpty()) {
+            return;
+        }
+        AdministrativeClassSchedulingPreCheck.PreCheckIssue firstIssue = issues.get(0);
+        String message = String.format("排课前校验失败，存在固定约束冲突或非法固定时间，请先修正任务数据。任务：%s，原因：%s",
+                firstIssue.taskCode(),
+                firstIssue.reasonMessage());
+        throw buildSchedulingException(start, semester, taskCount, message, ResultCode.BUSINESS_ERROR);
     }
 
     private List<SchedulingClassroom> buildSchedulingClassrooms() {
@@ -350,6 +376,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
                 .toList());
         return logs.stream().map(item -> {
             ScheduleRunLogVO vo = new ScheduleRunLogVO();
+            Long operatorUserId = item.getOperatorUserId();
             vo.setId(item.getId());
             vo.setSemester(item.getRemark());
             vo.setTaskCount(item.getTaskTotal());
@@ -357,8 +384,8 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             vo.setStatus("SUCCESS".equalsIgnoreCase(item.getRunStatus()) || "PARTIAL".equalsIgnoreCase(item.getRunStatus()) ? 1 : 0);
             vo.setDurationMs(resolveDurationMs(item));
             vo.setMessage(item.getFailureReason());
-            vo.setOperatorUserId(item.getOperatorUserId());
-            vo.setOperatorName(operatorNameMap.getOrDefault(item.getOperatorUserId(), "--"));
+            vo.setOperatorUserId(operatorUserId);
+            vo.setOperatorName(operatorUserId == null ? "--" : operatorNameMap.getOrDefault(operatorUserId, "--"));
             vo.setCreateTime(item.getCreatedAt());
             return vo;
         }).toList();
@@ -726,10 +753,7 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     }
 
     private String toLegacyClassTime(Integer weekdayNo, Integer periodNo) {
-        if (weekdayNo == null || periodNo == null || weekdayNo <= 0 || periodNo <= 0) {
-            return "";
-        }
-        return String.format("%02d", (weekdayNo - 1) * 5 + periodNo);
+        return ScheduleTaskMetaUtils.buildClassTime(weekdayNo, periodNo);
     }
 
     private void checkWeeksNumber(List<SchedulingTaskInput> classTaskList) {
@@ -1303,8 +1327,8 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         for (SchedulingTaskInput classTask : classTaskList) {
             // 1，不固定上课时间，默认默认不再填充 00
             if (isUnfixedTask(classTask)) {
-                // 得到每周上课的节数，因为设定2学时为一节课
-                int size = classTask.getWeeksNumber() / 2;
+                // weeksNumber 直接表示每周需要生成多少个时间格基因。
+                int size = Math.max(1, classTask.getWeeksNumber() == null ? 0 : classTask.getWeeksNumber());
                 for (int i = 0; i < size; i++) {
                     String gene = ConstantInfo.UN_FIX_TIME_FLAG + classTask.getGradeNo() + classTask.getClassNo()
                             + classTask.getTeacherNo() + classTask.getCourseNo() + classTask.getCourseAttr();
@@ -1314,10 +1338,15 @@ public class ClassTaskServiceImpl implements ClassTaskService {
             }
             // 2,固定上课时间
             if (isFixedTask(classTask)) {
-                int size = classTask.getWeeksNumber() / 2;
+                List<String> fixedClassTimes = splitClassTimes(classTask.getClassTime());
+                int size = Math.max(1, classTask.getWeeksNumber() == null ? 0 : classTask.getWeeksNumber());
+                if (fixedClassTimes.size() < size) {
+                    throw new BusinessException(ResultCode.BUSINESS_ERROR,
+                            String.format("固定时间数量不足：任务需要 %d 个时间片，但仅配置了 %d 个",
+                                    size, fixedClassTimes.size()));
+                }
                 for (int i = 0; i < size; i++) {
-                    // 获得设定的固定时间：04 07
-                    String classTime = classTask.getClassTime().substring(i * 2, (i + 1) * 2);
+                    String classTime = fixedClassTimes.get(i);
                     if (!availableClassTimes.contains(classTime)) {
                         throw new BusinessException(ResultCode.BUSINESS_ERROR,
                                 String.format("固定时间编码 %s 不在当前排课规则允许的时间片内", classTime));
@@ -1717,7 +1746,22 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         if (classTime == null || classTime.isBlank()) {
             return List.of();
         }
+        if (classTime.contains(",") || classTime.contains("，")) {
+            return java.util.Arrays.stream(classTime.split("[,，]"))
+                    .map(String::trim)
+                    .filter(item -> !item.isBlank())
+                    .toList();
+        }
+        if (classTime.length() <= 4) {
+            return List.of(classTime);
+        }
         List<String> classTimes = new ArrayList<>();
+        if (classTime.length() % 4 == 0) {
+            for (int i = 0; i + 3 < classTime.length(); i += 4) {
+                classTimes.add(classTime.substring(i, i + 4));
+            }
+            return classTimes;
+        }
         for (int i = 0; i + 1 < classTime.length(); i += 2) {
             classTimes.add(classTime.substring(i, i + 2));
         }
@@ -1729,11 +1773,8 @@ public class ClassTaskServiceImpl implements ClassTaskService {
     }
 
     private int resolveWeekdayNo(String classTime) {
-        if (classTime == null || classTime.isBlank()) {
-            return 0;
-        }
-        int classTimeNo = Integer.parseInt(classTime);
-        return ((classTimeNo - 1) / 5) + 1;
+        Integer weekdayNo = ScheduleTaskMetaUtils.resolveWeekdayNo(classTime);
+        return weekdayNo == null ? 0 : weekdayNo;
     }
 
     /**
@@ -1818,10 +1859,10 @@ public class ClassTaskServiceImpl implements ClassTaskService {
         if (timeSlot.getWeekdayNo() == null || timeSlot.getPeriodNo() == null) {
             return null;
         }
-        if (timeSlot.getWeekdayNo() < 1 || timeSlot.getWeekdayNo() > 5 || timeSlot.getPeriodNo() < 1 || timeSlot.getPeriodNo() > 5) {
+        if (timeSlot.getWeekdayNo() < 1 || timeSlot.getPeriodNo() < 1) {
             return null;
         }
-        return String.format("%02d", (timeSlot.getWeekdayNo() - 1) * 5 + timeSlot.getPeriodNo());
+        return ScheduleTaskMetaUtils.buildClassTime(timeSlot.getWeekdayNo(), timeSlot.getPeriodNo());
     }
 
     static record SchedulingRuntimeContext(String scheduleRuleName, List<String> availableClassTimes, boolean configApplied) {

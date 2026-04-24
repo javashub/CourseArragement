@@ -85,7 +85,7 @@
         <div class="card-head">
           <div>
             <div class="card-title">{{ viewMode === 'class' ? '班级课表' : '教师课表' }}</div>
-            <div class="card-caption">当前按标准课表结果的 01-25 时间片规则，映射成周一到周五、每天五节课的课表视图。</div>
+            <div class="card-caption">课表网格会优先按当前生效的排课规则展示星期与节次，并兼容已落库的标准时间片编码。</div>
           </div>
           <div class="header-tags">
             <el-tag v-if="canDragAdjust" type="warning" effect="plain">管理员仅可拖拽标准课表</el-tag>
@@ -225,6 +225,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { fetchTeacherPage } from '@/api/modules/base';
+import { fetchScheduleConfig } from '@/api/modules/system';
 import { getErrorMessage } from '@/utils/http';
 import {
   adjustCoursePlan,
@@ -234,6 +235,12 @@ import {
   fetchCoursePlanByClassNo,
   fetchCoursePlanByTeacherNo
 } from '@/api/modules/course';
+import {
+  buildPeriodLabels,
+  buildWeekLabels,
+  resolvePlanPosition,
+  toClassTime
+} from './scheduleGrid.js';
 
 const authStore = useAuthStore();
 const route = useRoute();
@@ -247,6 +254,7 @@ const selectedTeacherNo = ref('');
 const semesterOptions = ref([]);
 const classOptions = ref([]);
 const teacherOptions = ref([]);
+const scheduleConfig = ref(null);
 const planList = ref([]);
 const adjustLogs = ref([]);
 const filteredAdjustLogs = ref([]);
@@ -295,38 +303,12 @@ const planStatus = computed(() => {
   return null;
 });
 
-const weekLabels = [
-  { label: '周一', key: 'mon', index: 1 },
-  { label: '周二', key: 'tue', index: 2 },
-  { label: '周三', key: 'wed', index: 3 },
-  { label: '周四', key: 'thu', index: 4 },
-  { label: '周五', key: 'fri', index: 5 }
-];
-
-const periodLabels = [
-  { label: '第1节', key: '01', index: 1 },
-  { label: '第2节', key: '02', index: 2 },
-  { label: '第3节', key: '03', index: 3 },
-  { label: '第4节', key: '04', index: 4 },
-  { label: '第5节', key: '05', index: 5 }
-];
-
-function parseClassTime(classTime) {
-  const value = Number(classTime);
-  if (!value || value < 1) {
-    return null;
-  }
-  const dayIndex = Math.ceil(value / 5);
-  const periodIndex = ((value - 1) % 5) + 1;
-  return {
-    dayIndex,
-    periodIndex
-  };
-}
+const weekLabels = computed(() => buildWeekLabels(scheduleConfig.value, planList.value));
+const periodLabels = computed(() => buildPeriodLabels(scheduleConfig.value, planList.value));
 
 function getPlanCell(dayIndex, periodIndex) {
   return planList.value.filter((item) => {
-    const parsed = parseClassTime(item.classTime);
+    const parsed = resolvePlanPosition(item);
     return parsed && parsed.dayIndex === dayIndex && parsed.periodIndex === periodIndex;
   });
 }
@@ -339,12 +321,8 @@ function isRecentDropCell(dayIndex, periodIndex) {
   if (!lastAdjustedClassTime.value) {
     return false;
   }
-  const parsed = parseClassTime(lastAdjustedClassTime.value);
+  const parsed = resolvePlanPosition({ classTime: lastAdjustedClassTime.value });
   return parsed && parsed.dayIndex === dayIndex && parsed.periodIndex === periodIndex;
-}
-
-function toClassTime(dayIndex, periodIndex) {
-  return String((dayIndex - 1) * 5 + periodIndex).padStart(2, '0');
 }
 
 function handleDragStart(item) {
@@ -408,6 +386,11 @@ async function loadSemesterOptions() {
 async function loadTeacherOptions() {
   const response = await fetchTeacherPage(1, 200);
   teacherOptions.value = response.data?.records || [];
+}
+
+async function loadScheduleConfig() {
+  const response = await fetchScheduleConfig();
+  scheduleConfig.value = response.data || null;
 }
 
 async function loadCoursePlan() {
@@ -537,7 +520,7 @@ function syncRecentAdjustState() {
 }
 
 function focusAdjustLog(row) {
-  const parsed = parseClassTime(row.afterClassTime);
+  const parsed = resolvePlanPosition({ classTime: row.afterClassTime });
   focusedPlanId.value = row.coursePlanId || null;
   focusedCellKey.value = parsed ? `${parsed.dayIndex}-${parsed.periodIndex}` : '';
   lastAdjustedPlanId.value = row.coursePlanId || lastAdjustedPlanId.value;
@@ -579,7 +562,7 @@ async function applyRouteQuery() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadClassOptions(), loadTeacherOptions(), loadSemesterOptions()]);
+  await Promise.all([loadClassOptions(), loadTeacherOptions(), loadSemesterOptions(), loadScheduleConfig()]);
   await applyRouteQuery();
 });
 </script>
