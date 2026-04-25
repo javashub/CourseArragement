@@ -27,70 +27,76 @@
         </div>
         <div class="stat-badges">
           <span class="stat-badge">
+            <span class="stat-dot stat-dot--primary" />
             {{ viewMode === 'class' ? '班级' : '教师' }}: <strong>{{ currentTarget || '--' }}</strong>
           </span>
-          <span class="stat-badge stat-badge--accent">
+          <span class="stat-badge">
+            <span class="stat-dot stat-dot--course" />
             课程 <strong>{{ planList.length }}</strong>
           </span>
-          <span class="stat-badge stat-badge--accent">
+          <span class="stat-badge">
+            <span class="stat-dot stat-dot--teacher" />
             教师 <strong>{{ teacherCount }}</strong>
           </span>
-          <span class="stat-badge stat-badge--accent">
+          <span class="stat-badge">
+            <span class="stat-dot stat-dot--room" />
             教室 <strong>{{ classroomCount }}</strong>
           </span>
         </div>
       </div>
 
-      <!-- 第三行：筛选条件 + 查询按钮 -->
+      <!-- 第三行：筛选条件 + 查询按钮（固定一行） -->
       <div class="header-row filter-row">
-        <el-select
-          v-model="selectedSemester"
-          filterable
-          clearable
-          allow-create
-          default-first-option
-          placeholder="学期"
-          class="filter-select"
-          @change="handleSemesterChange"
-          @clear="handleSemesterClear"
-        >
-          <el-option v-for="item in semesterOptions" :key="item" :label="item" :value="item" />
-        </el-select>
-        <el-select
-          v-if="viewMode === 'class'"
-          v-model="selectedClassNo"
-          filterable
-          clearable
-          placeholder="班级"
-          class="filter-select"
-          @change="handleTargetChange"
-          @clear="clearPlan"
-        >
-          <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
-        </el-select>
-        <el-select
-          v-else
-          v-model="selectedTeacherNo"
-          filterable
-          clearable
-          placeholder="教师"
-          class="filter-select"
-          @change="handleTargetChange"
-          @clear="clearPlan"
-        >
-          <el-option
-            v-for="item in teacherOptions"
-            :key="item.teacherNo"
-            :label="`${item.teacherNo} ${item.teacherName || ''}`"
-            :value="item.teacherNo"
-          />
-        </el-select>
-        <el-button type="primary" class="query-btn" @click="loadCoursePlan">查询课表</el-button>
+        <div class="filter-bar">
+          <el-select
+            v-model="selectedSemester"
+            filterable
+            clearable
+            allow-create
+            default-first-option
+            placeholder="学期"
+            class="filter-select filter-select--semester"
+            @change="handleSemesterChange"
+            @clear="handleSemesterClear"
+          >
+            <el-option v-for="item in semesterOptions" :key="item" :label="item" :value="item" />
+          </el-select>
+          <el-select
+            v-if="viewMode === 'class'"
+            v-model="selectedClassNo"
+            filterable
+            clearable
+            placeholder="班级"
+            class="filter-select"
+            @change="handleTargetChange"
+            @clear="clearPlan"
+          >
+            <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
+          </el-select>
+          <el-select
+            v-else
+            v-model="selectedTeacherNo"
+            filterable
+            clearable
+            placeholder="教师"
+            class="filter-select"
+            @change="handleTargetChange"
+            @clear="clearPlan"
+          >
+            <el-option
+              v-for="item in teacherOptions"
+              :key="item.teacherNo"
+              :label="`${item.teacherNo} ${item.teacherName || ''}`"
+              :value="item.teacherNo"
+            />
+          </el-select>
+          <el-button type="primary" class="query-btn" @click="loadCoursePlan">查询课表</el-button>
+        </div>
       </div>
     </div>
 
     <!-- 课表主体 -->
-    <div class="timetable-wrapper" v-loading="loading">
+    <div v-loading="loading" class="timetable-wrapper">
       <el-alert
         v-if="planStatus"
         class="status-alert"
@@ -106,7 +112,7 @@
 
       <template v-else>
         <!-- 时段分组筛选 -->
-        <div class="period-groups" v-if="periodGroups.length">
+        <div v-if="periodGroups.length" class="period-groups">
           <div
             class="period-group-chip"
             :class="{ 'period-group-chip--active': activePeriodGroup === 'ALL' }"
@@ -136,7 +142,7 @@
           <template v-for="period in periodLabels" :key="period.key">
             <div class="time-cell" :class="getTimeGroupClass(period)">
               <div class="time-badge">{{ period.index }}</div>
-              <div class="time-range" v-if="period.timeRange">{{ period.timeRange }}</div>
+              <div v-if="period.timeRange" class="time-range">{{ period.timeRange }}</div>
             </div>
             <div
               v-for="day in weekLabels"
@@ -194,7 +200,7 @@
     </div>
 
     <!-- 调课记录 -->
-    <el-card shadow="never" class="log-card" v-if="adjustLogs.length">
+    <el-card v-if="adjustLogs.length" shadow="never" class="log-card">
       <template #header>
         <div class="card-head">
           <div>
@@ -693,11 +699,14 @@ onMounted(async () => {
 .stat-badges {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
   flex-wrap: wrap;
 }
 
 .stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   color: #53667f;
   font-weight: 500;
@@ -708,21 +717,52 @@ onMounted(async () => {
   font-weight: 700;
 }
 
-.stat-badge--accent {
-  color: #6c7d93;
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.stat-badge--accent strong {
-  color: #17263d;
+.stat-dot--primary {
+  background: linear-gradient(135deg, #165dff, #0ea5a4);
+  box-shadow: 0 0 6px rgb(22 93 255 / 30%);
+}
+
+.stat-dot--course {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgb(245 158 11 / 30%);
+}
+
+.stat-dot--teacher {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgb(34 197 94 / 30%);
+}
+
+.stat-dot--room {
+  background: #ec4899;
+  box-shadow: 0 0 6px rgb(236 72 153 / 30%);
 }
 
 /* 第三行：筛选 + 查询 */
 .filter-row {
-  flex-wrap: wrap;
+  overflow-x: auto;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .filter-select {
-  min-width: 160px;
+  min-width: 380px;
+}
+
+.filter-select--semester {
+  min-width: 180px;
 }
 
 :deep(.query-btn.el-button--primary) {
@@ -1076,12 +1116,15 @@ onMounted(async () => {
   }
 
   .filter-row {
-    flex-direction: column;
-    align-items: stretch;
+    overflow-x: auto;
+  }
+
+  .filter-bar {
+    min-width: min-content;
   }
 
   .filter-select {
-    min-width: 100%;
+    min-width: 120px;
   }
 
   .timetable-grid {
