@@ -16,6 +16,7 @@ import TeacherTimetableView from '@/views/teacher/TeacherTimetableView.vue';
 import StudentDashboardView from '@/views/student/StudentDashboardView.vue';
 import StudentTimetableView from '@/views/student/StudentTimetableView.vue';
 import { useAuthStore } from '@/stores/auth';
+import { resolveAccessRedirect } from './accessGuard';
 
 const routes = [
   {
@@ -222,8 +223,14 @@ router.beforeEach((to) => {
     return authStore
       .loadAuthContext()
       .then(() => {
-        if (to.meta?.permission && !authStore.hasPermission(to.meta.permission) && !authStore.hasMenuPath(to.path)) {
-          return authStore.firstAccessiblePath || '/login';
+        const redirectPath = resolveAccessRedirect({
+          permission: to.meta?.permission,
+          hasPermission: authStore.hasPermission(to.meta?.permission),
+          firstAccessiblePath: authStore.firstAccessiblePath,
+          targetPath: to.path
+        });
+        if (redirectPath) {
+          return redirectPath;
         }
         if (to.path === '/' && authStore.firstAccessiblePath) {
           return authStore.firstAccessiblePath;
@@ -240,8 +247,14 @@ router.beforeEach((to) => {
         };
       });
   }
-  if (to.meta?.permission && !authStore.hasPermission(to.meta.permission) && !authStore.hasMenuPath(to.path)) {
-    return authStore.firstAccessiblePath || '/login';
+  const redirectPath = resolveAccessRedirect({
+    permission: to.meta?.permission,
+    hasPermission: authStore.hasPermission(to.meta?.permission),
+    firstAccessiblePath: authStore.firstAccessiblePath,
+    targetPath: to.path
+  });
+  if (redirectPath) {
+    return redirectPath;
   }
   return true;
 });

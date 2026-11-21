@@ -84,7 +84,7 @@ async function handleLogin() {
     authStore.setLoginState(result.token || '', result.user || null);
     await authStore.loadAuthContext();
     ElMessage.success('登录成功');
-    const redirectPath = (route.query.redirect || authStore.firstAccessiblePath || '/dashboard').toString();
+    const redirectPath = (route.query.redirect || authStore.firstAccessiblePath || '/login').toString();
     router.push(redirectPath);
   } catch (error) {
     // 登录失败时，不需要在控制台打印错误，因为请求层已经统一处理了
