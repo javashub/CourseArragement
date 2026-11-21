@@ -1,69 +1,76 @@
-# CourseArrange
+# CourseArrange 课程排课系统
 
-## 介绍
-先给个Star再看嘛！
+基于遗传算法的高中 / 培训机构课程排课系统，采用前后端分离的单体架构。
 
-# 注意！注意！注意！
-# 如果你是买的，那么你变成了大冤种哦~！
-**本人发现不少地方有倒卖我这个毕设的(可恶的叼毛！)，B站也看到有，本项目完全开源，毫无保留。只要你懂一点环境配置就可以跑起来，排课算法的注释非常详尽，只要花时间琢磨几遍就可以看懂算法的(前提先建议了解一下遗传算法以及相关的概念)**
+> 项目已完成 2.0 重构：从 2021 年的 Vue 2 + JDK 1.8 升级为 **Vue 3 + Spring Boot 2.7 + Java 17**；排课主链已切换到标准表 `sch_task` / `sch_schedule_result`，不再依赖 legacy `tb_*` 表。
+>
+> 本项目完全开源，欢迎 Star 与反馈。
 
+## 技术栈
 
-基于遗传算法的高中排课系统。
-节次数跟当前的高中是不一样的，因为我当时的课题是为培训机构安排，
-大家只需要更改时间片的数量即可实现不同节次课程的编排，照葫芦画瓢即可。
+| 层 | 技术 |
+| --- | --- |
+| 后端 | Java 17、Spring Boot 2.7.18、MyBatis-Plus 3.5.7、Sa-Token 1.44.0、MySQL 8.0、Maven、Lombok、EasyExcel |
+| 前端 | Vue 3.5、Vite 5、Element Plus 2.9、Pinia 2、Vue Router 4、Axios |
+| 数据库 | MySQL 8，库名 `course_arrange_v2` |
 
-不提供帮改代码服务，除非给得多。
+## 功能概览
 
-如果喜欢GitHub，下方是项目在GitHub的地址。
-GitHub地址: https://github.com/imlyk/CourseArragement
-别忘了给一个star哦！
+系统包含管理员（教务处）、教师、学生三类角色：
 
+- **管理员**：基础数据（教师 / 学生 / 课程 / 教学楼 / 教室）、组织架构（校区 → 学院 → 学段 → 年级 → 行政班）、排课任务管理、自动排课与执行记录、课表查看与调课、系统配置（时间片模板 / 排课规则 / 功能开关）、数据字典、RBAC 用户 / 角色 / 菜单 / 权限、Excel 导入导出。
+- **教师**：个人课表查看（简化版）。
+- **学生**：个人课表查看（简化版）。
 
-## 软件技术栈
-前端技术栈：
-    Vue2.x + Element UI，使用npm包管理工具
+### 排课引擎
 
-后端技术栈：
-    JDK1.8 + Spring Boot + MySQL8.0 + Mybatis-Plus + Maven
+采用「双阶段」排课：先用可行解构造器生成初版课表，再用轻量遗传算法做补排与优化。已接入的约束包括：
 
+- 时间片模板（排除不可上课 / 固定休息时间片）
+- 教师禁排时间、班级禁排时间
+- 连堂需求与上限、教师日上限课时
+- 任务优先级
+- 特殊教室 / 容量匹配
+- 行政班固定时间前置校验（冲突前置拦截并给出原因）
 
+## 目录结构
 
-## 安装教程
+```
+CourseArrange/
+├── src/main/java/com/lyk/coursearrange/
+│   ├── auth/           # 认证（Sa-Token）
+│   ├── schedule/       # 排课域（controller / engine / entity / mapper / service）
+│   ├── resource/       # 基础资源（教师 / 学生 / 课程 / 教学楼 / 教室）
+│   ├── organization/   # 组织架构（校区 / 学院 / 学段 / 年级 / 行政班）
+│   ├── system/         # 系统配置 / 数据字典 / RBAC
+│   ├── excel/          # Excel 导入导出
+│   ├── common/         # 响应模型、异常、分页等横切能力
+│   └── config/         # 全局配置
+├── UI/coursearrange/   # 前端工程（Vue 3 + Vite）
+├── doc/                # 数据库设计与 schema.sql
+├── docs/incremental_sql/ # 增量 SQL（YYYYMMDD_NN_描述.sql）
+├── docs/plans/         # 阶段实施计划
+└── AGENTS.md / src/AGENTS.md / UI/coursearrange/AGENTS.md  # 编码规范
+```
 
-1.  配置好JDK环境，node.js环境，安装好Vue脚手架工具以及maven环境
-2.  前端项目在UI目录下的文件夹内，在CourseArrange目录下运行命令：npm install 安装完相关的前端依赖
-3.  执行 npm run dev 命令将前端项目启动
-4.  后端项目在配置好JDK环境之后，使用IDEA等IDE工具打开，将项目配置成自己本地的Maven(建议使用阿里云镜像)
-5.  运行maven安装项目所需依赖，配置好数据库的连接，待依赖安装完成启动项目的Application启动类即可(不会的也不教了哈)
-6.  用到文件上传功能时，需要配置好自己的阿里云key与密钥，在utils下面的AliyunUtil类下面
+## 快速开始
 
-## 实现功能
+环境要求：JDK 17+、Maven 3.6+、Node.js 18+、MySQL 8。
 
-1.  系统有管理员（教务处主任）、讲师、学生三种用户
-2.  前端比较菜，应用启动后进入的引导页面如下，根据需求进入不同登录页面
-    ![输入图片说明](https://images.gitee.com/uploads/images/2020/0708/111552_fafcb0e9_5505532.png "屏幕截图.png")
-3.  这里主要放管理员的功能截图
-    1）管理员登录成功后进入到系统数据页面
-        ![输入图片说明](https://images.gitee.com/uploads/images/2020/0708/111732_908e9b16_5505532.png "屏幕截图.png")
-    2）课程计划是某一个学期需要安排上的课程，应该一次性全部导入
-        ![输入图片说明](https://images.gitee.com/uploads/images/2020/0708/111837_60f807d0_5505532.png "屏幕截图.png")
-        可以手动添加课程任务（课程编号，讲师编号等信息一定要与数据库对得上）、也可以使用Excel模板填写后导入Excel文件直接将课程任务导入（点击“导入”选择好文件之后，点上传到服务器即可），没有模板可以点击下载模板下载对应的Excel模板（模板文件也根据UploadController.java中的路径存放在自己本地），随后根据要求填写模板，点击“排课”按钮开始排课，排课完成跳转到课表页面
-        ![输入图片说明](https://images.gitee.com/uploads/images/2020/0708/111952_de046c5a_5505532.png "屏幕截图.png")
-    3）课程表效果如下所示（选择对应的年级、对应的班级之后即可显示）
-    ![输入图片说明](https://images.gitee.com/uploads/images/2020/0708/112342_b83b9f32_5505532.png "屏幕截图.png")
+1. 建库：按 `doc/schema.sql` 初始化 `course_arrange_v2`，再按顺序执行 `docs/incremental_sql/` 下的增量脚本。
+2. 启动后端：在仓库根执行 `mvn -q -DskipTests compile` 验证编译，随后运行 `CoursearrangeApplication`，默认端口 `:8080`。
+   数据库连接可用 `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` 覆盖，默认库名 `course_arrange_v2`。
+3. 启动前端：`cd UI/coursearrange && npm install && npm run dev`，默认端口 `:8081`，`/api` 代理到 `http://127.0.0.1:8080`。
+4. 文件上传功能需要配置阿里云 OSS Key / 密钥，位置见 `src/main/java/com/lyk/coursearrange/util/AliyunUtil.java`。
 
+## 文档
 
+- `AGENTS.md`：仓库级编码约定；`src/AGENTS.md` / `UI/coursearrange/AGENTS.md`：前后端补充规范
+- `需求文件.md`、`系统设计方案.md`：需求与设计
+- `项目重构交接文档.md`、`待办.md`：重构上下文与阶段进度
+- `docs/plans/`：阶段实施计划
 
-## 后面的话
+## 开源说明
 
-1.  代码写得比较烂，所以大家就忽略我的那些你认为垃圾的东西
-2.  开源出来只是给大家做排课方面的小项目有一个参考
-3.  后面如果有时间我也希望去维护一下这个项目，有兴趣的小伙伴可以跟我一起搞搞
-4.  希望项目可以帮助到广大小伙伴们
-
-# 如需协助，有偿解答，代码开源了就不要白嫖人力了，Q:1576070851  WX: imyikee
-
-如果项目对你有帮助，可以请我喝喝奶茶哦~
-<center class="half">
-    <img src="https://images.gitee.com/uploads/images/2021/0204/085454_bc997c8b_5505532.png " width="200"/>   <img src="https://images.gitee.com/uploads/images/2021/0204/085553_f5e455d9_5505532.png " width="200"/>
-</center>
+- GitHub: https://github.com/imlyk/CourseArragement
+- 完全开源，欢迎 Star；如需交流，可在仓库 Issue 中提出。
