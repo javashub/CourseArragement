@@ -1,6 +1,5 @@
 package com.lyk.coursearrange.schedule.util;
 
-import com.lyk.coursearrange.entity.ClassTask;
 import com.lyk.coursearrange.entity.request.ClassTaskDTO;
 
 import java.util.HashMap;
@@ -39,20 +38,6 @@ public interface ScheduleTaskMetaUtils {
         String raw = buildTaskKey(classNo, courseNo, teacherNo) + "_" + safe(semester);
         String sanitized = raw.replaceAll("[^A-Za-z0-9_]", "_");
         return sanitized.length() > 32 ? sanitized.substring(0, 32) : sanitized;
-    }
-
-    /**
-     * 基于排课输入对象构造任务 remark 元数据。
-     */
-    static String buildTaskRemark(ClassTask schedulingTask) {
-        return "semester=" + safe(schedulingTask.getSemester())
-                + ",classNo=" + safe(schedulingTask.getClassNo())
-                + ",courseNo=" + safe(schedulingTask.getCourseNo())
-                + ",teacherNo=" + safe(schedulingTask.getTeacherNo())
-                + ",gradeNo=" + safe(schedulingTask.getGradeNo())
-                + ",courseName=" + safe(schedulingTask.getCourseName())
-                + ",courseAttr=" + safe(schedulingTask.getCourseAttr())
-                + ",teacherName=" + safe(schedulingTask.getTeacherName());
     }
 
     /**

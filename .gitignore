@@ -33,8 +33,12 @@ logs/
 ### VS Code ###
 .vscode/
 
-# local spec workflow artifacts
-openspec/
+# OpenSpec 规范与变更记录纳入版本控制（2026-11-20 起）
+openspec
 
 # ignore macOS metadata after src/main negation
 **/.DS_Store
+# OpenWiki 于 2026-11-20 下线，保留忽略规则防止生成物重新入库
+/openwiki/
+/.workbuddy/
+/tools/

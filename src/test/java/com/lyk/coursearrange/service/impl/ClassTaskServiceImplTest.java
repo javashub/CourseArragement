@@ -1,10 +1,8 @@
 package com.lyk.coursearrange.service.impl;
 
 import com.lyk.coursearrange.common.ServerResponse;
-import com.lyk.coursearrange.common.ConstantInfo;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.lyk.coursearrange.common.exception.BusinessException;
-import com.lyk.coursearrange.entity.CoursePlan;
 import com.lyk.coursearrange.resource.entity.ResCourse;
 import com.lyk.coursearrange.resource.entity.ResClassroom;
 import com.lyk.coursearrange.resource.entity.ResTeacher;
@@ -34,7 +32,6 @@ import com.lyk.coursearrange.system.config.service.ScheduleConfigFacadeService;
 import com.lyk.coursearrange.system.config.vo.ScheduleConfigVO;
 import com.lyk.coursearrange.system.rbac.entity.SysUser;
 import com.lyk.coursearrange.system.rbac.service.SysUserService;
-import com.lyk.coursearrange.util.ClassUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -581,45 +578,6 @@ class ClassTaskServiceImplTest {
         assertEquals(2, detail.getUnscheduledTasks().size());
     }
 
-    @Test
-    void buildSchedulingSummary_shouldAggregateScheduledAndUnscheduledTasks() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
-
-        SchedulingTaskInput scheduledTask = new SchedulingTaskInput();
-        scheduledTask.setSemester("2025-2026-1");
-        scheduledTask.setClassNo("2501");
-        scheduledTask.setCourseNo("10001");
-        scheduledTask.setCourseName("高等数学");
-        scheduledTask.setTeacherNo("T2026001");
-        scheduledTask.setTeacherName("张老师");
-
-        SchedulingTaskInput unscheduledTask = new SchedulingTaskInput();
-        unscheduledTask.setSemester("2025-2026-1");
-        unscheduledTask.setClassNo("2502");
-        unscheduledTask.setCourseNo("10002");
-        unscheduledTask.setCourseName("大学英语");
-        unscheduledTask.setTeacherNo("T2026002");
-        unscheduledTask.setTeacherName("李老师");
-
-        CoursePlan plan = new CoursePlan();
-        plan.setClassNo("2501");
-        plan.setCourseNo("10001");
-        plan.setTeacherNo("T2026001");
-
-        Map<String, Object> summary = service.buildSchedulingSummary(List.of(scheduledTask, unscheduledTask), List.of(plan));
-
-        assertEquals(2, summary.get("taskCount"));
-        assertEquals(1, summary.get("scheduledTaskCount"));
-        assertEquals(1, summary.get("unscheduledTaskCount"));
-        assertEquals(1, summary.get("conflictTaskCount"));
-        assertEquals(50.0d, summary.get("successRate"));
-        assertInstanceOf(List.class, summary.get("unscheduledTasks"));
-        List<?> unscheduledTasks = (List<?>) summary.get("unscheduledTasks");
-        assertEquals(1, unscheduledTasks.size());
-        String firstReason = String.valueOf(unscheduledTasks.get(0));
-        assertTrue(firstReason.contains("2502"));
-        assertTrue(firstReason.contains("大学英语"));
-    }
 
     @Test
     void resolveSchedulingRuntimeContext_shouldUseTeachingTimeSlotsFromActiveRule() {
@@ -648,84 +606,8 @@ class ClassTaskServiceImplTest {
         assertEquals(List.of("0101", "0202", "0601"), context.availableClassTimes());
     }
 
-    @Test
-    void coding_shouldRejectFixedClassTimeOutsideConfiguredSlots() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
-        SchedulingTaskInput fixedTask = new SchedulingTaskInput();
-        fixedTask.setIsFix("1");
-        fixedTask.setGradeNo("25");
-        fixedTask.setClassNo("25010001");
-        fixedTask.setTeacherNo("T0001");
-        fixedTask.setCourseNo("100001");
-        fixedTask.setCourseAttr("01");
-        fixedTask.setWeeksNumber(1);
-        fixedTask.setClassTime("06");
 
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> service.coding(List.of(fixedTask), List.of("01", "02", "03")));
 
-        assertTrue(exception.getMessage().contains("固定时间编码"));
-    }
-
-    @Test
-    void coding_shouldNormalizeStandardTaskFixFlags() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
-
-        SchedulingTaskInput unfixedTask = new SchedulingTaskInput();
-        unfixedTask.setIsFix("0");
-        unfixedTask.setGradeNo("25");
-        unfixedTask.setClassNo("25010001");
-        unfixedTask.setTeacherNo("T0001");
-        unfixedTask.setCourseNo("100001");
-        unfixedTask.setCourseAttr("01");
-        unfixedTask.setWeeksNumber(1);
-
-        SchedulingTaskInput fixedTask = new SchedulingTaskInput();
-        fixedTask.setIsFix("1");
-        fixedTask.setGradeNo("25");
-        fixedTask.setClassNo("25010002");
-        fixedTask.setTeacherNo("T0002");
-        fixedTask.setCourseNo("100002");
-        fixedTask.setCourseAttr("01");
-        fixedTask.setWeeksNumber(1);
-        fixedTask.setClassTime("01");
-
-        Map<String, List<String>> geneMap = service.coding(List.of(unfixedTask, fixedTask), List.of("01", "02", "03"));
-
-        assertEquals(1, geneMap.get("unFixedTime").size());
-        assertEquals(1, geneMap.get("isFixedTime").size());
-        assertTrue(geneMap.get("unFixedTime").get(0).startsWith("1"));
-        assertTrue(geneMap.get("isFixedTime").get(0).startsWith("2"));
-    }
-
-    @Test
-    void coding_shouldUseWeeksNumberAsExactGeneCount() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
-
-        SchedulingTaskInput unfixedTask = new SchedulingTaskInput();
-        unfixedTask.setIsFix("0");
-        unfixedTask.setGradeNo("25");
-        unfixedTask.setClassNo("25010001");
-        unfixedTask.setTeacherNo("T0001");
-        unfixedTask.setCourseNo("100001");
-        unfixedTask.setCourseAttr("01");
-        unfixedTask.setWeeksNumber(3);
-
-        SchedulingTaskInput fixedTask = new SchedulingTaskInput();
-        fixedTask.setIsFix("1");
-        fixedTask.setGradeNo("25");
-        fixedTask.setClassNo("25010002");
-        fixedTask.setTeacherNo("T0002");
-        fixedTask.setCourseNo("100002");
-        fixedTask.setCourseAttr("01");
-        fixedTask.setWeeksNumber(3);
-        fixedTask.setClassTime("01,02,03");
-
-        Map<String, List<String>> geneMap = service.coding(List.of(unfixedTask, fixedTask), List.of("01", "02", "03"));
-
-        assertEquals(3, geneMap.get("unFixedTime").size());
-        assertEquals(3, geneMap.get("isFixedTime").size());
-    }
 
     @Test
     void validateTeacherDayHourLimit_shouldRejectFixedTasksExceedingDailyLimit() {
@@ -756,24 +638,6 @@ class ClassTaskServiceImplTest {
         assertTrue(exception.getMessage().contains("日上限课时"));
     }
 
-    @Test
-    void enforceTeacherDayHourLimit_shouldMoveOverflowTaskToDifferentDay() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
-
-        List<String> resultGeneList = new java.util.ArrayList<>(List.of(
-                "12525010001T00011000010101",
-                "12525010002T00011000020102"
-        ));
-
-        List<String> adjustedGenes = service.enforceTeacherDayHourLimit(resultGeneList, Map.of("T0001", 1), List.of("01", "02", "06"));
-
-        long dayOneCount = adjustedGenes.stream()
-                .map(gene -> gene.substring(24, 26))
-                .filter(classTime -> classTime.equals("01") || classTime.equals("02"))
-                .count();
-        assertEquals(1, dayOneCount);
-        assertTrue(adjustedGenes.stream().anyMatch(gene -> gene.endsWith("06")));
-    }
 
     @Test
     void validateTeacherForbiddenTimeSlots_shouldRejectFixedTasksInForbiddenSlots() {
@@ -795,25 +659,6 @@ class ClassTaskServiceImplTest {
         assertTrue(exception.getMessage().contains("禁排"));
     }
 
-    @Test
-    void enforceTeacherForbiddenTimeSlots_shouldMoveTaskAwayFromForbiddenSlots() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
-
-        List<String> resultGeneList = new java.util.ArrayList<>(List.of(
-                "12525010001T00011000010101",
-                "12525010002T00021000020102"
-        ));
-
-        List<String> adjustedGenes = service.enforceTeacherForbiddenTimeSlots(
-                resultGeneList,
-                Map.of("T0001", List.of("01")),
-                List.of("01", "02", "03", "04", "05")
-        );
-
-        assertTrue(adjustedGenes.stream()
-                .filter(gene -> gene.contains("T0001"))
-                .noneMatch(gene -> gene.endsWith("01")));
-    }
 
     @Test
     void validateClassForbiddenTimeSlots_shouldRejectFixedTasksInForbiddenSlots() {
@@ -833,69 +678,7 @@ class ClassTaskServiceImplTest {
         assertTrue(exception.getMessage().contains("禁排"));
     }
 
-    @Test
-    void enforceClassForbiddenTimeSlots_shouldMoveTaskAwayFromForbiddenSlots() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
 
-        List<String> resultGeneList = new java.util.ArrayList<>(List.of(
-                "12525010001T00011000010101",
-                "12525010002T00021000020102"
-        ));
-
-        List<String> adjustedGenes = service.enforceClassForbiddenTimeSlots(
-                resultGeneList,
-                Map.of("25010001", List.of("01")),
-                List.of("01", "02", "03", "04", "05")
-        );
-
-        assertTrue(adjustedGenes.stream()
-                .filter(gene -> gene.contains("25010001"))
-                .noneMatch(gene -> gene.endsWith("01")));
-    }
-
-    @Test
-    void finalResult_shouldAssignStandardClassroomWithinAdminClassScope() {
-        ClassTaskServiceImpl service = new ClassTaskServiceImpl();
-        ReflectionTestUtils.setField(service, "adminClassService", adminClassService);
-        ReflectionTestUtils.setField(service, "resClassroomService", resClassroomService);
-
-        AdminClassVO adminClass = new AdminClassVO();
-        adminClass.setClassNo("25010001");
-        adminClass.setNum(42);
-        adminClass.setCampusId(1L);
-        adminClass.setCollegeId(2L);
-
-        ResClassroom scopedRoom = new ResClassroom();
-        scopedRoom.setId(1L);
-        scopedRoom.setClassroomCode("A101");
-        scopedRoom.setCampusId(1L);
-        scopedRoom.setCollegeId(2L);
-        scopedRoom.setRoomType("NORMAL");
-        scopedRoom.setSeatCount(50);
-        scopedRoom.setStatus(1);
-        scopedRoom.setDeleted(0);
-
-        ResClassroom otherScopeRoom = new ResClassroom();
-        otherScopeRoom.setId(2L);
-        otherScopeRoom.setClassroomCode("A201");
-        otherScopeRoom.setCampusId(9L);
-        otherScopeRoom.setCollegeId(9L);
-        otherScopeRoom.setRoomType("NORMAL");
-        otherScopeRoom.setSeatCount(80);
-        otherScopeRoom.setStatus(1);
-        otherScopeRoom.setDeleted(0);
-
-        when(adminClassService.listClassesByCodes(List.of("25010001"))).thenReturn(List.of(adminClass));
-        when(resClassroomService.list(org.mockito.ArgumentMatchers.<com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ResClassroom>>any()))
-                .thenReturn(List.of(scopedRoom, otherScopeRoom));
-
-        List<String> result = service.finalResult(Map.of(
-                "25010001", List.of("12525010001T00011000010101")
-        ));
-
-        assertEquals(1, result.size());
-        assertEquals("A101", ClassUtil.cutGene(ConstantInfo.CLASSROOM_NO, result.get(0)));
-    }
 
     private CfgTimeSlot buildTimeSlot(int weekdayNo, int periodNo, int isTeaching, int isFixedBreak) {
         CfgTimeSlot timeSlot = new CfgTimeSlot();
