@@ -15,6 +15,7 @@ import TeacherDashboardView from '@/views/teacher/TeacherDashboardView.vue';
 import TeacherTimetableView from '@/views/teacher/TeacherTimetableView.vue';
 import StudentDashboardView from '@/views/student/StudentDashboardView.vue';
 import StudentTimetableView from '@/views/student/StudentTimetableView.vue';
+import ProfileView from '@/views/account/ProfileView.vue';
 import { useAuthStore } from '@/stores/auth';
 import { resolveAccessRedirect } from './accessGuard';
 
@@ -186,6 +187,14 @@ const routes = [
         meta: {
           title: '我的课表',
           permission: 'page:student-timetable:view'
+        }
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: ProfileView,
+        meta: {
+          title: '个人中心'
         }
       },
       {

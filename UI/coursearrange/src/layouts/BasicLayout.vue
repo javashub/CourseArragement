@@ -90,14 +90,7 @@
           >
             <el-icon><Expand v-if="isMenuCollapsed" /><Fold v-else /></el-icon>
           </button>
-          <div class="user-box">
-            <span class="user-avatar">{{ avatarText }}</span>
-            <span class="user-meta">
-              <b>{{ authStore.displayName }}</b>
-              <small>{{ roleLabel }}</small>
-            </span>
-          </div>
-          <el-button plain size="small" @click="handleLogout">退出登录</el-button>
+          <AccountMenu />
         </div>
       </header>
     </template>
@@ -132,6 +125,7 @@ import {
   User,
   UserFilled
 } from '@element-plus/icons-vue';
+import AccountMenu from '@/components/AccountMenu.vue';
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue';
 import TopNav from '@/layouts/TopNav.vue';
 import { useAppStore } from '@/stores/app';
@@ -183,19 +177,9 @@ const breadcrumbTrail = computed(() => {
   }
   return [{ menuCode: `route-${route.path}`, menuName: route.meta?.title || '页面' }];
 });
-const avatarText = computed(() => (authStore.displayName || '未').slice(0, 1));
-const roleLabel = computed(() => {
-  const roleMap = { ADMIN: '管理员', TEACHER: '教师', STUDENT: '学生' };
-  return roleMap[authStore.user?.userType] || '已登录';
-});
 
 function toggleSidebar() {
   isMenuCollapsed.value = !isMenuCollapsed.value;
-}
-
-function handleLogout() {
-  authStore.clearLoginState();
-  router.push('/login');
 }
 
 function hasRegisteredRoute(routePath) {
@@ -472,43 +456,6 @@ function navigateToMenu(routePath) {
   background: var(--surface-2);
 }
 
-.user-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.user-avatar {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #e8f1ff, #dff7f5);
-  color: var(--brand);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.user-meta {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-}
-
-.user-meta b {
-  color: var(--ink);
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.user-meta small {
-  color: var(--muted-2);
-  font-size: 10.5px;
-  white-space: nowrap;
-}
-
 .layout-content {
   grid-area: content;
   min-width: 0;
@@ -526,10 +473,6 @@ function navigateToMenu(routePath) {
 @media (max-width: 1100px) {
   .layout-tools {
     gap: 8px;
-  }
-
-  .user-meta {
-    display: none;
   }
 }
 

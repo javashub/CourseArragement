@@ -56,14 +56,7 @@
     <div class="topnav__right">
       <ThemeSwitcher />
       <span class="topnav__divider" aria-hidden="true" />
-      <span class="topnav__user">
-        <span class="topnav__avatar">{{ avatarText }}</span>
-        <span class="topnav__user-meta">
-          <b>{{ authStore.displayName }}</b>
-          <small>{{ roleLabel }}</small>
-        </span>
-      </span>
-      <button type="button" class="topnav__logout" @click="handleLogout">退出</button>
+      <AccountMenu />
     </div>
   </header>
 </template>
@@ -73,6 +66,7 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { ArrowDown } from '@element-plus/icons-vue';
+import AccountMenu from '@/components/AccountMenu.vue';
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue';
 import { useAuthStore } from '@/stores/auth';
 import { isMenuActive, normalizeMenus } from './layoutNavigation';
@@ -82,11 +76,6 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const visibleMenus = computed(() => normalizeMenus(authStore.menus || []));
-const avatarText = computed(() => (authStore.displayName || '未').slice(0, 1));
-const roleLabel = computed(() => {
-  const roleMap = { ADMIN: '管理员', TEACHER: '教师', STUDENT: '学生' };
-  return roleMap[authStore.user?.userType] || '已登录';
-});
 
 function hasRegisteredRoute(routePath) {
   if (!routePath) {
@@ -107,11 +96,6 @@ function navigateToMenu(routePath) {
     return;
   }
   router.push(routePath).catch(() => {});
-}
-
-function handleLogout() {
-  authStore.clearLoginState();
-  router.push('/login');
 }
 </script>
 
@@ -243,60 +227,6 @@ function handleLogout() {
   background: var(--line);
 }
 
-.topnav__user {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.topnav__avatar {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #e8f1ff, #dff7f5);
-  color: var(--brand);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.topnav__user-meta {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-}
-
-.topnav__user-meta b {
-  color: var(--ink);
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.topnav__user-meta small {
-  color: var(--muted-2);
-  font-size: 10.5px;
-  white-space: nowrap;
-}
-
-.topnav__logout {
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--surface-2);
-  color: var(--ink-2);
-  font-family: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.topnav__logout:hover {
-  border-color: var(--line-2);
-  background: var(--surface);
-}
-
 @media (max-width: 1100px) {
   .topnav {
     gap: 12px;
@@ -314,10 +244,6 @@ function handleLogout() {
 }
 
 @media (max-width: 768px) {
-  .topnav__user-meta {
-    display: none;
-  }
-
   .topnav__brand-text {
     display: none;
   }
