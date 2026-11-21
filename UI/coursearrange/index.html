@@ -1,9 +1,25 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="daylight">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>课程排课系统</title>
+    <script>
+      // 首屏主题缓存：在样式生效前写入 data-theme，避免刷新时先闪回默认主题。
+      (function () {
+        var themes = ['daylight', 'deep-teal', 'top-nav'];
+        var theme = 'daylight';
+        try {
+          var cached = JSON.parse(localStorage.getItem('course-arrange-ui-theme') || '""');
+          if (themes.indexOf(cached) >= 0) {
+            theme = cached;
+          }
+        } catch (error) {
+          theme = 'daylight';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

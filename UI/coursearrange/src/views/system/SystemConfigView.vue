@@ -1,14 +1,10 @@
 <template>
   <section v-loading="loading" class="config-shell">
-    <div class="hero-panel">
-      <div class="hero-copy">
-        <div class="eyebrow">Scheduling Control Deck</div>
-        <h1 class="hero-title">系统配置</h1>
-        <p class="hero-description">
-          这里决定系统是否启用多校区、多学院、走班制，以及每周上课天数、每日节次数和时间片模板。后续排课算法会以这里的配置为准。
-        </p>
-      </div>
-      <div class="hero-actions">
+    <PageHeader
+      title="系统配置"
+      description="这里决定系统是否启用多校区、多学院、走班制，以及每周上课天数、每日节次数和时间片模板。后续排课算法会以这里的配置为准。"
+    >
+      <template #actions>
         <el-button class="ghost-action" @click="loadConfig">重新加载</el-button>
         <el-button
           class="soft-action"
@@ -23,8 +19,8 @@
         <el-button class="primary-action" type="primary" :loading="scheduleSaving" @click="saveRuleSection">
           保存排课规则
         </el-button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <el-card shadow="never" class="scope-card">
       <div class="scope-header">
@@ -282,6 +278,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
+import PageHeader from '@/components/PageHeader.vue';
 import {
   fetchCampusList,
   fetchCollegeList,
@@ -601,63 +598,14 @@ onMounted(async () => {
 .config-shell {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
 }
 
-.hero-panel {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 26px 28px;
-  overflow: hidden;
-  border: 1px solid #dbe7f6;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top left, rgb(255 255 255 / 88%), transparent 38%),
-    linear-gradient(135deg, #f6fbff 0%, #edf5ff 52%, #eef8f1 100%);
-  box-shadow: 0 18px 46px rgb(28 71 123 / 10%);
-}
-
-.hero-panel::after {
-  position: absolute;
-  inset: auto -40px -58px auto;
-  width: 220px;
-  height: 220px;
-  content: '';
-  border-radius: 999px;
-  background: radial-gradient(circle, rgb(70 136 255 / 18%) 0%, rgb(70 136 255 / 0%) 72%);
-}
-
-.eyebrow {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: #5c6f89;
-  text-transform: uppercase;
-}
-
-.hero-title {
-  margin: 10px 0 8px;
-  font-size: 34px;
-  line-height: 1.05;
-  color: #10233c;
-}
-
-.hero-description {
-  max-width: 760px;
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #4b6079;
-}
-
-.hero-actions,
 .header-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
 }
 
 .scope-card,
@@ -831,19 +779,20 @@ onMounted(async () => {
 :deep(.primary-action.el-button) {
   min-width: 116px;
   border: none;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #1c6cf5 0%, #0f9d7a 100%);
-  box-shadow: 0 12px 24px rgb(28 108 245 / 24%);
+  border-radius: var(--radius-control);
+  background: linear-gradient(135deg, #165dff 0%, #0ea5a4 100%);
+  box-shadow: 0 6px 16px rgb(22 93 255 / 18%);
 }
 
 :deep(.ghost-action.el-button) {
-  border-radius: 999px;
-  border-color: #d6e1ef;
-  background: rgb(255 255 255 / 78%);
+  border-radius: var(--radius-control);
+  border-color: var(--line-2);
+  background: var(--surface);
+  color: var(--ink-2);
 }
 
 :deep(.soft-action.el-button) {
-  border-radius: 999px;
+  border-radius: var(--radius-control);
   border-color: #cfe0f8;
   background: linear-gradient(180deg, #fff 0%, #f5f9ff 100%);
 }
@@ -860,7 +809,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 900px) {
-  .hero-panel,
   .scope-header,
   .card-head {
     flex-direction: column;
@@ -871,10 +819,6 @@ onMounted(async () => {
   .form-grid,
   .compact-grid {
     grid-template-columns: 1fr;
-  }
-
-  .hero-title {
-    font-size: 28px;
   }
 }
 </style>

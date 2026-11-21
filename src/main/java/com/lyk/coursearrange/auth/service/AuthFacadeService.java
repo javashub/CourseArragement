@@ -25,4 +25,12 @@ public interface AuthFacadeService {
     List<String> getCurrentPermissionCodes();
 
     List<MenuTreeVO> getCurrentMenus();
+
+    /**
+     * 保存当前登录用户的界面主题偏好，并返回更新后的当前用户视图。
+     *
+     * @param uiTheme 主题标识，仅接受 daylight / deep-teal / top-nav
+     * @return 更新后的当前用户视图
+     */
+    CurrentUserVO updateCurrentUiTheme(String uiTheme);
 }

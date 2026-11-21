@@ -1,98 +1,91 @@
 <template>
   <section class="schedule-shell">
-    <!-- 顶部卡片：三行布局 -->
-    <div class="header-card">
-      <!-- 第一行：标题 -->
-      <div class="header-row title-row">
-        <h1 class="page-title">课表管理</h1>
+    <!-- 单行工具条：标题 / 视角 / 统计 / 筛选（课表网格以下保持原样） -->
+    <div class="sched-toolbar">
+      <h1 class="sched-title">课表管理</h1>
+      <span class="sched-divider" aria-hidden="true" />
+
+      <div class="view-toggle">
+        <button
+          class="toggle-btn"
+          :class="{ 'toggle-btn--active': viewMode === 'teacher' }"
+          @click="viewMode = 'teacher'; handleViewModeChange()"
+        >
+          教师
+        </button>
+        <button
+          class="toggle-btn"
+          :class="{ 'toggle-btn--active': viewMode === 'class' }"
+          @click="viewMode = 'class'; handleViewModeChange()"
+        >
+          班级
+        </button>
       </div>
 
-      <!-- 第二行：视角按钮 + 统计数据 -->
-      <div class="header-row stats-row">
-        <div class="view-toggle">
-          <button
-            class="toggle-btn"
-            :class="{ 'toggle-btn--active': viewMode === 'teacher' }"
-            @click="viewMode = 'teacher'; handleViewModeChange()"
-          >
-            教师
-          </button>
-          <button
-            class="toggle-btn"
-            :class="{ 'toggle-btn--active': viewMode === 'class' }"
-            @click="viewMode = 'class'; handleViewModeChange()"
-          >
-            班级
-          </button>
-        </div>
-        <div class="stat-badges">
-          <span class="stat-badge">
-            <span class="stat-dot stat-dot--primary" />
-            {{ viewMode === 'class' ? '班级' : '教师' }}: <strong>{{ currentTarget || '--' }}</strong>
-          </span>
-          <span class="stat-badge">
-            <span class="stat-dot stat-dot--course" />
-            课程 <strong>{{ planList.length }}</strong>
-          </span>
-          <span class="stat-badge">
-            <span class="stat-dot stat-dot--teacher" />
-            教师 <strong>{{ teacherCount }}</strong>
-          </span>
-          <span class="stat-badge">
-            <span class="stat-dot stat-dot--room" />
-            教室 <strong>{{ classroomCount }}</strong>
-          </span>
-        </div>
+      <div class="stat-badges">
+        <span class="stat-badge">
+          <span class="stat-dot stat-dot--primary" />
+          {{ viewMode === 'class' ? '班级' : '教师' }}: <strong>{{ currentTarget || '--' }}</strong>
+        </span>
+        <span class="stat-badge">
+          <span class="stat-dot stat-dot--course" />
+          课程 <strong>{{ planList.length }}</strong>
+        </span>
+        <span class="stat-badge">
+          <span class="stat-dot stat-dot--teacher" />
+          教师 <strong>{{ teacherCount }}</strong>
+        </span>
+        <span class="stat-badge">
+          <span class="stat-dot stat-dot--room" />
+          教室 <strong>{{ classroomCount }}</strong>
+        </span>
       </div>
 
-      <!-- 第三行：筛选条件 + 查询按钮（固定一行） -->
-      <div class="header-row filter-row">
-        <div class="filter-bar">
-          <el-select
-            v-model="selectedSemester"
-            filterable
-            clearable
-            allow-create
-            default-first-option
-            placeholder="学期"
-            class="filter-select filter-select--semester"
-            @change="handleSemesterChange"
-            @clear="handleSemesterClear"
-          >
-            <el-option v-for="item in semesterOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-          <el-select
-            v-if="viewMode === 'class'"
-            v-model="selectedClassNo"
-            filterable
-            clearable
-            placeholder="班级"
-            class="filter-select"
-            @change="handleTargetChange"
-            @clear="clearPlan"
-          >
-            <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
-          </el-select>
-          <el-select
-            v-else
-            v-model="selectedTeacherNo"
-            filterable
-            clearable
-            placeholder="教师"
-            class="filter-select"
-            @change="handleTargetChange"
-            @clear="clearPlan"
-          >
-            <el-option
-              v-for="item in teacherOptions"
-              :key="item.teacherNo"
-              :label="`${item.teacherNo} ${item.teacherName || ''}`"
-              :value="item.teacherNo"
-            />
-          </el-select>
-          <el-button type="primary" class="query-btn" @click="loadCoursePlan">查询课表</el-button>
-        </div>
-      </div>
+      <span class="sched-spacer" />
+
+      <el-select
+        v-model="selectedSemester"
+        filterable
+        clearable
+        allow-create
+        default-first-option
+        placeholder="学期"
+        class="sched-select sched-select--semester"
+        @change="handleSemesterChange"
+        @clear="handleSemesterClear"
+      >
+        <el-option v-for="item in semesterOptions" :key="item" :label="item" :value="item" />
+      </el-select>
+      <el-select
+        v-if="viewMode === 'class'"
+        v-model="selectedClassNo"
+        filterable
+        clearable
+        placeholder="班级"
+        class="sched-select sched-select--target"
+        @change="handleTargetChange"
+        @clear="clearPlan"
+      >
+        <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
+      </el-select>
+      <el-select
+        v-else
+        v-model="selectedTeacherNo"
+        filterable
+        clearable
+        placeholder="教师"
+        class="sched-select sched-select--target"
+        @change="handleTargetChange"
+        @clear="clearPlan"
+      >
+        <el-option
+          v-for="item in teacherOptions"
+          :key="item.teacherNo"
+          :label="`${item.teacherNo} ${item.teacherName || ''}`"
+          :value="item.teacherNo"
+        />
+      </el-select>
+      <el-button type="primary" class="query-btn" @click="loadCoursePlan">查询课表</el-button>
     </div>
 
     <!-- 课表主体 -->
@@ -289,11 +282,6 @@ const focusedCellKey = ref('');
 const adjustLogKeyword = ref('');
 const activePeriodGroup = ref('ALL');
 
-const viewModeOptions = [
-  { label: '班级', value: 'class' },
-  { label: '教师', value: 'teacher' }
-];
-
 // ========== 课程颜色 ==========
 const COURSE_PALETTE = [
   { bg: '#eff6ff', accent: '#3b82f6', text: '#1e40af' },  // 蓝
@@ -317,16 +305,6 @@ function getCardStyle(item) {
     '--course-text': colors.text,
     background: colors.bg
   };
-}
-
-function getCourseColor(item) {
-  const name = item.courseName || item.courseNo || '';
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const color = COURSE_PALETTE[Math.abs(hash) % COURSE_PALETTE.length];
-  return color.accent;
 }
 
 function getCourseColorVars(item) {
@@ -629,61 +607,53 @@ onMounted(async () => {
   gap: 14px;
 }
 
-/* ========== 顶部三行卡片 ========== */
-.header-card {
-  padding: 24px 28px 20px;
-  border: 1px solid #dae7f4;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top left, rgb(255 255 255 / 88%), transparent 36%),
-    linear-gradient(135deg, #f8fdfb 0%, #f6fbff 52%, #eef5ff 100%);
-  box-shadow: 0 18px 42px rgb(17 34 68 / 7%);
+/* ========== 顶部单行工具条 ========== */
+.sched-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.header-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-/* 第一行：标题 */
-.title-row {
-  padding-bottom: 2px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #17263d;
-  margin: 0;
-}
-
-/* 第二行：视角按钮 + 统计 */
-.stats-row {
   flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 10px 14px;
+  overflow: hidden;
+  border: 1px solid #e5edf6;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 8px 22px rgb(17 34 68 / 4%);
+}
+
+.sched-title {
+  margin: 0;
+  color: #17263d;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sched-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 20px;
+  background: #e5edf6;
 }
 
 .view-toggle {
   display: flex;
-  border-radius: 12px;
+  flex-shrink: 0;
   overflow: hidden;
   border: 1px solid #c5d8e8;
-  flex-shrink: 0;
+  border-radius: 10px;
 }
 
 .toggle-btn {
-  padding: 6px 18px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 5px 14px;
   border: none;
   background: rgb(255 255 255 / 60%);
   color: #53667f;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
-  font-family: inherit;
 }
 
 .toggle-btn:hover {
@@ -698,18 +668,21 @@ onMounted(async () => {
 
 .stat-badges {
   display: flex;
+  flex: 0 1 auto;
   align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
+  gap: 14px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .stat-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 5px;
   color: #53667f;
+  font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .stat-badge strong {
@@ -718,58 +691,55 @@ onMounted(async () => {
 }
 
 .stat-dot {
-  width: 8px;
-  height: 8px;
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  flex-shrink: 0;
 }
 
 .stat-dot--primary {
   background: linear-gradient(135deg, #165dff, #0ea5a4);
-  box-shadow: 0 0 6px rgb(22 93 255 / 30%);
 }
 
 .stat-dot--course {
   background: #f59e0b;
-  box-shadow: 0 0 6px rgb(245 158 11 / 30%);
 }
 
 .stat-dot--teacher {
   background: #22c55e;
-  box-shadow: 0 0 6px rgb(34 197 94 / 30%);
 }
 
 .stat-dot--room {
   background: #ec4899;
-  box-shadow: 0 0 6px rgb(236 72 153 / 30%);
 }
 
-/* 第三行：筛选 + 查询 */
-.filter-row {
-  overflow-x: auto;
+.sched-spacer {
+  flex: 1 1 auto;
+  min-width: 8px;
 }
 
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-  white-space: nowrap;
+.sched-select {
+  flex: 0 1 auto;
+  width: 140px;
 }
 
-.filter-select {
-  min-width: 380px;
+.sched-select--semester {
+  width: 140px;
 }
 
-.filter-select--semester {
-  min-width: 180px;
+.sched-select--target {
+  width: 168px;
+}
+
+.query-btn {
+  flex: 0 0 auto;
 }
 
 :deep(.query-btn.el-button--primary) {
   border: none;
-  border-radius: 999px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #165dff 0%, #0ea5a4 100%);
-  box-shadow: 0 12px 24px rgb(22 93 255 / 22%);
+  box-shadow: 0 6px 16px rgb(22 93 255 / 20%);
   font-weight: 600;
 }
 
@@ -1099,32 +1069,24 @@ onMounted(async () => {
     padding: 10px;
   }
 
-  .header-card {
-    gap: 8px;
-    padding: 16px 18px;
-    border-radius: 20px;
+  .sched-toolbar {
+    gap: 8px 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
   }
 
-  .page-title {
-    font-size: 22px;
+  .sched-title {
+    font-size: 15px;
   }
 
-  .stats-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  .stat-badges {
+    gap: 10px;
   }
 
-  .filter-row {
-    overflow-x: auto;
-  }
-
-  .filter-bar {
-    min-width: min-content;
-  }
-
-  .filter-select {
-    min-width: 120px;
+  .sched-select,
+  .sched-select--semester,
+  .sched-select--target {
+    width: 132px;
   }
 
   .timetable-grid {

@@ -1,12 +1,6 @@
 <template>
   <section class="resource-shell">
-    <div class="hero-panel">
-      <div class="hero-copy">
-        <div class="eyebrow">Base Resource Studio</div>
-        <h1 class="hero-title">基础数据</h1>
-        <p class="hero-description">{{ BASE_DATA_HERO_COPY }}</p>
-      </div>
-    </div>
+    <PageHeader :title="activeTabLabel" :count="activeTabTotal" :description="BASE_DATA_HERO_COPY" />
 
     <el-card shadow="never" class="resource-card">
       <el-tabs v-model="activeTab" class="resource-tabs" @tab-change="handleTabChange">
@@ -579,6 +573,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import PageHeader from '@/components/PageHeader.vue';
 import { getErrorMessage } from '@/utils/http';
 import { BASE_DATA_HERO_COPY } from './baseDataHero';
 import {
@@ -779,6 +774,16 @@ const activeTabLabel = computed(() => {
     classroom: '教室管理'
   };
   return map[activeTab.value] || '基础数据';
+});
+
+const activeTabTotal = computed(() => {
+  const stateMap = {
+    teacher: teacherState,
+    student: studentState,
+    course: courseState,
+    classroom: classroomState
+  };
+  return stateMap[activeTab.value]?.total ?? 0;
 });
 
 function syncActiveTabByRoute(routePath) {
@@ -1346,69 +1351,17 @@ watch(
 .resource-shell {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-
-.hero-panel {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 28px;
-  border: 1px solid #dbe7f6;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top left, rgb(255 255 255 / 88%), transparent 36%),
-    linear-gradient(135deg, #fffdf8 0%, #f6fbff 48%, #eef6ff 100%);
-  box-shadow: 0 18px 42px rgb(17 34 68 / 8%);
-}
-
-.eyebrow {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: #7b6c45;
-  text-transform: uppercase;
-}
-
-.hero-title {
-  margin: 10px 0 8px;
-  font-size: 34px;
-  color: #17263d;
-}
-
-.hero-description {
-  max-width: 760px;
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #53667f;
-}
-
-.hero-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.stat-chip {
-  min-width: 180px;
-  padding: 14px 16px;
-  border: 1px solid #e5edf6;
-  border-radius: 20px;
-  background: rgb(255 255 255 / 75%);
-}
-
-.stat-label {
-  display: block;
-  font-size: 12px;
-  color: #8090a7;
+  gap: 8px;
 }
 
 .resource-card {
-  border: 1px solid #e5edf6;
-  border-radius: 24px;
-  box-shadow: 0 12px 30px rgb(15 23 42 / 4%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.resource-card :deep(.el-card__body) {
+  padding: 0 16px 12px;
 }
 
 .toolbar-row {
@@ -1416,20 +1369,21 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  height: 42px;
+  margin-bottom: 4px;
 }
 
 .toolbar-row > .el-input {
-  max-width: 320px;
+  max-width: 300px;
 }
 
 .toolbar-select {
-  width: 170px;
+  width: 160px;
 }
 
 .toolbar-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .excel-upload {
@@ -1438,18 +1392,18 @@ watch(
 
 .toolbar-placeholder {
   font-size: 13px;
-  color: #6b7b90;
+  color: var(--muted-2);
 }
 
 .table-footer {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .status-alert {
-  margin-bottom: 16px;
-  border-radius: 18px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-control);
 }
 
 .form-grid {
@@ -1466,12 +1420,10 @@ watch(
 
 .teacher-constraint-panel {
   margin-bottom: 18px;
-  padding: 18px 20px;
-  border: 1px solid #d8e3f0;
-  border-radius: 22px;
-  background:
-    linear-gradient(145deg, rgb(250 252 255 / 96%), rgb(245 249 255 / 86%)),
-    radial-gradient(circle at top right, rgb(180 210 255 / 18%), transparent 42%);
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(145deg, var(--surface-2) 0%, var(--brand-soft) 100%);
 }
 
 .teacher-constraint-panel__copy {
@@ -1480,56 +1432,66 @@ watch(
 
 .teacher-constraint-panel__title {
   margin-bottom: 6px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #173055;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .teacher-constraint-panel__text {
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.7;
-  color: #607089;
+  color: var(--muted-2);
+}
+
+:deep(.resource-tabs .el-tabs__header) {
+  margin-bottom: 0;
 }
 
 :deep(.resource-tabs .el-tabs__nav-wrap::after) {
-  display: none;
+  height: 1px;
+  background-color: #f0f5fa;
 }
 
 :deep(.resource-tabs .el-tabs__item) {
-  height: 42px;
-  padding: 0 18px;
-  font-weight: 700;
-  color: #62748b;
+  height: 38px;
+  padding: 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
 }
 
 :deep(.resource-tabs .el-tabs__item.is-active) {
-  color: #165dff;
+  color: var(--brand);
+  font-weight: 600;
 }
 
 :deep(.resource-tabs .el-tabs__active-bar) {
-  height: 3px;
-  border-radius: 999px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
   background: linear-gradient(90deg, #165dff 0%, #0ea5a4 100%);
 }
 
 :deep(.primary-action.el-button) {
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-control);
   background: linear-gradient(135deg, #165dff 0%, #0ea5a4 100%);
-  box-shadow: 0 12px 24px rgb(22 93 255 / 22%);
+  box-shadow: 0 6px 16px rgb(22 93 255 / 18%);
+  font-weight: 600;
 }
 
 :deep(.ghost-action.el-button) {
-  border-radius: 999px;
-  border-color: #d7e1ef;
-  background: rgb(255 255 255 / 82%);
+  border-radius: var(--radius-control);
+  border-color: var(--line-2);
+  background: var(--surface);
+  color: var(--ink-2);
 }
 
 @media (max-width: 960px) {
-  .hero-panel,
   .toolbar-row {
     flex-direction: column;
     align-items: flex-start;
+    height: auto;
+    margin-bottom: 12px;
   }
 
   .form-grid {

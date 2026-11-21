@@ -2,15 +2,17 @@ package com.lyk.coursearrange.auth.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.lyk.coursearrange.auth.request.AuthLoginRequest;
+import com.lyk.coursearrange.auth.request.AuthUiThemeUpdateRequest;
 import com.lyk.coursearrange.auth.service.AuthFacadeService;
 import com.lyk.coursearrange.auth.service.AuthLoginService;
 import com.lyk.coursearrange.common.ServerResponse;
 import com.lyk.coursearrange.common.enums.ResultCode;
 import com.lyk.coursearrange.common.exception.BusinessException;
 import com.lyk.coursearrange.system.rbac.entity.SysUser;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -64,6 +66,15 @@ public class AuthController {
     @GetMapping("/menus")
     public ServerResponse<?> menus() {
         return ServerResponse.ofSuccess(authFacadeService.getCurrentMenus());
+    }
+
+    /**
+     * 保存当前登录用户的界面主题偏好，只允许写当前账号。
+     */
+    @PutMapping("/ui-theme")
+    public ServerResponse<?> updateUiTheme(@RequestBody(required = false) AuthUiThemeUpdateRequest request) {
+        String uiTheme = request == null ? null : request.getUiTheme();
+        return ServerResponse.ofSuccess(authFacadeService.updateCurrentUiTheme(uiTheme));
     }
 
     String issueLoginToken(SysUser sysUser) {

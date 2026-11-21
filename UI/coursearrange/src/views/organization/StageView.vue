@@ -1,12 +1,10 @@
 <template>
   <section class="page-card" v-loading="loading">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">学段管理</h1>
-        <p class="page-description">用于定义小学、初中、高中、大学等学段层级，后续排课规则会按学段差异化生效。</p>
-      </div>
-      <el-button type="primary" @click="handleCreate">新增学段</el-button>
-    </div>
+    <PageHeader title="学段管理" description="用于定义小学、初中、高中、大学等学段层级，后续排课规则会按学段差异化生效。">
+      <template #actions>
+        <el-button type="primary" @click="handleCreate">新增学段</el-button>
+      </template>
+    </PageHeader>
 
     <el-card shadow="never" class="toolbar-card">
       <div class="toolbar-grid">
@@ -116,6 +114,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import PageHeader from '@/components/PageHeader.vue';
 import { deleteStage, fetchStageDetail, fetchStageList, saveStage } from '@/api/modules/system';
 
 const loading = ref(false);
@@ -212,16 +211,14 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-header {
+.page-card {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .toolbar-card {
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .toolbar-grid {
@@ -237,10 +234,6 @@ onMounted(() => {
 }
 
 @media (max-width: 900px) {
-  .page-header {
-    flex-direction: column;
-  }
-
   .toolbar-grid {
     grid-template-columns: 1fr;
   }

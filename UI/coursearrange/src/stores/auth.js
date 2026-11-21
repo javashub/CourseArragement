@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { fetchAuthContext } from '@/api/modules/auth';
 import { AUTH_CONTEXT_KEY, TOKEN_KEY, USER_KEY } from '@/constants/storage';
+import { useAppStore } from '@/stores/app';
 import { getStorage, removeStorage, setStorage } from '@/utils/storage';
 
 export const useAuthStore = defineStore('auth', {
@@ -73,6 +74,17 @@ export const useAuthStore = defineStore('auth', {
       this.menus = context?.menus || [];
       setStorage(USER_KEY, this.user);
       setStorage(AUTH_CONTEXT_KEY, context);
+      this.syncThemeFromAccount(context);
+    },
+    // 登录上下文里的 user.uiTheme 覆盖本地缓存；接口未返回该字段时沿用本地值（默认 daylight）。
+    syncThemeFromAccount(context) {
+      const appStore = useAppStore();
+      const accountTheme = context?.user?.uiTheme;
+      if (accountTheme) {
+        appStore.applyTheme(accountTheme);
+        return;
+      }
+      appStore.loadTheme();
     },
     async loadAuthContext() {
       const response = await fetchAuthContext();

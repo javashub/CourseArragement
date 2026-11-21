@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 认证门面服务实现。
@@ -85,8 +86,21 @@ public class AuthFacadeServiceImpl implements AuthFacadeService {
                 .realName(sysUser.getRealName())
                 .displayName(resolveDisplayName(loginUser, sysUser))
                 .userType(sysUser.getUserType())
+                .uiTheme(resolveUiTheme(sysUser))
                 .roles(roleCodes)
                 .build();
+    }
+
+    @Override
+    public CurrentUserVO updateCurrentUiTheme(String uiTheme) {
+        String normalizedTheme = normalizeUiTheme(uiTheme);
+        LoginUser loginUser = getCurrentLoginUser();
+        SysUser sysUser = requireCurrentSysUser(loginUser.getUserId());
+        sysUser.setUiTheme(normalizedTheme);
+        if (!sysUserService.updateById(sysUser)) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR, "保存界面主题失败，请稍后重试");
+        }
+        return getCurrentUserView();
     }
 
     @Override
@@ -178,6 +192,31 @@ public class AuthFacadeServiceImpl implements AuthFacadeService {
                 .filter(strategy -> strategy.supports(roleCode))
                 .findFirst()
                 .orElseThrow(() -> new BusinessException(ResultCode.FORBIDDEN, "当前角色未配置菜单策略"));
+    }
+
+    /**
+     * 解析账号已保存的界面主题，空值回退默认 daylight。
+     */
+    static String resolveUiTheme(SysUser sysUser) {
+        if (sysUser == null || sysUser.getUiTheme() == null || sysUser.getUiTheme().isBlank()) {
+            return SystemConstants.UiTheme.DAYLIGHT;
+        }
+        return sysUser.getUiTheme().trim().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * 校验并归一化主题标识，非法值按既有业务错误结构返回。
+     */
+    static String normalizeUiTheme(String uiTheme) {
+        if (uiTheme == null || uiTheme.isBlank()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "界面主题不能为空");
+        }
+        String normalized = uiTheme.trim().toLowerCase(Locale.ROOT);
+        if (!SystemConstants.UiTheme.SUPPORTED.contains(normalized)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST,
+                    "不支持的界面主题：" + uiTheme.trim() + "，仅支持 " + String.join("/", SystemConstants.UiTheme.SUPPORTED));
+        }
+        return normalized;
     }
 
     private String resolveSysUserDisplayName(SysUser sysUser) {

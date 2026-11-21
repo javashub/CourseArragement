@@ -22,5 +22,10 @@ public class CurrentUserVO {
 
     private String userType;
 
+    /**
+     * 当前账号的界面主题标识，空值由服务端回退 daylight。
+     */
+    private String uiTheme;
+
     private List<String> roles;
 }

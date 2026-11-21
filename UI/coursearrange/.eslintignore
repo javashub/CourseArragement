@@ -1,0 +1,4 @@
+# 构建产物与遗留静态脚本不参与源码规范检查
+dist/
+build/
+src/assets/js/pop.js

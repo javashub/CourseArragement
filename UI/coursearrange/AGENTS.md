@@ -83,24 +83,34 @@
 
 当前前端视觉基线来自：
 
-- `src/styles/index.css`
-- `LoginView.vue`
-- `BasicLayout.vue`
+- `src/styles/index.css`（唯一 token 源）
+- `src/components/PageHeader.vue`（页头规范）
+- `src/layouts/BasicLayout.vue` + `src/layouts/TopNav.vue`（三套壳）
+- `docs/design/theme-preview/theme.css`（视觉稿对应 token）
 
 关键词：
 
-- 学院/教务气质
-- 暖米色背景、深蓝主色、金色强调
-- 渐变、柔和阴影、玻璃质感
-- 标题偏衬线，正文偏无衬线
+- 冷白数据台：`--bg #f3f8fd`、`--surface #ffffff`、`--line #e4edf7`
+- 品牌蓝 `--brand #165dff` → 青绿 `--teal #0ea5a4`，主按钮/页签用 `--grad`
+- 文字：`--ink #17263d`、`--ink-2 #2f4a6b`、`--muted-2 #5b7089`
+- 面板圆角 `--radius 14px`，控件圆角 `--radius-control 8px`
+- 无衬线：`--app-font-family`（苹果系统字体 / PingFang SC / HarmonyOS Sans SC / MiSans / Noto Sans SC）
+- 数字统一 `font-variant-numeric: tabular-nums`
+- 页头单行：标题 19px/600 + 12.5px 说明 + 计数 pill + 右侧操作
+
+三套主题（同时决定色板与导航布局，`<html data-theme>`）：
+
+- `daylight`：浅色侧栏（默认）
+- `deep-teal`：深青侧栏，内容区仍为冷白
+- `top-nav`：菜单移到顶栏，一级项 + 下拉子菜单，表格更宽（`--row 44px`）
 
 要求：
 
-- 优先复用全局 CSS 变量，如 `--app-primary`、`--app-accent`。
-- 优先复用 `.page-card` 等现有页面容器模式。
-- 不要做成默认的白底后台模板风格。
-- 不要新增与现有体系冲突的颜色、阴影、圆角体系。
-- 样式上优先延续当前项目语言，而不是重新设计一套。
+- 只使用 `src/styles/index.css` 提供的 token，不新造颜色、阴影、圆角体系。
+- 列表页统一用 `PageHeader`，不要在页面上再写 eyebrow / 34px 衬线标题 / 两行说明。
+- 主题只影响外壳与页头；组件里不要写主题判断分支，靠 CSS 变量自动跟随。
+- **课表冻结**：`views/course/ScheduleView.vue` 的 `COURSE_PALETTE`、`.grid-*`、`.time-*`、`.course-*` 与 `.timetable-wrapper` 以下样式一行都不许改，行高 108px、圆角 18px、12 色板必须保持不变；课表页只允许压缩页头为单行工具条。
+- Element Plus 覆写走全局 CSS 变量与 `:deep()`；`.academy-form-dialog` 等类名保持不变。
 
 ## 样式组织
 

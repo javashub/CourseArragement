@@ -51,4 +51,9 @@ public class SysUser extends BaseEntity {
     private LocalDateTime lastLoginAt;
 
     private String lastLoginIp;
+
+    /**
+     * 界面主题偏好：daylight / deep-teal / top-nav。
+     */
+    private String uiTheme;
 }

@@ -1,5 +1,7 @@
 package com.lyk.coursearrange.common.constants;
 
+import java.util.List;
+
 /**
  * 系统常量。
  * 说明：
@@ -55,5 +57,22 @@ public interface SystemConstants {
     interface FeatureToggleDefaultValue {
         String TRUE = "true";
         String FALSE = "false";
+    }
+
+    /**
+     * 界面主题标识。
+     * 说明：
+     * 1. 主题同时决定色板与导航布局，后端只持久化标识，不存颜色值。
+     * 2. sys_user.ui_theme 缺省为 daylight，未知标识由前端回退 daylight。
+     */
+    interface UiTheme {
+        String DAYLIGHT = "daylight";
+        String DEEP_TEAL = "deep-teal";
+        String TOP_NAV = "top-nav";
+
+        /**
+         * 当前允许持久化的主题白名单。
+         */
+        List<String> SUPPORTED = List.of(DAYLIGHT, DEEP_TEAL, TOP_NAV);
     }
 }

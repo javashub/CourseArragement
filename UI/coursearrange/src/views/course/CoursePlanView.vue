@@ -1,15 +1,11 @@
 <template>
   <div style="overflow-x: auto;">
     <section class="plan-shell">
-      <div class="hero-panel">
-        <div class="hero-copy">
-          <div class="eyebrow">Task Orchestrator</div>
-          <h1 class="hero-title">排课任务</h1>
-        <p class="hero-description">
-            先把开课任务、学期切换和一键排课打通。当前页已经统一读取标准排课任务、标准班级与标准执行日志，后续继续围绕标准表补齐数据和算法约束。
-          </p>
-        </div>
-        <div class="hero-actions">
+      <PageHeader
+        title="排课任务"
+        description="先把开课任务、学期切换和一键排课打通。当前页已经统一读取标准排课任务、标准班级与标准执行日志，后续继续围绕标准表补齐数据和算法约束。"
+      >
+        <template #actions>
           <el-select
             v-model="selectedSemester"
             filterable
@@ -23,8 +19,8 @@
           </el-select>
           <el-button class="ghost-action" @click="loadClassTasks(true)">刷新任务</el-button>
           <el-button class="primary-action" type="primary" :loading="arranging" @click="handleArrange">执行排课</el-button>
-        </div>
-      </div>
+        </template>
+      </PageHeader>
 
       <el-card shadow="never" class="plan-card config-card">
         <div class="config-headline">
@@ -606,6 +602,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import PageHeader from '@/components/PageHeader.vue';
 import { fetchCoursePage, fetchTeacherPage } from '@/api/modules/base';
 import { getErrorMessage } from '@/utils/http';
 import { fetchScheduleConfig } from '@/api/modules/system';
@@ -1266,58 +1263,21 @@ onMounted(async () => {
 .plan-shell {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
 }
 
-.hero-panel {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 28px;
-  border: 1px solid #dae7f4;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top left, rgb(255 255 255 / 88%), transparent 36%),
-    linear-gradient(135deg, #fdfcf7 0%, #f7fbff 50%, #eef7ff 100%);
-  box-shadow: 0 18px 42px rgb(17 34 68 / 7%);
+.semester-select {
+  width: 220px;
 }
 
-.eyebrow {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: #7b6c45;
-  text-transform: uppercase;
-}
-
-.hero-title {
-  margin: 10px 0 8px;
-  font-size: 34px;
-  color: #17263d;
-}
-
-.hero-description {
-  max-width: 760px;
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #53667f;
-}
-
-.hero-actions,
 .toolbar-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .excel-upload {
   display: inline-flex;
-}
-
-.semester-select {
-  min-width: 220px;
 }
 
 .plan-card,
@@ -1769,19 +1729,19 @@ onMounted(async () => {
 
 :deep(.primary-action.el-button) {
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-control);
   background: linear-gradient(135deg, #165dff 0%, #0ea5a4 100%);
-  box-shadow: 0 12px 24px rgb(22 93 255 / 22%);
+  box-shadow: 0 6px 16px rgb(22 93 255 / 18%);
 }
 
 :deep(.ghost-action.el-button) {
-  border-radius: 999px;
-  border-color: #d7e1ef;
-  background: rgb(255 255 255 / 82%);
+  border-radius: var(--radius-control);
+  border-color: var(--line-2);
+  background: var(--surface);
+  color: var(--ink-2);
 }
 
 @media (max-width: 960px) {
-  .hero-panel,
   .toolbar-row,
   .log-header,
   .summary-header,

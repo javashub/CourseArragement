@@ -1,12 +1,10 @@
 <template>
   <section class="page-card" v-loading="loading">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">校区管理</h1>
-        <p class="page-description">维护多校区办学场景下的校区信息，后续教学楼、教室、教师归属都会挂在这里。</p>
-      </div>
-      <el-button type="primary" @click="handleCreate">新增校区</el-button>
-    </div>
+    <PageHeader title="校区管理" description="维护多校区办学场景下的校区信息，后续教学楼、教室、教师归属都会挂在这里。">
+      <template #actions>
+        <el-button type="primary" @click="handleCreate">新增校区</el-button>
+      </template>
+    </PageHeader>
 
     <el-card shadow="never" class="toolbar-card">
       <div class="toolbar-grid">
@@ -171,6 +169,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import PageHeader from '@/components/PageHeader.vue';
 import { deleteCampus, fetchCampusDetail, fetchCampusPage, saveCampus } from '@/api/modules/system';
 
 const loading = ref(false);
@@ -303,16 +302,14 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-header {
+.page-card {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .toolbar-card {
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .toolbar-grid {
@@ -334,10 +331,6 @@ onMounted(() => {
 }
 
 @media (max-width: 900px) {
-  .page-header {
-    flex-direction: column;
-  }
-
   .toolbar-grid {
     grid-template-columns: 1fr;
   }
