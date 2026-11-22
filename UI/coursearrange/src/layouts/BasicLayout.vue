@@ -98,16 +98,26 @@
       </header>
     </template>
 
+    <TabBar
+      :tabs="tabs"
+      :active-path="route.path"
+      @select="handleTabSelect"
+      @refresh="handleTabRefresh"
+      @close="handleTabClose"
+    />
+
     <main class="layout-content">
       <router-view v-slot="{ Component, route: currentRoute }">
-        <component :is="Component" :key="buildLayoutViewKey(currentRoute)" />
+        <keep-alive :max="50">
+          <component :is="Component" :key="buildTabViewKey(currentRoute, activeTab)" />
+        </keep-alive>
       </router-view>
     </main>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
@@ -130,16 +140,17 @@ import {
 } from '@element-plus/icons-vue';
 import AccountMenu from '@/components/AccountMenu.vue';
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue';
+import TabBar from '@/layouts/TabBar.vue';
 import TopNav from '@/layouts/TopNav.vue';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
 import {
-  buildLayoutViewKey,
   findMenuTrailByPath,
   normalizeMenus,
   resolveActiveMenuPath,
   resolveOpenMenuIndexes
 } from './layoutNavigation';
+import { buildTabViewKey, refreshTab, removeTab, resolveAdjacentTab, upsertTab } from './tabsNavigation.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -147,6 +158,23 @@ const appStore = useAppStore();
 const authStore = useAuthStore();
 
 const isMenuCollapsed = ref(false);
+const tabs = ref([]);
+// 记录刚刚被关闭且尚未离开的路由，避免关闭后残留的路由变化把标签重新加回。
+let closedTabPath = '';
+const activeTab = computed(() => tabs.value.find((tab) => tab.path === route.path) || null);
+
+// 路由变化时合并标签：同一路径更新而不追加，保证标签顺序与首次打开一致。
+watch(
+  () => route.fullPath,
+  () => {
+    if (route.path === closedTabPath) {
+      return;
+    }
+    closedTabPath = '';
+    tabs.value = upsertTab(tabs.value, route);
+  },
+  { immediate: true }
+);
 
 // 菜单图标来自后端 sys_menu.icon，这里只登记可能用到的图标，避免整包引入。
 const MENU_ICONS = {
@@ -185,6 +213,50 @@ function toggleSidebar() {
   isMenuCollapsed.value = !isMenuCollapsed.value;
 }
 
+function handleTabSelect(tab) {
+  if (!tab?.path || route.path === tab.path) {
+    return;
+  }
+  router.push(tab.fullPath || tab.path).catch(() => {});
+}
+
+function handleTabRefresh(tab) {
+  if (!tab?.path) {
+    return;
+  }
+  // 刷新只递增该标签的 version；keep-alive 的 key 变化后会生成新的页面实例。
+  tabs.value = refreshTab(tabs.value, tab.path);
+  if (route.path !== tab.path) {
+    router.push(tab.fullPath || tab.path).catch(() => {});
+  }
+}
+
+function handleTabClose(tab) {
+  if (!tab?.path) {
+    return;
+  }
+  const isActive = route.path === tab.path;
+  const nextTab = resolveAdjacentTab(tabs.value, tab.path);
+  // 关闭后下次路由变化不得把被关闭的标签重新加回来。
+  if (isActive) {
+    closedTabPath = tab.path;
+  }
+  tabs.value = removeTab(tabs.value, tab.path);
+  if (isActive) {
+    if (nextTab) {
+      router.push(nextTab.fullPath || nextTab.path).catch(() => {});
+      return;
+    }
+    // 最后一个标签关闭后回到该角色的首个可访问页面；标签栏重新显示该页面。
+    const fallbackPath = authStore.firstAccessiblePath || route.path;
+    const fallbackRoute = router.resolve(fallbackPath);
+    closedTabPath = '';
+    tabs.value = upsertTab(tabs.value, fallbackRoute);
+    router.push(fallbackPath).catch(() => {});
+    return;
+  }
+}
+
 function hasRegisteredRoute(routePath) {
   if (!routePath) {
     return false;
@@ -212,9 +284,10 @@ function navigateToMenu(routePath) {
   display: grid;
   grid-template-areas:
     'sider topbar'
+    'sider tabs'
     'sider content';
   grid-template-columns: 232px minmax(0, 1fr);
-  grid-template-rows: var(--app-header-height) minmax(0, 1fr);
+  grid-template-rows: var(--app-header-height) 38px minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
   background: var(--bg);
@@ -224,9 +297,10 @@ function navigateToMenu(routePath) {
 .layout-root--top-nav {
   grid-template-areas:
     'topbar'
+    'tabs'
     'content';
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 52px minmax(0, 1fr);
+  grid-template-rows: 52px 38px minmax(0, 1fr);
 }
 
 .layout-root:not(.layout-root--top-nav).sider-collapsed {
