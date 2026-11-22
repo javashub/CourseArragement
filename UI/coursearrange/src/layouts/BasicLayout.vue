@@ -64,9 +64,20 @@
           </template>
         </el-menu>
 
-        <div v-if="!isMenuCollapsed" class="sider-foot">
-          <span>排课引擎</span>
-          <b>GA · 运行中</b>
+        <div class="sider-foot" :class="{ 'sider-foot--collapsed': isMenuCollapsed }">
+          <div v-if="!isMenuCollapsed" class="sider-foot__status">
+            <span>排课引擎</span>
+            <b>GA · 运行中</b>
+          </div>
+          <button
+            type="button"
+            class="sider-toggle"
+            :aria-label="isMenuCollapsed ? '展开侧栏' : '收起侧栏'"
+            :title="isMenuCollapsed ? '展开侧栏' : '收起侧栏'"
+            @click="toggleSidebar"
+          >
+            <el-icon><Expand v-if="isMenuCollapsed" /><Fold v-else /></el-icon>
+          </button>
         </div>
       </aside>
 
@@ -80,16 +91,8 @@
         </nav>
 
         <div class="layout-tools">
-          <ThemeSwitcher />
           <span class="tool-divider" aria-hidden="true" />
-          <button
-            type="button"
-            class="sider-toggle"
-            :aria-label="isMenuCollapsed ? '展开菜单' : '收起菜单'"
-            @click="toggleSidebar"
-          >
-            <el-icon><Expand v-if="isMenuCollapsed" /><Fold v-else /></el-icon>
-          </button>
+          <ThemeSwitcher />
           <AccountMenu />
         </div>
       </header>
@@ -381,15 +384,49 @@ function navigateToMenu(routePath) {
   flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px 14px;
+  gap: 8px;
+  padding: 8px 10px 10px;
   border-top: 1px solid var(--sider-line);
   color: var(--sider-label);
   font-size: 10.5px;
 }
 
-.sider-foot b {
+.sider-foot--collapsed {
+  justify-content: center;
+  padding: 8px 0 10px;
+}
+
+.sider-foot__status {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sider-foot__status b {
   color: var(--sider-title);
   font-weight: 600;
+}
+
+.sider-toggle {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--sider-ink);
+  cursor: pointer;
+}
+
+.sider-toggle:hover {
+  border-color: var(--sider-line);
+  background: var(--sider-hover);
+  color: var(--sider-title);
 }
 
 .layout-topbar {
@@ -431,29 +468,13 @@ function navigateToMenu(routePath) {
   flex: 0 0 auto;
   align-items: center;
   gap: 10px;
+  margin-left: auto;
 }
 
 .tool-divider {
   width: 1px;
   height: 20px;
   background: var(--line);
-}
-
-.sider-toggle {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.sider-toggle:hover {
-  border-color: var(--line);
-  background: var(--surface-2);
 }
 
 .layout-content {

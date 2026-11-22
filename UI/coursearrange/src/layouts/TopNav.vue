@@ -54,8 +54,8 @@
     </nav>
 
     <div class="topnav__right">
-      <ThemeSwitcher />
       <span class="topnav__divider" aria-hidden="true" />
+      <ThemeSwitcher />
       <AccountMenu />
     </div>
   </header>
