@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS `sch_schedule_run_detail` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `run_log_id` bigint NOT NULL COMMENT '执行日志ID',
+  `task_id` bigint DEFAULT NULL COMMENT '任务ID',
+  `task_code` varchar(64) DEFAULT NULL COMMENT '任务编码',
+  `class_no` varchar(64) DEFAULT NULL COMMENT '班级编号',
+  `course_no` varchar(64) DEFAULT NULL COMMENT '课程编号',
+  `teacher_no` varchar(64) DEFAULT NULL COMMENT '教师编号',
+  `reason_code` varchar(64) NOT NULL COMMENT '失败原因编码',
+  `reason_message` varchar(255) DEFAULT NULL COMMENT '失败原因说明',
+  `created_by` bigint DEFAULT NULL COMMENT '创建人',
+  `updated_by` bigint DEFAULT NULL COMMENT '更新人',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint DEFAULT 0 COMMENT '逻辑删除',
+  `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_sch_schedule_run_detail_run_log` (`run_log_id`),
+  KEY `idx_sch_schedule_run_detail_task` (`task_id`),
+  KEY `idx_sch_schedule_run_detail_reason` (`reason_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='排课执行失败任务明细表';
