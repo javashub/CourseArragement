@@ -3,7 +3,7 @@
     class="layout-root"
     :class="[
       `layout-root--${appStore.theme}`,
-      { 'layout-root--top-nav': appStore.isTopNav, 'sider-collapsed': isMenuCollapsed }
+      { 'sider-collapsed': isMenuCollapsed && !appStore.isTopNav }
     ]"
   >
     <TopNav v-if="appStore.isTopNav" />
@@ -229,7 +229,7 @@ function navigateToMenu(routePath) {
   grid-template-rows: 52px minmax(0, 1fr);
 }
 
-.sider-collapsed {
+.layout-root:not(.layout-root--top-nav).sider-collapsed {
   grid-template-columns: 64px minmax(0, 1fr);
 }
 
@@ -498,11 +498,11 @@ function navigateToMenu(routePath) {
 }
 
 @media (max-width: 900px) {
-  .layout-root {
+  .layout-root:not(.layout-root--top-nav) {
     grid-template-columns: 188px minmax(0, 1fr);
   }
 
-  .sider-collapsed {
+  .layout-root:not(.layout-root--top-nav).sider-collapsed {
     grid-template-columns: 64px minmax(0, 1fr);
   }
 
