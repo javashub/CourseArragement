@@ -1,7 +1,12 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { AUTH_CONTEXT_KEY, TOKEN_KEY, USER_KEY } from '@/constants/storage';
-import { getErrorMessage, getErrorPayload } from '@/utils/http';
+import {
+  getErrorMessage,
+  getErrorPayload,
+  isUnauthorizedError,
+  isUnauthorizedPayload
+} from '@/utils/http';
 import { removeStorage } from '@/utils/storage';
 
 const request = axios.create({
@@ -10,6 +15,9 @@ const request = axios.create({
 });
 
 const MAX_PAGE_SIZE = 100;
+const AUTH_EXPIRED_MESSAGE = '登录已过期，请重新登录';
+// 给 message 的入场动画留出可见时间，再整页回到登录页。
+const AUTH_EXPIRED_REDIRECT_DELAY = 1000;
 
 let redirectingToLogin = false;
 
@@ -42,22 +50,41 @@ function normalizePagingParams(params) {
   return normalizedParams;
 }
 
-function redirectToLogin() {
+function clearAuthStorage() {
+  // 只清理认证相关键，保留主题等非认证偏好。
+  removeStorage(TOKEN_KEY);
+  removeStorage(USER_KEY);
+  removeStorage(AUTH_CONTEXT_KEY);
+}
+
+function buildLoginUrl() {
+  const currentHash = window.location.hash?.replace(/^#/, '') || '/';
+  const baseUrl = `${window.location.pathname}${window.location.search}`;
+  if (currentHash.startsWith('/login')) {
+    return `${baseUrl}#/login`;
+  }
+  return `${baseUrl}#/login?redirect=${encodeURIComponent(currentHash)}`;
+}
+
+function performRedirectToLogin() {
+  window.location.replace(buildLoginUrl());
+  // hash 路由下 replace 只改 hash，不会重建应用；显式 reload 清空 Pinia 中的旧登录态。
+  window.location.reload();
+}
+
+/**
+ * 统一处理登录失效：立即清理凭证并提示，等 message 动画可见后再整页跳转。
+ * 并发 401 只会进入一次，避免重复提示与重复跳转。
+ */
+function handleUnauthorized() {
   if (redirectingToLogin) {
     return;
   }
   redirectingToLogin = true;
-  removeStorage(TOKEN_KEY);
-  removeStorage(USER_KEY);
-  removeStorage(AUTH_CONTEXT_KEY);
-  const currentHash = window.location.hash?.replace(/^#/, '') || '/';
-  const onLoginPage = currentHash.startsWith('/login');
-  if (!onLoginPage) {
-    const redirect = encodeURIComponent(currentHash);
-    window.location.replace(`${window.location.pathname}${window.location.search}#/login?redirect=${redirect}`);
-    return;
-  }
-  window.location.replace(`${window.location.pathname}${window.location.search}#/login`);
+  // 先清 token，避免等待提示动画期间继续携带旧凭证请求接口。
+  clearAuthStorage();
+  ElMessage.error(AUTH_EXPIRED_MESSAGE);
+  window.setTimeout(performRedirectToLogin, AUTH_EXPIRED_REDIRECT_DELAY);
 }
 
 request.interceptors.request.use((config) => {
@@ -73,6 +100,10 @@ request.interceptors.response.use(
   (response) => {
     const { data } = response;
     if (typeof data?.code === 'number' && data.code !== 0) {
+      if (isUnauthorizedPayload(data)) {
+        handleUnauthorized();
+        return Promise.reject(data);
+      }
       if (!response.config?.meta?.silentError) {
         ElMessage.error(data.message || '请求失败');
       }
@@ -82,11 +113,8 @@ request.interceptors.response.use(
   },
   (error) => {
     const payload = getErrorPayload(error);
-    if (payload?.code === 401) {
-      if (!error.config?.meta?.silentError) {
-        ElMessage.error(getErrorMessage(payload, '登录已失效，请重新登录'));
-      }
-      redirectToLogin();
+    if (isUnauthorizedError(error)) {
+      handleUnauthorized();
       return Promise.reject(payload);
     }
     if (!error.config?.meta?.silentError) {

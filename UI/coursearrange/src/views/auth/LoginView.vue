@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
@@ -58,10 +58,22 @@ const loginTypes = [
   { label: '教师', value: 'teacher' },
   { label: '学生', value: 'student' }
 ];
-const form = reactive({
-  username: '',
-  password: ''
+
+// 本地演示/联调默认账号：切换登录身份时自动填充，仍允许手动修改。
+const DEFAULT_LOGIN_ACCOUNTS = {
+  admin: { username: '900001', password: '123456' },
+  teacher: { username: '900101', password: '123456' },
+  student: { username: '900201', password: '123456' }
+};
+
+const form = reactive({ ...DEFAULT_LOGIN_ACCOUNTS[loginType.value] });
+
+watch(loginType, (type) => {
+  const account = DEFAULT_LOGIN_ACCOUNTS[type] || DEFAULT_LOGIN_ACCOUNTS.admin;
+  form.username = account.username;
+  form.password = account.password;
 });
+
 const userTypeMap = {
   admin: 'ADMIN',
   teacher: 'TEACHER',
