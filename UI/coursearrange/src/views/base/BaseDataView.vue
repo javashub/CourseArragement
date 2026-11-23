@@ -3,8 +3,7 @@
     <PageHeader :title="activeTabLabel" :count="activeTabTotal" :description="BASE_DATA_HERO_COPY" />
 
     <el-card shadow="never" class="resource-card">
-      <el-tabs v-model="activeTab" class="resource-tabs" @tab-change="handleTabChange">
-        <el-tab-pane label="教师管理" name="teacher">
+        <div v-if="activeResource === 'teacher'" class="resource-pane">
           <div class="toolbar-row">
             <el-input
               v-model="teacherState.keyword"
@@ -86,9 +85,9 @@
               @current-change="handleTeacherPageChange"
             />
           </div>
-        </el-tab-pane>
+        </div>
 
-        <el-tab-pane label="学生管理" name="student">
+        <div v-if="activeResource === 'student'" class="resource-pane">
           <div class="toolbar-row">
             <el-input
               v-model="studentState.keyword"
@@ -163,9 +162,9 @@
               @current-change="handleStudentPageChange"
             />
           </div>
-        </el-tab-pane>
+        </div>
 
-        <el-tab-pane label="课程管理" name="course">
+        <div v-if="activeResource === 'course'" class="resource-pane">
           <div class="toolbar-row">
             <el-input
               v-model="courseState.keyword"
@@ -240,9 +239,9 @@
               @current-change="handleCoursePageChange"
             />
           </div>
-        </el-tab-pane>
+        </div>
 
-        <el-tab-pane label="教室管理" name="classroom">
+        <div v-if="activeResource === 'classroom'" class="resource-pane">
           <div class="toolbar-row">
             <el-input
               v-model="classroomState.keyword"
@@ -319,8 +318,7 @@
               @current-change="handleClassroomPageChange"
             />
           </div>
-        </el-tab-pane>
-      </el-tabs>
+        </div>
     </el-card>
 
     <el-dialog v-model="teacherDialogVisible" :title="teacherForm.id ? '编辑教师' : '新增教师'" width="680px" append-to-body>
@@ -570,8 +568,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import PageHeader from '@/components/PageHeader.vue';
 import { getErrorMessage } from '@/utils/http';
@@ -622,20 +620,9 @@ import {
 } from '@/api/modules/base';
 
 const route = useRoute();
-const router = useRouter();
 
-const TAB_ROUTE_MAP = {
-  teacher: '/base-data/teachers',
-  student: '/base-data/students',
-  course: '/base-data/courses',
-  classroom: '/base-data/classrooms'
-};
-
-const ROUTE_TAB_MAP = Object.fromEntries(
-  Object.entries(TAB_ROUTE_MAP).map(([tab, path]) => [path, tab])
-);
-
-const activeTab = ref('teacher');
+// 页签已移除：当前资源完全由路由 meta.resourceTab 决定，菜单/路由是唯一导航来源。
+const activeResource = computed(() => route.meta.resourceTab || 'teacher');
 const teacherDialogVisible = ref(false);
 const studentDialogVisible = ref(false);
 const courseDialogVisible = ref(false);
@@ -773,7 +760,7 @@ const activeTabLabel = computed(() => {
     course: '课程管理',
     classroom: '教室管理'
   };
-  return map[activeTab.value] || '基础数据';
+  return map[activeResource.value] || '基础数据';
 });
 
 const activeTabTotal = computed(() => {
@@ -783,20 +770,8 @@ const activeTabTotal = computed(() => {
     course: courseState,
     classroom: classroomState
   };
-  return stateMap[activeTab.value]?.total ?? 0;
+  return stateMap[activeResource.value]?.total ?? 0;
 });
-
-function syncActiveTabByRoute(routePath) {
-  activeTab.value = ROUTE_TAB_MAP[routePath] || 'teacher';
-}
-
-function handleTabChange(tabName) {
-  const nextPath = TAB_ROUTE_MAP[String(tabName)] || TAB_ROUTE_MAP.teacher;
-  if (route.path === nextPath) {
-    return;
-  }
-  router.push(nextPath).catch(() => {});
-}
 
 function applyPageData(state, pageData) {
   state.records = pageData?.records || [];
@@ -1333,18 +1308,20 @@ async function loadBuildingOptions() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadTeachers(), loadStudents(), loadCourses(), loadClassrooms(), loadBuildingOptions()]);
-});
-
-watch(
-  () => route.path,
-  (routePath) => {
-    syncActiveTabByRoute(routePath);
-  },
-  {
-    immediate: true
+  // 按需加载：每个路由实例只拉自己那类资源，不再一次请求四类列表。
+  const loaders = {
+    teacher: loadTeachers,
+    student: loadStudents,
+    course: loadCourses,
+    classroom: loadClassrooms
+  };
+  const loader = loaders[activeResource.value] || loadTeachers;
+  if (activeResource.value === 'classroom') {
+    await Promise.all([loader(), loadBuildingOptions()]);
+    return;
   }
-);
+  await loader();
+});
 </script>
 
 <style scoped>
@@ -1441,34 +1418,6 @@ watch(
   font-size: 12.5px;
   line-height: 1.7;
   color: var(--muted-2);
-}
-
-:deep(.resource-tabs .el-tabs__header) {
-  margin-bottom: 0;
-}
-
-:deep(.resource-tabs .el-tabs__nav-wrap::after) {
-  height: 1px;
-  background-color: #f0f5fa;
-}
-
-:deep(.resource-tabs .el-tabs__item) {
-  height: 38px;
-  padding: 0 16px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-:deep(.resource-tabs .el-tabs__item.is-active) {
-  color: var(--brand);
-  font-weight: 600;
-}
-
-:deep(.resource-tabs .el-tabs__active-bar) {
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-  background: linear-gradient(90deg, #165dff 0%, #0ea5a4 100%);
 }
 
 :deep(.primary-action.el-button) {
