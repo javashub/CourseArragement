@@ -9,6 +9,7 @@ import SystemGuideView from '@/views/system/SystemGuideView.vue';
 import CampusView from '@/views/organization/CampusView.vue';
 import CollegeView from '@/views/organization/CollegeView.vue';
 import StageView from '@/views/organization/StageView.vue';
+import RegionView from '@/views/organization/RegionView.vue';
 import SystemConfigView from '@/views/system/SystemConfigView.vue';
 import RbacManageView from '@/views/system/RbacManageView.vue';
 import TeacherDashboardView from '@/views/teacher/TeacherDashboardView.vue';
@@ -133,6 +134,15 @@ const routes = [
         meta: {
           title: '学段管理',
           permission: 'page:stage:view'
+        }
+      },
+      {
+        path: 'organization/region',
+        name: 'RegionPage',
+        component: RegionView,
+        meta: {
+          title: '行政区划',
+          permission: 'page:region:view'
         }
       },
       {

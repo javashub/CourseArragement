@@ -51,6 +51,13 @@ logging:
     com.lyk.coursearrange: info
     org.springframework.web: info
 
+app:
+  region:
+    # 行政区划数据源：省市区三级带编码 JSON，替换镜像时只需改本配置
+    source-url: https://raw.githubusercontent.com/modood/Administrative-divisions-of-China/master/dist/pca-code.json
+    connect-timeout-ms: 5000
+    read-timeout-ms: 30000
+
 aliyun:
   oss:
     file:
