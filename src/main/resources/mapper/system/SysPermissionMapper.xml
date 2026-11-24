@@ -8,6 +8,8 @@
         场景说明：
         1. 用户权限需要跨用户角色、角色权限、权限三张表关联。
         2. 这里使用 XML 保持 SQL 可读性和后续可维护性。
+        3. DISTINCT 与 ORDER BY 不能同时引用未出现在 SELECT 列表中的列（MySQL 3065），
+           权限编码集合本身无序消费（前端按 includes 判断），因此不排序。
     -->
     <select id="selectPermissionCodesByUserId" resultType="java.lang.String">
         select distinct p.permission_code
@@ -19,7 +21,6 @@
           and rp.deleted = 0
           and p.deleted = 0
           and p.status = 1
-        order by p.permission_type asc, p.id asc
     </select>
 
 </mapper>

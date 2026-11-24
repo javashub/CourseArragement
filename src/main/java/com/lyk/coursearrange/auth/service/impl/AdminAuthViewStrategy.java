@@ -33,8 +33,10 @@ public class AdminAuthViewStrategy implements AuthViewStrategy {
                 "page:campus:view",
                 "page:college:view",
                 "page:stage:view",
+                "page:region:view",
                 "page:config:view",
                 "page:rbac:view",
+                "btn:region:sync",
                 "btn:config:edit",
                 "btn:timetable:drag-adjust"
         );
@@ -229,6 +231,21 @@ public class AdminAuthViewStrategy implements AuthViewStrategy {
                                         .isHidden(0)
                                         .isKeepAlive(0)
                                         .sortNo(3)
+                                        .children(List.of())
+                                        .build(),
+                                MenuTreeVO.builder()
+                                        .id(54L)
+                                        .menuCode("region")
+                                        .parentId(5L)
+                                        .menuName("行政区划")
+                                        .menuType("MENU")
+                                        .routeName("RegionPage")
+                                        .routePath("/organization/region")
+                                        .componentPath("views/organization/RegionView.vue")
+                                        .permissionCode("page:region:view")
+                                        .isHidden(0)
+                                        .isKeepAlive(0)
+                                        .sortNo(4)
                                         .children(List.of())
                                         .build()
                         ))

@@ -24,6 +24,9 @@ class AdminAuthViewStrategyTest {
         assertTrue(permissions.contains("page:student:view"));
         assertTrue(permissions.contains("page:course:view"));
         assertTrue(permissions.contains("page:classroom:view"));
+        // 兜底权限必须与数据库菜单结构保持一致，行政区划也必须在列。
+        assertTrue(permissions.contains("page:region:view"));
+        assertTrue(permissions.contains("btn:region:sync"));
     }
 
     @Test
