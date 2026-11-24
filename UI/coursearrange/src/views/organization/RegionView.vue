@@ -1,8 +1,8 @@
 <template>
-  <section v-loading="loading" class="page-card">
+  <section class="page-card">
     <PageHeader
       title="行政区划"
-      description="省市区三级区划字典，供校区等组织数据引用，可从公开数据源手动更新。"
+      description="省 / 市 / 区县三级字典，从左至右逐级选择，供校区等组织数据引用。"
       :count="total"
     >
       <template #actions>
@@ -17,152 +17,194 @@
       </template>
     </PageHeader>
 
-    <el-card shadow="never" class="toolbar-card">
-      <div class="toolbar-grid">
-        <el-input
-          v-model="filters.keyword"
-          clearable
-          placeholder="搜索区划名称或代码，例如 北京市、110000"
-          @keyup.enter="handleSearch"
-          @clear="handleSearch"
-        />
-        <el-select v-model="filters.regionLevel" placeholder="选择层级">
-          <el-option label="全部层级" value="" />
-          <el-option label="省" :value="1" />
-          <el-option label="市" :value="2" />
-          <el-option label="区县" :value="3" />
-        </el-select>
-        <el-input
-          v-model="filters.parentCode"
-          clearable
-          placeholder="父级代码，例如 110000"
-          @keyup.enter="handleSearch"
-          @clear="handleSearch"
-        />
-        <div class="toolbar-actions">
-          <el-button @click="handleReset">重置</el-button>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-        </div>
-      </div>
-    </el-card>
+    <div v-if="selectedPath" class="region-path">
+      当前选择：{{ selectedPath }}
+    </div>
 
-    <el-card shadow="never">
-      <el-table :data="regions" stripe>
-        <template #empty>暂无数据，请先点击右上角更新</template>
-        <el-table-column prop="regionCode" label="区划代码" min-width="120" />
-        <el-table-column prop="regionName" label="名称" min-width="180" />
-        <el-table-column label="层级" width="100">
-          <template #default="{ row }">
-            <el-tag effect="plain" :type="levelTagType(row.regionLevel)">
-              {{ levelText(row.regionLevel) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="parentCode" label="父级代码" min-width="120" />
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">
-              {{ row.status === 1 ? '启用' : '停用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="updatedAt" label="更新时间" min-width="170" />
-      </el-table>
+    <div class="region-cascade">
+      <section class="cascade-panel">
+        <header class="cascade-panel__head">
+          <span>省</span>
+          <span class="cascade-panel__count">{{ provinces.length }}</span>
+        </header>
+        <el-scrollbar class="cascade-panel__body">
+          <ul v-loading="provinceLoading" class="cascade-list">
+            <template v-if="provinces.length">
+              <li
+                v-for="item in provinces"
+                :key="item.regionCode"
+                class="cascade-item"
+                :class="{ 'is-active': item.regionCode === selectedProvinceCode }"
+                @click="handleSelectProvince(item)"
+              >
+                <span class="cascade-item__name">{{ item.regionName }}</span>
+                <span class="cascade-item__code">{{ item.regionCode }}</span>
+              </li>
+            </template>
+            <li v-else class="cascade-empty">暂无数据，请先点击右上角更新行政区划</li>
+          </ul>
+        </el-scrollbar>
+      </section>
 
-      <div class="table-footer">
-        <el-pagination
-          background
-          layout="total, prev, pager, next"
-          :current-page="pageNum"
-          :page-size="pageSize"
-          :total="total"
-          @current-change="handlePageChange"
-        />
-      </div>
-    </el-card>
+      <section class="cascade-panel">
+        <header class="cascade-panel__head">
+          <span>市</span>
+          <span class="cascade-panel__count">{{ cities.length }}</span>
+        </header>
+        <el-scrollbar class="cascade-panel__body">
+          <ul v-loading="cityLoading" class="cascade-list">
+            <template v-if="cities.length">
+              <li
+                v-for="item in cities"
+                :key="item.regionCode"
+                class="cascade-item"
+                :class="{ 'is-active': item.regionCode === selectedCityCode }"
+                @click="handleSelectCity(item)"
+              >
+                <span class="cascade-item__name">{{ item.regionName }}</span>
+                <span class="cascade-item__code">{{ item.regionCode }}</span>
+              </li>
+            </template>
+            <li v-else class="cascade-empty">请先选择左侧省份</li>
+          </ul>
+        </el-scrollbar>
+      </section>
+
+      <section class="cascade-panel">
+        <header class="cascade-panel__head">
+          <span>区县</span>
+          <span class="cascade-panel__count">{{ districts.length }}</span>
+        </header>
+        <el-scrollbar class="cascade-panel__body">
+          <ul v-loading="districtLoading" class="cascade-list">
+            <template v-if="districts.length">
+              <li
+                v-for="item in districts"
+                :key="item.regionCode"
+                class="cascade-item"
+                :class="{ 'is-active': item.regionCode === selectedDistrictCode }"
+                @click="selectedDistrictCode = item.regionCode"
+              >
+                <span class="cascade-item__name">{{ item.regionName }}</span>
+                <span class="cascade-item__code">{{ item.regionCode }}</span>
+              </li>
+            </template>
+            <li v-else class="cascade-empty">请先选择左侧城市</li>
+          </ul>
+        </el-scrollbar>
+      </section>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import PageHeader from '@/components/PageHeader.vue';
-import { fetchRegionPage, syncRegionDivisions } from '@/api/modules/system';
+import { fetchRegionChildren, fetchRegionPage, syncRegionDivisions } from '@/api/modules/system';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
 
-const loading = ref(false);
-const syncing = ref(false);
-const regions = ref([]);
-const total = ref(0);
-const pageNum = ref(1);
-const pageSize = ref(10);
+/** 三列数据：省固定拉取 parentCode='0'，市 / 区县随上一级选择联动。 */
+const provinces = ref([]);
+const cities = ref([]);
+const districts = ref([]);
+const provinceLoading = ref(false);
+const cityLoading = ref(false);
+const districtLoading = ref(false);
 
-const filters = reactive({
-  keyword: '',
-  regionLevel: '',
-  parentCode: ''
+const selectedProvinceCode = ref('');
+const selectedCityCode = ref('');
+const selectedDistrictCode = ref('');
+
+/** 字典总量，仅用于页头计数徽标。 */
+const total = ref(0);
+const syncing = ref(false);
+
+/** 选中路径文案：省 / 市 / 区县，未选满时只拼已选部分。 */
+const selectedPath = computed(() => {
+  const parts = [];
+  const province = provinces.value.find((item) => item.regionCode === selectedProvinceCode.value);
+  const city = cities.value.find((item) => item.regionCode === selectedCityCode.value);
+  const district = districts.value.find((item) => item.regionCode === selectedDistrictCode.value);
+  if (province) {
+    parts.push(province.regionName);
+  }
+  if (city) {
+    parts.push(city.regionName);
+  }
+  if (district) {
+    parts.push(district.regionName);
+  }
+  return parts.join(' / ');
 });
 
-/** 层级代码转中文文案；未知层级回退为占位符，避免空白单元格。 */
-function levelText(level) {
-  return { 1: '省', 2: '市', 3: '区县' }[level] || '--';
-}
-
-/** 层级代码转 el-tag 配色，仅用 Element Plus 语义色，不引入新颜色。 */
-function levelTagType(level) {
-  return { 1: 'primary', 2: 'success', 3: 'warning' }[level] || 'info';
-}
-
 /**
- * 加载行政区划分页数据；失败时保留空列表态，
- * 错误提示已由请求拦截器统一弹出，这里只记录日志避免双重弹窗。
+ * 拉取某一级的直属下级列表；失败时保留空列表态，
+ * 错误提示由请求拦截器统一弹出，这里只记录日志避免双重弹窗。
+ * @param {string} parentCode 父级区划代码，省级传 '0'
+ * @returns {Promise<Array>} 下级区划数组
  */
-async function loadRegions() {
-  loading.value = true;
+async function loadChildren(parentCode) {
   try {
-    const response = await fetchRegionPage({
-      pageNum: pageNum.value,
-      pageSize: pageSize.value,
-      keyword: filters.keyword || undefined,
-      regionLevel: filters.regionLevel === '' ? undefined : filters.regionLevel,
-      parentCode: filters.parentCode || undefined
-    });
-    const pageData = response.data || {};
-    regions.value = pageData.records || [];
-    total.value = pageData.total || 0;
+    const response = await fetchRegionChildren(parentCode);
+    return response.data || [];
   } catch (error) {
-    // 拦截器已向用户提示失败原因，列表维持空态即可。
-    console.error('加载行政区划失败', error);
-  } finally {
-    loading.value = false;
+    // 拦截器已向用户提示失败原因，返回空数组维持面板空态即可。
+    console.error('加载行政区划下级失败', parentCode, error);
+    return [];
   }
 }
 
-/** 触发筛选查询：回到第一页再拉取，避免停留在越页码。 */
-function handleSearch() {
-  pageNum.value = 1;
-  loadRegions();
+/** 加载省级列表与字典总量。 */
+async function loadProvinces() {
+  provinceLoading.value = true;
+  provinces.value = await loadChildren('0');
+  provinceLoading.value = false;
 }
 
-/** 清空筛选条件并重新查询。 */
-function handleReset() {
-  filters.keyword = '';
-  filters.regionLevel = '';
-  filters.parentCode = '';
-  handleSearch();
+/** 字典总量只取分页接口的 total，不拉明细。 */
+async function loadTotal() {
+  try {
+    const response = await fetchRegionPage({ pageNum: 1, pageSize: 1 });
+    total.value = response.data?.total || 0;
+  } catch (error) {
+    console.error('加载行政区划总量失败', error);
+  }
 }
 
-/** 分页切换。 */
-function handlePageChange(page) {
-  pageNum.value = page;
-  loadRegions();
+/**
+ * 选择省份：清空右侧两级选择与数据，再拉取该省城市。
+ * @param {{regionCode: string}} province 选中的省级节点
+ */
+async function handleSelectProvince(province) {
+  selectedProvinceCode.value = province.regionCode;
+  selectedCityCode.value = '';
+  selectedDistrictCode.value = '';
+  cities.value = [];
+  districts.value = [];
+  cityLoading.value = true;
+  cities.value = await loadChildren(province.regionCode);
+  cityLoading.value = false;
+}
+
+/**
+ * 选择城市：清空区县选择与数据，再拉取该市区县。
+ * @param {{regionCode: string}} city 选中的市级节点
+ */
+async function handleSelectCity(city) {
+  selectedCityCode.value = city.regionCode;
+  selectedDistrictCode.value = '';
+  districts.value = [];
+  districtLoading.value = true;
+  districts.value = await loadChildren(city.regionCode);
+  districtLoading.value = false;
 }
 
 /**
  * 手动触发行政区划更新：二次确认后调用同步接口，
- * 成功展示新增 / 更新 / 停用条数与耗时并刷新列表。
+ * 成功展示新增 / 更新 / 停用条数与耗时，并重置三列重新拉取省级数据。
  */
 async function handleSync() {
   // 取消确认时静默返回，不当作错误处理。
@@ -183,10 +225,15 @@ async function handleSync() {
     ElMessage.success(
       `新增 ${result.inserted ?? 0} / 更新 ${result.updated ?? 0} / 停用 ${result.disabled ?? 0}，耗时 ${result.durationMs ?? 0} ms`
     );
-    pageNum.value = 1;
-    await loadRegions();
+    // 同步后字典整体变化，清空三列选择并重新加载。
+    selectedProvinceCode.value = '';
+    selectedCityCode.value = '';
+    selectedDistrictCode.value = '';
+    cities.value = [];
+    districts.value = [];
+    await Promise.all([loadProvinces(), loadTotal()]);
   } catch (error) {
-    // 失败提示已由拦截器统一弹出，这里只记录日志；字典与列表保持原状。
+    // 失败提示已由拦截器统一弹出，这里只记录日志；字典与面板保持原状。
     console.error('更新行政区划失败', error);
   } finally {
     syncing.value = false;
@@ -194,7 +241,8 @@ async function handleSync() {
 }
 
 onMounted(() => {
-  loadRegions();
+  loadProvinces();
+  loadTotal();
 });
 </script>
 
@@ -205,35 +253,106 @@ onMounted(() => {
   gap: 12px;
 }
 
-.toolbar-card {
-  margin-bottom: 0;
+.region-path {
+  color: var(--muted);
+  font-size: 12.5px;
 }
 
-.toolbar-grid {
+.region-cascade {
   display: grid;
-  grid-template-columns: minmax(280px, 1.5fr) 160px minmax(220px, 1fr) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
-.toolbar-actions {
+.cascade-panel {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
 }
 
-.table-footer {
+.cascade-panel__head {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.cascade-panel__count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cascade-panel__body {
+  height: 480px;
+}
+
+.cascade-list {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+
+.cascade-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.cascade-item:hover {
+  background: var(--bg);
+}
+
+.cascade-item.is-active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.cascade-item__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cascade-item__code {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cascade-item.is-active .cascade-item__code {
+  color: var(--brand);
+}
+
+.cascade-empty {
+  padding: 24px 12px;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
-  .toolbar-grid {
+  .region-cascade {
     grid-template-columns: 1fr;
   }
 
-  .toolbar-actions {
-    justify-content: flex-start;
+  .cascade-panel__body {
+    height: 260px;
   }
 }
 </style>
