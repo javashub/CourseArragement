@@ -58,6 +58,8 @@ class AuthFacadeServiceImplTest {
         assertEquals("daylight", AuthFacadeServiceImpl.normalizeUiTheme("daylight"));
         assertEquals("deep-teal", AuthFacadeServiceImpl.normalizeUiTheme("DEEP-TEAL"));
         assertEquals("top-nav", AuthFacadeServiceImpl.normalizeUiTheme(" Top-Nav "));
+        assertEquals("graphite", AuthFacadeServiceImpl.normalizeUiTheme("GRAPHITE"));
+        assertEquals("emerald", AuthFacadeServiceImpl.normalizeUiTheme("EMERALD"));
     }
 
     @Test

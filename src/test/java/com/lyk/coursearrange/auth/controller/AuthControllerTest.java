@@ -92,7 +92,7 @@ class AuthControllerTest {
         AuthController controller = new AuthController(authFacadeService, authLoginService);
         when(authFacadeService.updateCurrentUiTheme("dark"))
                 .thenThrow(new BusinessException(ResultCode.BAD_REQUEST,
-                        "不支持的界面主题：dark，仅支持 daylight/deep-teal/top-nav"));
+                        "不支持的界面主题：dark，仅支持 daylight/deep-teal/top-nav/graphite/emerald"));
 
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> controller.updateUiTheme(uiThemeRequest("dark")));

@@ -69,10 +69,12 @@ public interface SystemConstants {
         String DAYLIGHT = "daylight";
         String DEEP_TEAL = "deep-teal";
         String TOP_NAV = "top-nav";
+        String GRAPHITE = "graphite";
+        String EMERALD = "emerald";
 
         /**
          * 当前允许持久化的主题白名单。
          */
-        List<String> SUPPORTED = List.of(DAYLIGHT, DEEP_TEAL, TOP_NAV);
+        List<String> SUPPORTED = List.of(DAYLIGHT, DEEP_TEAL, TOP_NAV, GRAPHITE, EMERALD);
     }
 }

@@ -605,3 +605,79 @@ select {
     border-radius: 12px;
   }
 }
+
+/* 主题 D：石墨银蓝 */
+html[data-theme='graphite'] {
+  --brand: #2563eb;
+  --brand-strong: #1d4ed8;
+  --brand-soft: #e8f0ff;
+  --grad: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --muted: #566b85;
+  --muted-2: #5b7089;
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --line: #e2e8f0;
+  --line-2: #cbd5e1;
+  --sider-bg: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  --sider-line: rgb(255 255 255 / 7%);
+  --sider-title: #f1f5f9;
+  --sider-ink: #b8c4d4;
+  --sider-label: #71809a;
+  --sider-hover: rgb(255 255 255 / 6%);
+  --sider-active-bg: linear-gradient(90deg, rgb(37 99 235 / 38%), rgb(14 165 233 / 18%));
+  --sider-active-ink: #ffffff;
+  --sider-active-bar: #0ea5e9;
+  --sider-shadow: 12px 0 32px rgb(15 23 42 / 14%);
+  --row: 54px;
+  --el-color-primary: #2563eb;
+  --el-color-primary-light-3: #5b8def;
+  --el-color-primary-light-5: #8aabf5;
+  --el-color-primary-light-7: #b9c9f9;
+  --el-color-primary-light-8: #d0dcfb;
+  --el-color-primary-light-9: #e8eefc;
+  --el-color-primary-dark-2: #1d4ed8;
+}
+
+/* 主题 F：松石苔绿 */
+html[data-theme='emerald'] {
+  --brand: #0f766e;
+  --brand-strong: #0b5f58;
+  --brand-soft: #e6f7f2;
+  --grad: linear-gradient(135deg, #0f766e 0%, #10b981 100%);
+  --ink: #0f2e2a;
+  --ink-2: #1f4d45;
+  --muted: #4f6f68;
+  --muted-2: #5b7a73;
+  --bg: #f2faf7;
+  --surface: #ffffff;
+  --surface-2: #f8fdfb;
+  --line: #d9efe8;
+  --line-2: #c3e5da;
+  --sider-bg: linear-gradient(180deg, #0b3b35 0%, #115e56 100%);
+  --sider-line: rgb(255 255 255 / 8%);
+  --sider-title: #ecfdf5;
+  --sider-ink: #b7d6ce;
+  --sider-label: #7fa39a;
+  --sider-hover: rgb(255 255 255 / 7%);
+  --sider-active-bg: linear-gradient(90deg, rgb(15 118 110 / 45%), rgb(16 185 129 / 20%));
+  --sider-active-ink: #ffffff;
+  --sider-active-bar: #34d399;
+  --sider-shadow: 12px 0 32px rgb(11 59 53 / 20%);
+  --row: 54px;
+  --el-color-primary: #0f766e;
+  --el-color-primary-light-3: #4f9a93;
+  --el-color-primary-light-5: #87bdb6;
+  --el-color-primary-light-7: #bfe0d9;
+  --el-color-primary-light-8: #d5ebe6;
+  --el-color-primary-light-9: #e7f3f0;
+  --el-color-primary-dark-2: #0b5f58;
+}
+
+/* 6 项主题下拉在低分辨率下可滚动 */
+.theme-switcher__popper .el-dropdown-menu {
+  max-height: 340px;
+  overflow-y: auto;
+}

@@ -3,6 +3,7 @@
     ref="themeDropdownRef"
     trigger="click"
     placement="bottom-end"
+    popper-class="theme-switcher__popper"
     @command="handleSelect"
   >
     <button

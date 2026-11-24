@@ -5,6 +5,8 @@ import { getStorage, setStorage } from '@/utils/storage';
 export const THEME_DAYLIGHT = 'daylight';
 export const THEME_DEEP_TEAL = 'deep-teal';
 export const THEME_TOP_NAV = 'top-nav';
+export const THEME_GRAPHITE = 'graphite';
+export const THEME_EMERALD = 'emerald';
 export const DEFAULT_THEME = THEME_DAYLIGHT;
 
 // 主题 = 色板 + 导航布局，共用一个 id；后端只持久化这个 id。
@@ -29,6 +31,20 @@ export const THEME_OPTIONS = [
     description: '菜单收到顶栏 · 表格更宽',
     layout: 'top-nav',
     swatch: 'linear-gradient(135deg, #165dff 0%, #0ea5a4 100%)'
+  },
+  {
+    value: THEME_GRAPHITE,
+    label: '石墨银蓝',
+    description: '石墨侧栏 · 天蓝强调',
+    layout: 'sidebar',
+    swatch: 'linear-gradient(135deg, #0f172a 0%, #2563eb 100%)'
+  },
+  {
+    value: THEME_EMERALD,
+    label: '松石苔绿',
+    description: '墨绿侧栏 · 薄荷强调',
+    layout: 'sidebar',
+    swatch: 'linear-gradient(135deg, #0b3b35 0%, #10b981 100%)'
   }
 ];
 
