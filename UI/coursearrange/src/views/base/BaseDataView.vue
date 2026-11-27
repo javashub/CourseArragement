@@ -321,9 +321,11 @@
         </div>
     </el-card>
 
-    <el-dialog v-model="teacherDialogVisible" :title="teacherForm.id ? '编辑教师' : '新增教师'" width="680px" append-to-body>
+    <!-- 四个表单弹窗统一挂接 A 方案紧凑布局（class="compact-form"）：
+         网格列数/间距、form-item 与控件高度、footer 常驻均由全局 CSS 提供。 -->
+    <el-dialog v-model="teacherDialogVisible" class="compact-form" :title="teacherForm.id ? '编辑教师' : '新增教师'" width="680px" append-to-body>
       <el-form :model="teacherForm" label-position="top">
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="教师编号">
             <div class="inline-field">
               <el-input v-model="teacherForm.teacherNo" placeholder="例如 T2026001" />
@@ -334,7 +336,7 @@
             <el-input disabled value="自动使用教师编号作为登录账号" placeholder="自动使用教师编号作为登录账号" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="真实姓名">
             <el-input v-model="teacherForm.teacherName" placeholder="例如 张老师" />
           </el-form-item>
@@ -342,7 +344,7 @@
             <el-input v-model="teacherForm.jobtitle" placeholder="例如 讲师、副教授" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="授课说明">
             <el-input v-model="teacherForm.teach" placeholder="例如 主授高等数学，兼授线性代数" />
           </el-form-item>
@@ -353,7 +355,7 @@
             </el-select>
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="联系电话">
             <el-input v-model="teacherForm.telephone" placeholder="例如 13800000000" />
           </el-form-item>
@@ -361,31 +363,29 @@
             <el-input v-model="teacherForm.email" placeholder="例如 teacher@school.edu.cn" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="周上限课时">
-            <el-input-number v-model="teacherForm.maxWeekHours" :min="0" :max="40" controls-position="right" />
+            <el-input-number v-model="teacherForm.maxWeekHours" :min="0" :max="40" controls-position="right" placeholder="例如 12，选填" />
           </el-form-item>
           <el-form-item label="日上限课时">
-            <el-input-number v-model="teacherForm.maxDayHours" :min="0" :max="12" controls-position="right" />
+            <el-input-number v-model="teacherForm.maxDayHours" :min="0" :max="12" controls-position="right" placeholder="例如 4，选填" />
           </el-form-item>
         </div>
-        <div class="teacher-constraint-panel">
-          <div class="teacher-constraint-panel__copy">
-            <div class="teacher-constraint-panel__title">教师禁排时间</div>
-            <div class="teacher-constraint-panel__text">
-              使用两位时间编码配置教师不能上课的时间片，例如 `01, 06, 11`。自动排课会避开这些时间，固定排课也会在保存时校验。
-            </div>
+        <!-- 教师禁排时间：只保留短分组标题，示例与格式交给 placeholder。 -->
+        <div class="compact-form-section">
+          <div class="compact-form-section__header">
+            <div class="compact-form-section__title">教师禁排时间</div>
           </div>
           <el-form-item label="禁排时间编码">
             <el-input
               v-model="teacherForm.forbiddenTimeSlotsText"
-              placeholder="例如 01, 06, 11"
+              placeholder="例如 01, 06, 11；多个编码用逗号分隔"
             />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="状态">
-            <el-radio-group v-model="teacherForm.status">
+            <el-radio-group v-model="teacherForm.status" class="academy-radio-group">
               <el-radio :value="1">启用</el-radio>
               <el-radio :value="0">停用</el-radio>
             </el-radio-group>
@@ -402,9 +402,9 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="studentDialogVisible" :title="studentForm.id ? '编辑学生' : '新增学生'" width="700px" append-to-body>
+    <el-dialog v-model="studentDialogVisible" class="compact-form" :title="studentForm.id ? '编辑学生' : '新增学生'" width="700px" append-to-body>
       <el-form :model="studentForm" label-position="top">
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="学号">
             <div class="inline-field">
               <el-input v-model="studentForm.studentNo" placeholder="例如 2026020001" />
@@ -415,7 +415,7 @@
             <el-input disabled value="自动使用学号作为登录账号" placeholder="自动使用学号作为登录账号" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="真实姓名">
             <el-input v-model="studentForm.studentName" placeholder="例如 李同学" />
           </el-form-item>
@@ -423,18 +423,18 @@
             <el-input v-model="studentForm.grade" placeholder="例如 2024级" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="班级">
             <el-input v-model="studentForm.classNo" placeholder="例如 2024-1 班" />
           </el-form-item>
           <el-form-item label="状态">
-            <el-radio-group v-model="studentForm.status">
+            <el-radio-group v-model="studentForm.status" class="academy-radio-group">
               <el-radio :value="1">启用</el-radio>
               <el-radio :value="0">停用</el-radio>
             </el-radio-group>
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="联系电话">
             <el-input v-model="studentForm.telephone" placeholder="例如 13800000000" />
           </el-form-item>
@@ -452,9 +452,9 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="courseDialogVisible" :title="courseForm.id ? '编辑课程' : '新增课程'" width="680px" append-to-body>
+    <el-dialog v-model="courseDialogVisible" class="compact-form" :title="courseForm.id ? '编辑课程' : '新增课程'" width="680px" append-to-body>
       <el-form :model="courseForm" label-position="top">
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="课程编号">
             <div class="inline-field">
               <el-input v-model="courseForm.courseCode" placeholder="例如 C10001" />
@@ -465,7 +465,7 @@
             <el-input v-model="courseForm.courseName" placeholder="例如 高等数学" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="课程简称">
             <el-input v-model="courseForm.courseShortName" placeholder="例如 高数、大学英语" />
           </el-form-item>
@@ -479,17 +479,17 @@
             </el-select>
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="总课时">
-            <el-input-number v-model="courseForm.totalHours" :min="0" :max="999" controls-position="right" />
+            <el-input-number v-model="courseForm.totalHours" :min="0" :max="999" controls-position="right" placeholder="例如 64，选填" />
           </el-form-item>
           <el-form-item label="周课时">
-            <el-input-number v-model="courseForm.weekHours" :min="0" :max="30" controls-position="right" />
+            <el-input-number v-model="courseForm.weekHours" :min="0" :max="30" controls-position="right" placeholder="例如 4，选填" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="专用教室">
-            <el-radio-group v-model="courseForm.needSpecialRoom">
+            <el-radio-group v-model="courseForm.needSpecialRoom" class="academy-radio-group">
               <el-radio :value="0">不需要</el-radio>
               <el-radio :value="1">需要</el-radio>
             </el-radio-group>
@@ -498,9 +498,9 @@
             <el-input v-model="courseForm.roomType" placeholder="例如 NORMAL、LAB、COMPUTER" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="状态">
-            <el-radio-group v-model="courseForm.status">
+            <el-radio-group v-model="courseForm.status" class="academy-radio-group">
               <el-radio :value="1">启用</el-radio>
               <el-radio :value="0">停用</el-radio>
             </el-radio-group>
@@ -517,9 +517,9 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="classroomDialogVisible" :title="classroomForm.id ? '编辑教室' : '新增教室'" width="680px" append-to-body>
+    <el-dialog v-model="classroomDialogVisible" class="compact-form" :title="classroomForm.id ? '编辑教室' : '新增教室'" width="680px" append-to-body>
       <el-form :model="classroomForm" label-position="top">
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="教室编号">
             <el-input v-model="classroomForm.classroomCode" placeholder="例如 A101、08-302" />
           </el-form-item>
@@ -527,7 +527,7 @@
             <el-input v-model="classroomForm.classroomName" placeholder="例如 第一多媒体教室" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="教学楼">
             <el-select v-model="classroomForm.buildingCode" clearable filterable placeholder="例如 B08 实验楼">
               <el-option
@@ -539,15 +539,15 @@
             </el-select>
           </el-form-item>
           <el-form-item label="座位数">
-            <el-input-number v-model="classroomForm.seatCount" :min="0" :max="500" controls-position="right" />
+            <el-input-number v-model="classroomForm.seatCount" :min="0" :max="500" controls-position="right" placeholder="例如 60，选填" />
           </el-form-item>
         </div>
-        <div class="form-grid">
+        <div class="form-grid compact-form-grid--two">
           <el-form-item label="教室类型">
             <el-input v-model="classroomForm.roomType" placeholder="例如 NORMAL、LAB、COMPUTER" />
           </el-form-item>
           <el-form-item label="状态">
-            <el-radio-group v-model="classroomForm.status">
+            <el-radio-group v-model="classroomForm.status" class="academy-radio-group">
               <el-radio :value="1">启用</el-radio>
               <el-radio :value="0">停用</el-radio>
             </el-radio-group>
@@ -1383,11 +1383,8 @@ onMounted(async () => {
   border-radius: var(--radius-control);
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
+/* 表单网格统一走全局 .form-grid / .compact-form-grid--two，
+   此处不再重复声明 display / 列数 / 间距，避免 scoped 覆盖紧凑规范。 */
 
 .inline-field {
   display: grid;
@@ -1395,30 +1392,6 @@ onMounted(async () => {
   gap: 10px;
 }
 
-.teacher-constraint-panel {
-  margin-bottom: 18px;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: linear-gradient(145deg, var(--surface-2) 0%, var(--brand-soft) 100%);
-}
-
-.teacher-constraint-panel__copy {
-  margin-bottom: 12px;
-}
-
-.teacher-constraint-panel__title {
-  margin-bottom: 6px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.teacher-constraint-panel__text {
-  font-size: 12.5px;
-  line-height: 1.7;
-  color: var(--muted-2);
-}
 
 :deep(.primary-action.el-button) {
   border: none;
@@ -1443,7 +1416,8 @@ onMounted(async () => {
     margin-bottom: 12px;
   }
 
-  .form-grid {
+  /* 窄屏时弹窗网格降为单列（页面特有的响应式列数，保留）。 */
+  .form-grid.compact-form-grid--two {
     grid-template-columns: 1fr;
   }
 

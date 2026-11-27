@@ -87,26 +87,19 @@
       append-to-body
       class="academy-form-dialog"
     >
-      <div class="academy-form-intro">
-        <div class="academy-form-intro__eyebrow">College Registry</div>
-        <div class="academy-form-intro__title">{{ collegeForm.id ? '更新学院档案' : '建立学院档案' }}</div>
-        <div class="academy-form-intro__text">
-          学院会作为教师归属、课程组织和跨学院排课范围的基础节点，建议先明确所属校区与管理责任人。
-        </div>
-      </div>
-
+      <!-- A 方案紧凑表单：删除 intro banner 与分组描述，字段统一 2 列网格，示例写进 placeholder。 -->
       <el-form ref="formRef" :model="collegeForm" :rules="formRules" label-position="top" class="academy-form">
         <div class="academy-form-section">
           <div class="academy-form-section__header">
             <div class="academy-form-section__title">学院身份</div>
-            <div class="academy-form-section__desc">维护学院在系统内的唯一编号、名称与可用状态。</div>
           </div>
+          <!-- 2 列紧凑网格：编码 / 名称 同行，示例与格式全部写进 placeholder。 -->
           <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="学院编码" prop="collegeCode">
-              <el-input v-model="collegeForm.collegeCode" placeholder="例如 COLLEGE_CS、ARTS_SCHOOL" />
+              <el-input v-model="collegeForm.collegeCode" placeholder="例如 COLLEGE_CS" />
             </el-form-item>
             <el-form-item label="学院名称" prop="collegeName">
-              <el-input v-model="collegeForm.collegeName" placeholder="例如 信息工程学院、文学院" />
+              <el-input v-model="collegeForm.collegeName" placeholder="例如 信息工程学院" />
             </el-form-item>
           </div>
         </div>
@@ -114,11 +107,10 @@
         <div class="academy-form-section">
           <div class="academy-form-section__header">
             <div class="academy-form-section__title">归属关系</div>
-            <div class="academy-form-section__desc">指定学院挂接的校区与负责人，便于后续组织权限和资源汇总。</div>
           </div>
           <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="所属校区">
-              <el-select v-model="collegeForm.campusId" clearable placeholder="例如 主校区">
+              <el-select v-model="collegeForm.campusId" clearable placeholder="选择所属校区">
                 <el-option
                   v-for="campus in campusOptions"
                   :key="campus.id"
@@ -128,7 +120,13 @@
               </el-select>
             </el-form-item>
             <el-form-item label="负责人用户ID">
-              <el-input-number v-model="collegeForm.deanUserId" :min="0" :max="999999999" controls-position="right" />
+              <el-input-number
+                v-model="collegeForm.deanUserId"
+                :min="0"
+                :max="999999999"
+                controls-position="right"
+                placeholder="选填，例如 1001"
+              />
             </el-form-item>
           </div>
         </div>
@@ -136,11 +134,16 @@
         <div class="academy-form-section">
           <div class="academy-form-section__header">
             <div class="academy-form-section__title">展示与说明</div>
-            <div class="academy-form-section__desc">通过排序和备注补充学院的业务定位与组织边界。</div>
           </div>
           <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="排序">
-              <el-input-number v-model="collegeForm.sortNo" :min="0" :max="9999" controls-position="right" />
+              <el-input-number
+                v-model="collegeForm.sortNo"
+                :min="0"
+                :max="9999"
+                controls-position="right"
+                placeholder="0-9999，例如 10"
+              />
             </el-form-item>
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="collegeForm.status" class="academy-radio-group">
@@ -154,7 +157,7 @@
               v-model="collegeForm.remark"
               type="textarea"
               :rows="3"
-              placeholder="例如 允许教师跨学院授课，需要后续开启跨学院开关"
+              placeholder="例如 允许教师跨学院授课"
             />
           </el-form-item>
         </div>
@@ -264,12 +267,14 @@ function handlePageChange(page) {
   loadColleges();
 }
 
+/** 新增学院：重置为默认表单并清除上一次的字段校验提示。 */
 function handleCreate() {
   collegeForm.value = createDefaultForm();
   dialogVisible.value = true;
   formRef.value?.clearValidate();
 }
 
+/** 编辑学院：按详情接口回填表单（字段名与提交载荷保持不变）。 */
 async function handleEdit(row) {
   const response = await fetchCollegeDetail(row.id);
   collegeForm.value = {
@@ -280,6 +285,7 @@ async function handleEdit(row) {
   formRef.value?.clearValidate();
 }
 
+/** 保存学院：校验通过后调用原保存接口，成功后提示并刷新列表。 */
 async function submitForm() {
   const valid = await formRef.value.validate().catch(() => false);
   if (!valid) {
@@ -296,6 +302,7 @@ async function submitForm() {
   }
 }
 
+/** 删除学院：二次确认后调用原删除接口并刷新列表。 */
 async function handleDelete(row) {
   await ElMessageBox.confirm(`确认删除学院“${row.collegeName}”吗？`, '删除确认', {
     type: 'warning'

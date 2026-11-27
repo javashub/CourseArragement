@@ -91,55 +91,44 @@
       />
     </div>
 
-    <!-- 角色编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑角色' : '新增角色'" width="560px" append-to-body>
+    <!-- 角色编辑弹窗：挂接 A 方案紧凑布局，字段改用全局 2 列紧凑网格，
+         label 与示例/格式提示保留，v-model、校验与提交逻辑不变。 -->
+    <el-dialog v-model="dialogVisible" class="compact-form" :title="form.id ? '编辑角色' : '新增角色'" width="560px" append-to-body>
       <el-form :model="form" label-position="top">
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="角色编码">
-              <el-input v-model="form.roleCode" placeholder="例如 ADMIN" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="角色名称">
-              <el-input v-model="form.roleName" placeholder="请输入角色名称" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="角色类型">
-              <el-select v-model="form.roleType" style="width: 100%;">
-                <el-option label="系统角色" value="SYSTEM" />
-                <el-option label="业务角色" value="BUSINESS" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="数据范围">
-              <el-select v-model="form.dataScopeType" style="width: 100%;">
-                <el-option label="全部" value="ALL" />
-                <el-option label="校区" value="CAMPUS" />
-                <el-option label="学院" value="COLLEGE" />
-                <el-option label="本人" value="SELF" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="排序">
-              <el-input-number v-model="form.sortNo" :min="1" :max="999" style="width: 100%;" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="角色编码">
+            <el-input v-model="form.roleCode" placeholder="例如 ADMIN" />
+          </el-form-item>
+          <el-form-item label="角色名称">
+            <el-input v-model="form.roleName" placeholder="例如 教务管理员" />
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="角色类型">
+            <el-select v-model="form.roleType" style="width: 100%;" placeholder="例如 BUSINESS 业务角色">
+              <el-option label="系统角色" value="SYSTEM" />
+              <el-option label="业务角色" value="BUSINESS" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="数据范围">
+            <el-select v-model="form.dataScopeType" style="width: 100%;" placeholder="例如 ALL 全部">
+              <el-option label="全部" value="ALL" />
+              <el-option label="校区" value="CAMPUS" />
+              <el-option label="学院" value="COLLEGE" />
+              <el-option label="本人" value="SELF" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="排序">
+            <el-input-number v-model="form.sortNo" :min="1" :max="999" style="width: 100%;" placeholder="例如 99" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" />
+          </el-form-item>
+        </div>
         <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="例如 负责排课与基础数据，选填" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -257,6 +246,8 @@ onMounted(() => loadData());
 </script>
 
 <style scoped>
+/* 弹窗表单网格统一走全局 .form-grid + .compact-form-grid--two，
+   页面 scoped 不再声明列宽与间距；form-item margin 与控件高度由全局提供。 */
 .module-card {
   background: #fff;
 }

@@ -111,6 +111,7 @@
 - 主题只影响外壳与页头；组件里不要写主题判断分支，靠 CSS 变量自动跟随。
 - **课表冻结**：`views/course/ScheduleView.vue` 的 `COURSE_PALETTE`、`.grid-*`、`.time-*`、`.course-*` 与 `.timetable-wrapper` 以下样式一行都不许改，行高 108px、圆角 18px、12 色板必须保持不变；课表页只允许压缩页头为单行工具条。
 - Element Plus 覆写走全局 CSS 变量与 `:deep()`；`.academy-form-dialog` 等类名保持不变。
+- **弹窗表单规范（A 方案紧凑布局）**：新增/编辑类弹窗 MUST 用 `src/styles/index.css` 的 `.academy-form-dialog`（组织页沿用）或 `.compact-form`（其余页面挂接）。字段按 2/3 列网格排布、label 在控件上方、控件高 30–32px、分组只留一行短标题 + 细分隔线。MUST NOT 在弹窗内写英文 eyebrow、大标题、段落说明或分组描述；示例与格式全交给输入框 `placeholder`。内容区超长时只滚 `el-dialog__body`，底部「保存 / 取消」MUST 常驻。字段名、校验、接口与载荷不得因布局改造而改变。
 
 ## 样式组织
 

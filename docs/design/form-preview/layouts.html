@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>表单布局候选</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --brand: #165dff; --teal: #0ea5a4; --grad: linear-gradient(135deg,#165dff,#0ea5a4);
+    --ink: #17263d; --ink-2: #2f4a6b; --muted: #566b85; --muted-2: #5b7089; --muted-3: #9fafc1;
+    --line: #e4edf7; --line-2: #d7e5f4; --bg: #f3f8fd; --surface: #ffffff; --surface-2: #f8fbff;
+    --brand-soft: #ebf3ff; --radius: 14px; --radius-control: 8px;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans SC', 'Noto Sans SC', sans-serif;
+  }
+  body { padding: 28px 32px 40px; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 13px; }
+  h1 { font-size: 20px; font-weight: 600; }
+  .sub { margin-top: 6px; color: var(--muted); font-size: 12.5px; line-height: 1.7; max-width: 980px; }
+  .board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
+  .card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: 0 12px 30px rgb(17 34 68 / 7%); overflow: hidden; }
+  .card__head { padding: 14px 18px 12px; border-bottom: 1px solid var(--line); }
+  .card__title { font-size: 15px; font-weight: 600; }
+  .card__tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 10.5px; font-weight: 600; vertical-align: 1px; }
+  .card__desc { margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .mock { padding: 16px 18px 18px; background: var(--bg); }
+  .dlg { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: 0 20px 44px rgb(17 34 68 / 12%); overflow: hidden; }
+  .dlg__head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .dlg__title { font-size: 14px; font-weight: 600; }
+  .dlg__close { color: var(--muted-3); font-size: 16px; }
+  .dlg__body { padding: 14px 16px; }
+  .dlg__foot { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); }
+  .btn { height: 30px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: var(--radius-control); background: var(--surface); color: var(--ink-2); font-family: var(--font); font-size: 12.5px; }
+  .btn--primary { border-color: transparent; background: var(--grad); color: #fff; font-weight: 600; }
+  .f { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .f > label { color: var(--ink-2); font-size: 11.5px; font-weight: 600; }
+  .f > .box { display: flex; align-items: center; height: 30px; padding: 0 9px; border: 1px solid var(--line-2); border-radius: var(--radius-control); background: var(--surface); color: var(--muted-3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .f.req > label::after { content: ' *'; color: #e08300; }
+  .f > .box.filled { color: var(--ink); }
+  .grid { display: grid; gap: 12px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .sect { font-size: 11.5px; font-weight: 700; color: var(--brand); letter-spacing: .02em; padding: 2px 0 0; }
+  .hairline { height: 1px; background: var(--line); margin: 2px 0 10px; }
+
+  /* A 双栏紧凑 */
+  .a-intro { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-control); background: var(--brand-soft); color: var(--ink-2); font-size: 11.5px; margin-bottom: 12px; }
+  .a-intro i { width: 4px; height: 14px; border-radius: 2px; background: var(--grad); }
+
+  /* B 标签页 */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  .tab { position: relative; padding: 7px 12px; color: var(--muted); font-size: 12px; cursor: pointer; }
+  .tab.on { color: var(--brand); font-weight: 600; }
+  .tab.on::after { position: absolute; bottom: -1px; left: 8px; right: 8px; height: 2px; border-radius: 2px; background: var(--grad); content: ''; }
+  .tab .dot { display: inline-block; margin-left: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--teal); vertical-align: 2px; }
+
+  /* C 抽屉 */
+  .drawer { display: grid; grid-template-columns: 1fr; }
+  .drawer .dlg__head { background: var(--surface-2); }
+  .drawer .dlg__body { padding: 0; }
+  .drawer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .drawer-cell { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .drawer-cell:nth-child(odd) { border-right: 1px solid var(--line); }
+  .drawer-cell.full { grid-column: 1 / -1; }
+  .drawer-foot { position: sticky; bottom: 0; }
+
+  /* D 左侧步骤 */
+  .steps { display: grid; grid-template-columns: 116px minmax(0, 1fr); }
+  .steps__nav { border-right: 1px solid var(--line); background: var(--surface-2); padding: 12px 0; }
+  .step { display: flex; align-items: center; gap: 8px; padding: 9px 12px; color: var(--muted); font-size: 12px; }
+  .step.on { color: var(--brand); font-weight: 600; background: var(--brand-soft); }
+  .step__n { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line-2); font-size: 10px; flex: 0 0 18px; }
+  .step.on .step__n { border-color: transparent; background: var(--grad); color: #fff; }
+  .steps__main { padding: 14px 16px; }
+  .steps__hint { margin-top: 10px; color: var(--muted); font-size: 11.5px; }
+
+  .metric { display: flex; gap: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line-2); color: var(--muted-2); font-size: 11px; }
+  .metric b { color: var(--ink-2); font-weight: 600; }
+  .foot-note { margin-top: 18px; padding: 14px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--muted); font-size: 12px; line-height: 1.8; }
+  .foot-note b { color: var(--ink); }
+</style>
+</head>
+<body>
+  <h1>表单弹窗布局候选（以「新增校区」10 个字段为样例）</h1>
+  <p class="sub">共同目标：1440×900 下弹窗高度 ≤ 620px、所有字段一屏可见、底部操作栏常驻不随滚动消失。四套都沿用当前冷白主题 token（--brand / --line / --surface / --radius），只改「信息密度与分组方式」，不改课表、不改业务字段。</p>
+
+  <div class="board">
+    <!-- A -->
+    <section class="card">
+      <div class="card__head">
+        <span class="card__title">A · 双栏紧凑 + 轻分组</span><span class="card__tag">改动最小</span>
+        <div class="card__desc">删掉大段 banner 与分组卡片，只留一行 10px 分组标题 + 细分隔线；字段 2 列甚至 3 列排布，label 在上方但行高压到 30px。</div>
+      </div>
+      <div class="mock">
+        <div class="dlg">
+          <div class="dlg__head"><span class="dlg__title">新增校区</span><span class="dlg__close">×</span></div>
+          <div class="dlg__body">
+            <div class="a-intro"><i></i>带 <b>*</b> 为必填；编码保存后不可修改</div>
+            <div class="sect">基础信息</div><div class="hairline"></div>
+            <div class="grid g2">
+              <div class="f req"><label>校区编码</label><div class="box filled">CAMPUS_MAIN</div></div>
+              <div class="f req"><label>校区名称</label><div class="box filled">主校区</div></div>
+              <div class="f req"><label>校区类型</label><div class="box filled">主校区</div></div>
+              <div class="f"><label>状态</label><div class="box filled">● 启用　○ 停用</div></div>
+            </div>
+            <div class="sect" style="margin-top:14px">区域与地址</div><div class="hairline"></div>
+            <div class="grid g3">
+              <div class="f"><label>省份编码</label><div class="box">110000</div></div>
+              <div class="f"><label>城市编码</label><div class="box">110100</div></div>
+              <div class="f"><label>区县编码</label><div class="box">110108</div></div>
+            </div>
+            <div class="grid g2" style="margin-top:12px">
+              <div class="f"><label>详细地址</label><div class="box">北京市海淀区学院路 1 号</div></div>
+              <div class="f"><label>排序</label><div class="box filled">0</div></div>
+            </div>
+            <div class="f" style="margin-top:12px"><label>备注</label><div class="box">承担高中部与大学部课程安排</div></div>
+          </div>
+          <div class="dlg__foot"><button class="btn">取消</button><button class="btn btn--primary">保存</button></div>
+        </div>
+        <div class="metric"><span>弹窗宽 <b>760px</b></span><span>估高 <b>~430px</b></span><span>滚动 <b>无</b></span><span>改造 <b>全局 CSS</b></span></div>
+      </div>
+    </section>
+
+    <!-- B -->
+    <section class="card">
+      <div class="card__head">
+        <span class="card__title">B · 分组标签页（Tabs）</span><span class="card__tag">最适合字段多</span>
+        <div class="card__desc">弹窗内用 2–3 个页签切分组，一次只看 4–5 个字段；校验错误在对应页签上打点，提交时自动跳到出错页签。</div>
+      </div>
+      <div class="mock">
+        <div class="dlg">
+          <div class="dlg__head"><span class="dlg__title">新增校区</span><span class="dlg__close">×</span></div>
+          <div class="dlg__body">
+            <div class="tabs">
+              <span class="tab on">基础信息</span><span class="tab">区域与地址<span class="dot"></span></span><span class="tab">展示与备注</span>
+            </div>
+            <div class="grid g2">
+              <div class="f req"><label>校区编码</label><div class="box filled">CAMPUS_MAIN</div></div>
+              <div class="f req"><label>校区名称</label><div class="box filled">主校区</div></div>
+              <div class="f req"><label>校区类型</label><div class="box filled">主校区</div></div>
+              <div class="f"><label>状态</label><div class="box filled">● 启用　○ 停用</div></div>
+            </div>
+            <div class="a-intro" style="margin-top:14px"><i></i>切到「区域与地址」填省市区与详细地址</div>
+          </div>
+          <div class="dlg__foot"><button class="btn">取消</button><button class="btn">下一步</button><button class="btn btn--primary">保存</button></div>
+        </div>
+        <div class="metric"><span>弹窗宽 <b>640px</b></span><span>估高 <b>~360px</b></span><span>滚动 <b>无</b></span><span>改造 <b>各弹窗模板</b></span></div>
+      </div>
+    </section>
+
+    <!-- C -->
+    <section class="card">
+      <div class="card__head">
+        <span class="card__title">C · 右侧抽屉表单</span><span class="card__tag">屏幕利用率最高</span>
+        <div class="card__desc">不用居中弹窗，改为从右侧滑出的 480px 抽屉；字段按「左 label / 右输入」横向对齐铺满，纵向极短；底部操作栏常驻。</div>
+      </div>
+      <div class="mock">
+        <div class="dlg drawer">
+          <div class="dlg__head"><span class="dlg__title">新增校区</span><span class="dlg__close">×</span></div>
+          <div class="dlg__body">
+            <div class="drawer-grid">
+              <div class="drawer-cell f req"><label>校区编码</label><div class="box filled">CAMPUS_MAIN</div></div>
+              <div class="drawer-cell f req"><label>校区名称</label><div class="box filled">主校区</div></div>
+              <div class="drawer-cell f req"><label>校区类型</label><div class="box filled">主校区</div></div>
+              <div class="drawer-cell f"><label>状态</label><div class="box filled">● 启用</div></div>
+              <div class="drawer-cell f"><label>省份编码</label><div class="box">110000</div></div>
+              <div class="drawer-cell f"><label>城市编码</label><div class="box">110100</div></div>
+              <div class="drawer-cell f"><label>区县编码</label><div class="box">110108</div></div>
+              <div class="drawer-cell f"><label>排序</label><div class="box filled">0</div></div>
+              <div class="drawer-cell f full"><label>详细地址</label><div class="box">北京市海淀区学院路 1 号</div></div>
+              <div class="drawer-cell f full"><label>备注</label><div class="box">承担高中部与大学部课程安排</div></div>
+            </div>
+          </div>
+          <div class="dlg__foot drawer-foot"><button class="btn">取消</button><button class="btn btn--primary">保存</button></div>
+        </div>
+        <div class="metric"><span>抽屉宽 <b>480px</b></span><span>估高 <b>~460px</b></span><span>滚动 <b>无</b></span><span>改造 <b>el-dialog→drawer</b></span></div>
+      </div>
+    </section>
+
+    <!-- D -->
+    <section class="card">
+      <div class="card__head">
+        <span class="card__title">D · 左侧步骤导航</span><span class="card__tag">适合长表单</span>
+        <div class="card__desc">弹窗左侧一列分组锚点（基础信息 / 区域 / 备注），右侧只显示当前组；点击或滚动定位，始终能看到自己填到哪一步。</div>
+      </div>
+      <div class="mock">
+        <div class="dlg">
+          <div class="dlg__head"><span class="dlg__title">新增校区</span><span class="dlg__close">×</span></div>
+          <div class="steps">
+            <div class="steps__nav">
+              <div class="step on"><span class="step__n">1</span>基础信息</div>
+              <div class="step"><span class="step__n">2</span>区域与地址</div>
+              <div class="step"><span class="step__n">3</span>展示备注</div>
+            </div>
+            <div class="steps__main">
+              <div class="grid g2">
+                <div class="f req"><label>校区编码</label><div class="box filled">CAMPUS_MAIN</div></div>
+                <div class="f req"><label>校区名称</label><div class="box filled">主校区</div></div>
+                <div class="f req"><label>校区类型</label><div class="box filled">主校区</div></div>
+                <div class="f"><label>状态</label><div class="box filled">● 启用</div></div>
+              </div>
+              <div class="steps__hint">① / ③　下一步：区域与地址 →</div>
+            </div>
+          </div>
+          <div class="dlg__foot"><button class="btn">取消</button><button class="btn">上一步</button><button class="btn btn--primary">下一步</button></div>
+        </div>
+        <div class="metric"><span>弹窗宽 <b>720px</b></span><span>估高 <b>~330px</b></span><span>滚动 <b>无</b></span><span>改造 <b>最大</b></span></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot-note">
+    <b>对比与建议：</b>A 只改全局 CSS 一天就能全站生效，是性价比最高的方案；B 对 78 字段的基础数据页最有效（一次只看一组），但需要给每个弹窗加页签与错误跳转逻辑；C 屏幕最省，但要换组件（el-drawer）、要处理多标签页共存下的抽屉层级；D 结构感最强但改造量最大，且你现有表单大多只有 2–3 组，用步骤反而显得重。<br>
+    <b>推荐组合：A 打底全站统一 + B 用于字段最多的基础数据 / 权限 / 排课任务三个页面。</b> 四套都遵守：label 常驻可见、必填星号贴近字段、错误提示在字段下方、底部操作栏常驻、768px 以下自动单列。
+  </div>
+</body>
+</html>

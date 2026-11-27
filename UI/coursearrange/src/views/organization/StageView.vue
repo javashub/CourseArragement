@@ -53,26 +53,19 @@
       append-to-body
       class="academy-form-dialog"
     >
-      <div class="academy-form-intro">
-        <div class="academy-form-intro__eyebrow">Stage Taxonomy</div>
-        <div class="academy-form-intro__title">{{ stageForm.id ? '更新学段定义' : '建立学段定义' }}</div>
-        <div class="academy-form-intro__text">
-          学段会参与排课规则分层、资源过滤和范围配置，建议保持编码清晰、层级稳定，便于后续扩展更多教学场景。
-        </div>
-      </div>
-
+      <!-- A 方案紧凑表单：删除 intro banner 与分组描述，字段统一 2 列网格，示例写进 placeholder。 -->
       <el-form ref="formRef" :model="stageForm" :rules="formRules" label-position="top" class="academy-form">
         <div class="academy-form-section">
           <div class="academy-form-section__header">
             <div class="academy-form-section__title">分类信息</div>
-            <div class="academy-form-section__desc">先定义学段编码、名称和层级，用于系统内统一识别。</div>
           </div>
+          <!-- 2 列紧凑网格：编码 / 名称 同行，示例与格式全部写进 placeholder。 -->
           <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="学段编码" prop="stageCode">
-              <el-input v-model="stageForm.stageCode" placeholder="例如 PRIMARY、JUNIOR_HIGH、UNIVERSITY" />
+              <el-input v-model="stageForm.stageCode" placeholder="例如 PRIMARY" />
             </el-form-item>
             <el-form-item label="学段名称" prop="stageName">
-              <el-input v-model="stageForm.stageName" placeholder="例如 小学、初中、大学" />
+              <el-input v-model="stageForm.stageName" placeholder="例如 小学" />
             </el-form-item>
           </div>
         </div>
@@ -80,11 +73,16 @@
         <div class="academy-form-section">
           <div class="academy-form-section__header">
             <div class="academy-form-section__title">排序与状态</div>
-            <div class="academy-form-section__desc">层级用于表达学段顺序，状态决定是否参与范围配置与规则下发。</div>
           </div>
           <div class="academy-form-grid academy-form-grid--two">
             <el-form-item label="学段层级" prop="stageLevel">
-              <el-input-number v-model="stageForm.stageLevel" :min="1" :max="20" controls-position="right" />
+              <el-input-number
+                v-model="stageForm.stageLevel"
+                :min="1"
+                :max="20"
+                controls-position="right"
+                placeholder="1-20，例如 1"
+              />
             </el-form-item>
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="stageForm.status" class="academy-radio-group">
@@ -164,12 +162,14 @@ function handleReset() {
   loadStages();
 }
 
+/** 新增学段：重置为默认表单并清除上一次的字段校验提示。 */
 function handleCreate() {
   stageForm.value = createDefaultForm();
   dialogVisible.value = true;
   formRef.value?.clearValidate();
 }
 
+/** 编辑学段：按详情接口回填表单（字段名与提交载荷保持不变）。 */
 async function handleEdit(row) {
   const response = await fetchStageDetail(row.id);
   stageForm.value = {
@@ -180,6 +180,7 @@ async function handleEdit(row) {
   formRef.value?.clearValidate();
 }
 
+/** 保存学段：校验通过后调用原保存接口，成功后提示并刷新列表。 */
 async function submitForm() {
   const valid = await formRef.value.validate().catch(() => false);
   if (!valid) {
@@ -196,6 +197,7 @@ async function submitForm() {
   }
 }
 
+/** 删除学段：二次确认后调用原删除接口并刷新列表。 */
 async function handleDelete(row) {
   await ElMessageBox.confirm(`确认删除学段“${row.stageName}”吗？`, '删除确认', {
     type: 'warning'

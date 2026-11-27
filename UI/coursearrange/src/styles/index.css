@@ -414,12 +414,32 @@ select {
   background-color: rgb(255 255 255 / 78%);
 }
 
-/* ---------------------------------------------------------------- 表单弹窗（保留原类名） */
-.academy-form-dialog {
+/* ---------------------------------------------------------------- 表单弹窗（A 方案紧凑布局，保留原类名） */
+/*
+ * A 方案规范：双/三栏网格 + 短分组标题 + 细分隔线，弹窗内不放 eyebrow、大标题、
+ * 段落说明；示例与格式由输入框 placeholder 承载；内容区超长时只滚 body，footer 常驻。
+ * .academy-form-dialog 为三个组织页沿用类名，.compact-form 供其余页面统一挂接。
+ */
+.academy-form-dialog,
+.compact-form {
   --el-dialog-bg-color: var(--surface);
 }
 
-.academy-form-dialog .el-dialog {
+/* Element Plus 2.9 把 <el-dialog class="..."> 的 class 合并到 .el-dialog 根元素本身
+ * （dialog.vue inheritAttrs:false + $attrs mergeProps → dialog-content 根节点，
+ *  渲染为 class="el-dialog compact-form"）。因此根级规则必须同时匹配
+ *  「class 在父级」与「class 与 .el-dialog 同一元素」两种落点；
+ *  header/body/footer/form-item 是真后代，两种落点下后代选择器都成立。 */
+.academy-form-dialog .el-dialog,
+.academy-form-dialog.el-dialog,
+.compact-form .el-dialog,
+.compact-form.el-dialog {
+  display: flex;
+  flex-direction: column;
+  /* EP 默认 margin 为 15vh auto 50px，弹窗顶到 15vh 后底部会溢出视口（800px 高时 footer 被裁）；
+   * 固定上下留白并同步缩减 max-height，保证「保存 / 取消」始终完整落在视口内。 */
+  margin: 32px auto 40px;
+  max-height: calc(100vh - 72px);
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -427,132 +447,152 @@ select {
   box-shadow: 0 28px 72px rgb(17 34 68 / 16%);
 }
 
-.academy-form-dialog .el-dialog__header {
+.academy-form-dialog .el-dialog__header,
+.compact-form .el-dialog__header {
+  flex: 0 0 auto;
   margin-right: 0;
-  padding: 18px 22px 0;
+  padding: 14px 22px 10px;
+  border-bottom: 1px solid var(--line);
 }
 
-.academy-form-dialog .el-dialog__title {
+.academy-form-dialog .el-dialog__title,
+.compact-form .el-dialog__title {
   color: var(--ink);
   font-family: var(--app-font-family);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0;
 }
 
-.academy-form-dialog .el-dialog__headerbtn {
-  top: 16px;
-  right: 16px;
+.academy-form-dialog .el-dialog__headerbtn,
+.compact-form .el-dialog__headerbtn {
+  top: 12px;
+  right: 12px;
 }
 
-.academy-form-dialog .el-dialog__body {
+.academy-form-dialog .el-dialog__body,
+.compact-form .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: 14px 22px 6px;
+  color: var(--ink-2);
 }
 
-.academy-form-dialog .el-dialog__footer {
-  padding: 12px 22px 18px;
+.academy-form-dialog .el-dialog__footer,
+.compact-form .el-dialog__footer {
+  flex: 0 0 auto;
+  padding: 10px 22px 14px;
+  border-top: 1px solid var(--line);
 }
 
-.academy-form-dialog .el-form-item {
-  margin-bottom: 14px;
+.academy-form-dialog .el-form-item,
+.compact-form .el-form-item {
+  margin-bottom: 10px;
 }
 
-.academy-form-dialog .el-form-item__label {
-  padding-bottom: 6px;
+.academy-form-dialog .el-form-item__label,
+.compact-form .el-form-item__label {
+  padding-bottom: 4px;
   color: var(--ink-2);
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0;
+  line-height: 1.5;
 }
 
-.academy-form-dialog .el-input__wrapper,
-.academy-form-dialog .el-select__wrapper,
-.academy-form-dialog .el-textarea__inner,
-.academy-form-dialog .el-input-number {
+.academy-form-dialog .el-form-item__error,
+.compact-form .el-form-item__error {
+  padding-top: 2px;
+  font-size: 11.5px;
+}
+
+.academy-form-dialog :is(.el-input__wrapper, .el-select__wrapper, .el-textarea__inner, .el-input-number),
+.compact-form :is(.el-input__wrapper, .el-select__wrapper, .el-textarea__inner, .el-input-number) {
+  min-height: 32px;
   border-radius: var(--radius-control) !important;
   background: var(--surface) !important;
   box-shadow: 0 0 0 1px var(--line-2) inset !important;
 }
 
-.academy-form-dialog .el-textarea__inner {
-  min-height: 96px !important;
+.academy-form-dialog .el-input__inner,
+.compact-form .el-input__inner {
+  height: 30px;
+  line-height: 30px;
 }
 
-.academy-form-dialog .el-input-number {
+.academy-form-dialog .el-textarea__inner,
+.compact-form .el-textarea__inner {
+  min-height: 64px !important;
+}
+
+.academy-form-dialog .el-input-number,
+.compact-form .el-input-number {
   width: 100%;
 }
 
-.academy-form-intro {
-  margin-bottom: 14px;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: linear-gradient(145deg, var(--surface-2) 0%, var(--brand-soft) 100%);
+/* 弹窗内不再渲染说明性 banner；保留类名兼容旧模板，但视觉上不占空间。 */
+.academy-form-intro,
+.compact-form-intro {
+  display: none;
 }
 
-.academy-form-intro__eyebrow {
-  color: var(--brand);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.academy-form-intro__title {
-  margin-top: 6px;
-  color: var(--ink);
-  font-family: var(--app-font-family);
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.academy-form-intro__text {
-  margin-top: 6px;
-  color: var(--muted-2);
-  font-size: 12.5px;
-  line-height: 1.7;
-}
-
-.academy-form {
+.academy-form,
+.compact-form__body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-.academy-form-section {
-  padding: 14px 16px 4px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
+.academy-form-section,
+.compact-form-section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
-.academy-form-section__header {
+.academy-form-section__header,
+.compact-form-section__header {
   margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
 }
 
-.academy-form-section__title {
-  color: var(--ink);
+.academy-form-section__title,
+.compact-form-section__title {
+  color: var(--brand);
   font-family: var(--app-font-family);
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
 }
 
-.academy-form-section__desc {
-  margin-top: 4px;
-  color: var(--muted-2);
-  font-size: 12px;
-  line-height: 1.6;
+.academy-form-section:not(:last-child),
+.compact-form-section:not(:last-child) {
+  margin-bottom: 4px;
 }
 
-.academy-form-grid {
+.academy-form-section__desc,
+.compact-form-section__desc {
+  display: none;
+}
+
+.academy-form-grid,
+.compact-form-grid,
+.form-grid {
   display: grid;
-  gap: 14px;
+  gap: 10px 12px;
 }
 
-.academy-form-grid--two {
+.academy-form-grid--two,
+.compact-form-grid--two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.academy-form-grid--three {
+.academy-form-grid--three,
+.compact-form-grid--three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -564,14 +604,14 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  min-height: 34px;
-  padding: 2px 0;
+  min-height: 32px;
+  padding: 0;
 }
 
 .academy-dialog__ghost,
 .academy-dialog__primary {
   min-width: 96px;
-  height: 34px;
+  height: 32px;
   padding: 0 16px;
   border-radius: var(--radius-control);
 }
@@ -583,20 +623,29 @@ select {
 }
 
 @media (max-width: 768px) {
-  .academy-form-dialog .el-dialog {
+  .academy-form-dialog .el-dialog,
+  .academy-form-dialog.el-dialog,
+  .compact-form .el-dialog,
+  .compact-form.el-dialog {
     width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 48px);
     margin-top: 24px !important;
   }
 
   .academy-form-dialog .el-dialog__body,
   .academy-form-dialog .el-dialog__header,
-  .academy-form-dialog .el-dialog__footer {
+  .academy-form-dialog .el-dialog__footer,
+  .compact-form .el-dialog__body,
+  .compact-form .el-dialog__header,
+  .compact-form .el-dialog__footer {
     padding-left: 16px;
     padding-right: 16px;
   }
 
   .academy-form-grid--two,
-  .academy-form-grid--three {
+  .academy-form-grid--three,
+  .compact-form-grid--two,
+  .compact-form-grid--three {
     grid-template-columns: 1fr;
   }
 

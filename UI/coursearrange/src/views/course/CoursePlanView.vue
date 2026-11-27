@@ -357,15 +357,11 @@
         </div>
       </el-card>
 
-      <el-dialog v-model="taskDialogVisible" title="新增排课任务" width="760px" append-to-body>
+      <!-- 新增排课任务弹窗：挂接 A 方案紧凑布局；删掉录入前检查 banner 与解释段落，
+           示例/格式写入 placeholder，实时约束指标与校验预览保留，字段与提交逻辑不变。 -->
+      <el-dialog v-model="taskDialogVisible" class="compact-form" title="新增排课任务" width="760px" append-to-body>
         <el-form :model="taskForm" label-position="top">
-          <div class="dialog-alert">
-            <div class="alert-title">录入前检查</div>
-            <div class="alert-text">
-              请先确认学期、班级、课程、教师四项都已对应真实数据；固定时间仅在必须占位时填写。
-            </div>
-          </div>
-          <div class="form-grid">
+          <div class="form-grid compact-form-grid--two">
             <el-form-item label="学期">
               <el-input v-model="taskForm.semester" placeholder="例如 2025-2026-1" />
             </el-form-item>
@@ -373,7 +369,7 @@
               <el-input v-model="taskForm.gradeNo" placeholder="例如 2024、02" />
             </el-form-item>
           </div>
-          <div class="form-grid">
+          <div class="form-grid compact-form-grid--two">
             <el-form-item label="班级编号">
               <el-select v-model="taskForm.classNo" clearable filterable placeholder="例如 2401">
                 <el-option v-for="item in classOptions" :key="item.classNo" :label="`${item.classNo} ${item.className || ''}`" :value="item.classNo" />
@@ -397,9 +393,9 @@
               </el-select>
             </el-form-item>
           </div>
-          <div class="form-grid">
+          <div class="form-grid compact-form-grid--two">
             <el-form-item label="课程编号">
-              <el-input v-model="taskForm.courseNo" placeholder="例如 10001，建议优先从上方课程下拉选择" />
+              <el-input v-model="taskForm.courseNo" placeholder="例如 10001，可从上方课程下拉选择" />
             </el-form-item>
             <el-form-item label="教师姓名">
               <el-select
@@ -419,20 +415,18 @@
               </el-select>
             </el-form-item>
           </div>
-          <div class="form-grid">
+          <div class="form-grid compact-form-grid--two">
             <el-form-item label="教师编号">
-              <el-input v-model="taskForm.teacherNo" placeholder="例如 T2026001，建议优先从上方教师下拉选择" />
+              <el-input v-model="taskForm.teacherNo" placeholder="例如 T2026001，可从上方教师下拉选择" />
             </el-form-item>
             <el-form-item label="课程属性">
               <el-input v-model="taskForm.courseAttr" placeholder="例如 必修、实验课" />
             </el-form-item>
           </div>
           <div class="teacher-limit-card">
-            <div class="teacher-limit-card__copy">
-              <div class="teacher-limit-card__title">教师课时约束</div>
-              <div class="teacher-limit-card__text">
-                自动排课会遵守教师资源里维护的日上限和周上限课时。当前任务页优先展示所选教师的实时配置，排课时会据此消解冲突。
-              </div>
+            <!-- 教师课时约束：仅保留短分组标题，实时指标作为数据展示。 -->
+            <div class="compact-form-section__header">
+              <div class="compact-form-section__title">教师课时约束</div>
             </div>
             <div class="teacher-limit-card__metrics">
               <div class="teacher-limit-pill">
@@ -450,11 +444,9 @@
             </div>
           </div>
           <div class="teacher-limit-card teacher-limit-card--class">
-            <div class="teacher-limit-card__copy">
-              <div class="teacher-limit-card__title">班级时间约束</div>
-              <div class="teacher-limit-card__text">
-                班级管理页维护的禁排时间会直接参与固定课保存校验和自动排课避让。
-              </div>
+            <!-- 班级时间约束：同上，删掉解释段落。 -->
+            <div class="compact-form-section__header">
+              <div class="compact-form-section__title">班级时间约束</div>
             </div>
             <div class="teacher-limit-card__metrics">
               <div class="teacher-limit-pill teacher-limit-pill--wide">
@@ -471,24 +463,21 @@
               </div>
             </div>
           </div>
-          <div class="form-grid compact-grid">
+          <div class="form-grid compact-grid compact-form-grid--three">
             <el-form-item label="学生人数">
-              <el-input-number v-model="taskForm.studentNum" :min="1" :max="300" controls-position="right" />
+              <el-input-number v-model="taskForm.studentNum" :min="1" :max="300" controls-position="right" placeholder="例如 45" />
             </el-form-item>
             <el-form-item label="周学时">
-              <el-input-number v-model="taskForm.weeksNumber" :min="1" :max="20" controls-position="right" />
+              <el-input-number v-model="taskForm.weeksNumber" :min="1" :max="20" controls-position="right" placeholder="例如 4" />
             </el-form-item>
             <el-form-item label="周数">
-              <el-input-number v-model="taskForm.weeksSum" :min="1" :max="30" controls-position="right" />
+              <el-input-number v-model="taskForm.weeksSum" :min="1" :max="30" controls-position="right" placeholder="例如 18" />
             </el-form-item>
           </div>
           <div class="constraint-band">
             <div class="constraint-band__copy">
               <div class="constraint-band__title">连堂约束</div>
-              <div class="constraint-band__text">
-                需要连堂时会把该任务作为连续节次约束参与排课，当前规则默认上限为
-                {{ runtimeConfig.defaultContinuousLimit || '未配置' }} 节。
-              </div>
+              <div class="constraint-band__text">默认上限 {{ runtimeConfig.defaultContinuousLimit || '未配置' }} 节</div>
             </div>
             <div class="constraint-band__controls">
               <el-form-item label="是否连堂">
@@ -500,6 +489,7 @@
               <el-form-item label="连堂节数">
                 <el-input-number
                   v-model="taskForm.continuousSize"
+                  placeholder="例如 2"
                   :min="2"
                   :max="Math.max(runtimeConfig.defaultContinuousLimit || 2, 2)"
                   :disabled="taskForm.needContinuous !== 1"
@@ -511,14 +501,13 @@
           <div class="constraint-band constraint-band--priority">
             <div class="constraint-band__copy">
               <div class="constraint-band__title">排课优先级</div>
-              <div class="constraint-band__text">
-                优先级越高，任务会越早进入排课主流程。当前建议范围为 1 到 9，默认值为 5。
-              </div>
+              <div class="constraint-band__text">建议 1 到 9，默认 5</div>
             </div>
             <div class="constraint-band__controls">
               <el-form-item label="优先级">
                 <el-input-number
                   v-model="taskForm.priorityLevel"
+                  placeholder="例如 5"
                   :min="1"
                   :max="9"
                   controls-position="right"
@@ -526,7 +515,7 @@
               </el-form-item>
             </div>
           </div>
-          <div class="form-grid">
+          <div class="form-grid compact-form-grid--two">
             <el-form-item label="是否固定上课时间">
               <el-radio-group v-model="taskForm.isFix">
                 <el-radio value="0">否</el-radio>
@@ -534,7 +523,7 @@
               </el-radio-group>
             </el-form-item>
             <el-form-item label="固定时间">
-              <el-input v-model="taskForm.classTime" placeholder="例如 01、13；未固定可留空，不建议一次填多个编码" />
+              <el-input v-model="taskForm.classTime" placeholder="例如 01、13；选填" />
             </el-form-item>
           </div>
           <div class="validation-preview">
@@ -552,7 +541,8 @@
         </template>
       </el-dialog>
 
-      <el-dialog v-model="executionDetailVisible" title="排课执行详情" width="920px" append-to-body>
+      <!-- 排课执行详情为只读弹窗：仅套用紧凑间距，内部结构保持不变。 -->
+      <el-dialog v-model="executionDetailVisible" class="compact-form" title="排课执行详情" width="920px" append-to-body>
         <template v-if="selectedExecutionDetail">
           <div class="execution-detail-summary">
             <div class="summary-chip">
@@ -1579,72 +1569,27 @@ onMounted(async () => {
   line-height: 1.7;
 }
 
-.dialog-alert {
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  border: 1px solid #dce8f8;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgb(249 252 255 / 96%) 0%, rgb(240 248 255 / 96%) 100%);
-}
-
-.alert-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1d3557;
-}
-
-.alert-text {
-  margin-top: 6px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #60748d;
-}
-
+/* 教师/班级约束：短分组标题 + 实时指标，间距与全局紧凑规范一致。 */
 .teacher-limit-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
-  gap: 18px;
-  margin-bottom: 14px;
-  padding: 18px 20px;
-  border: 1px solid #d8e3f2;
-  border-radius: 22px;
-  background: linear-gradient(135deg, rgb(244 248 255 / 96%) 0%, rgb(236 244 255 / 88%) 100%);
-}
-
-.teacher-limit-card__copy {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.teacher-limit-card__title {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #28527a;
-}
-
-.teacher-limit-card__text {
-  font-size: 13px;
-  line-height: 1.7;
-  color: #5e7590;
+  margin-bottom: 10px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--line);
 }
 
 .teacher-limit-card__metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px 12px;
 }
 
 .teacher-limit-pill {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  border: 1px solid rgb(133 163 194 / 28%);
-  border-radius: 18px;
-  background: rgb(255 255 255 / 72%);
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
 }
 
 .teacher-limit-pill span {
@@ -1655,8 +1600,8 @@ onMounted(async () => {
 }
 
 .teacher-limit-pill strong {
-  font-size: 18px;
-  color: #16324f;
+  font-size: 14px;
+  color: var(--ink);
 }
 
 .teacher-limit-pill--wide strong {
@@ -1664,25 +1609,19 @@ onMounted(async () => {
   line-height: 1.6;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
+/* 表单网格统一走全局 .form-grid + .compact-form-grid--two/--three，
+   此处不再重复声明 display / 列数 / 间距，避免 scoped 覆盖紧凑规范。 */
 
-.compact-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
+/* 连堂/优先级约束：保留极短提示与控件，压缩为轻分组。 */
 .constraint-band {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
-  gap: 18px;
-  margin-bottom: 14px;
-  padding: 18px 20px;
-  border: 1px solid #eadfbe;
-  border-radius: 22px;
-  background: linear-gradient(135deg, rgb(255 250 240 / 96%) 0%, rgb(250 244 230 / 88%) 100%);
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
 }
 
 .constraint-band__copy {
@@ -1692,30 +1631,28 @@ onMounted(async () => {
 }
 
 .constraint-band__title {
-  font-size: 14px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #7c5b1e;
+  color: var(--brand);
 }
 
 .constraint-band__text {
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 1.5;
   color: #6f634d;
 }
 
 .constraint-band__controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px 12px;
   align-items: start;
 }
 
 .validation-preview {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   margin-top: 8px;
 }
 
@@ -1762,8 +1699,8 @@ onMounted(async () => {
   .constraint-band__controls,
   .teacher-limit-card,
   .teacher-limit-card__metrics,
-  .form-grid,
-  .compact-grid,
+  .form-grid.compact-form-grid--two,
+  .form-grid.compact-grid.compact-form-grid--three,
   .config-strip,
   .summary-metrics,
   .reason-list,

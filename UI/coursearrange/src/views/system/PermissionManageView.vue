@@ -75,8 +75,8 @@
       </el-row>
     </template>
 
-    <!-- 菜单维护弹窗 -->
-    <el-dialog v-model="menuDialogVisible" :title="menuForm.id ? '编辑菜单' : '新增菜单'" width="900px" append-to-body>
+    <!-- 菜单维护弹窗：挂接 A 方案紧凑布局，字段改用全局紧凑网格。 -->
+    <el-dialog v-model="menuDialogVisible" class="compact-form" :title="menuForm.id ? '编辑菜单' : '新增菜单'" width="900px" append-to-body>
       <div class="dialog-toolbar">
         <el-input v-model="menuKeyword" placeholder="按菜单名称/编码搜索" clearable @clear="menuKeyword = ''" />
         <el-select v-model="menuStatusFilter" placeholder="菜单状态" clearable @clear="menuStatusFilter = ''">
@@ -102,94 +102,70 @@
       </el-table>
       <el-divider />
       <el-form :model="menuForm" label-position="top">
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="菜单编码">
-              <el-input v-model="menuForm.menuCode" placeholder="例如 system-rbac" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="菜单名称">
-              <el-input v-model="menuForm.menuName" placeholder="例如 权限管理" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="父级菜单">
-              <el-select v-model="menuForm.parentId" placeholder="选择上级菜单">
-                <el-option label="根节点" :value="0" />
-                <el-option v-for="item in menuParentOptions" :key="item.id" :label="item.menuName" :value="item.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="菜单类型">
-              <el-select v-model="menuForm.menuType">
-                <el-option label="目录" value="CATALOG" />
-                <el-option label="菜单" value="MENU" />
-                <el-option label="按钮" value="BUTTON" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="状态">
-              <el-radio-group v-model="menuForm.status">
-                <el-radio :value="1">启用</el-radio>
-                <el-radio :value="0">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="路由名称">
-              <el-input v-model="menuForm.routeName" placeholder="例如 RbacManage" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="路由路径">
-              <el-input v-model="menuForm.routePath" placeholder="例如 /system/rbac" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="组件路径">
-              <el-input v-model="menuForm.componentPath" placeholder="例如 system/RbacManageView" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="权限编码">
-              <el-input v-model="menuForm.permissionCode" placeholder="例如 page:system:rbac:view" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="图标">
-              <el-input v-model="menuForm.icon" placeholder="例如 Setting" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="是否隐藏">
-              <el-radio-group v-model="menuForm.isHidden">
-                <el-radio :value="0">否</el-radio>
-                <el-radio :value="1">是</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="是否缓存">
-              <el-radio-group v-model="menuForm.isKeepAlive">
-                <el-radio :value="0">否</el-radio>
-                <el-radio :value="1">是</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="菜单编码">
+            <el-input v-model="menuForm.menuCode" placeholder="例如 system-rbac" />
+          </el-form-item>
+          <el-form-item label="菜单名称">
+            <el-input v-model="menuForm.menuName" placeholder="例如 权限管理" />
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--three">
+          <el-form-item label="父级菜单">
+            <el-select v-model="menuForm.parentId" placeholder="选择上级菜单，选填">
+              <el-option label="根节点" :value="0" />
+              <el-option v-for="item in menuParentOptions" :key="item.id" :label="item.menuName" :value="item.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="菜单类型">
+            <el-select v-model="menuForm.menuType" placeholder="例如 MENU 菜单">
+              <el-option label="目录" value="CATALOG" />
+              <el-option label="菜单" value="MENU" />
+              <el-option label="按钮" value="BUTTON" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-radio-group v-model="menuForm.status">
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="0">停用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="路由名称">
+            <el-input v-model="menuForm.routeName" placeholder="例如 RbacManage，选填" />
+          </el-form-item>
+          <el-form-item label="路由路径">
+            <el-input v-model="menuForm.routePath" placeholder="例如 /system/rbac" />
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="组件路径">
+            <el-input v-model="menuForm.componentPath" placeholder="例如 system/RbacManageView" />
+          </el-form-item>
+          <el-form-item label="权限编码">
+            <el-input v-model="menuForm.permissionCode" placeholder="例如 page:system:rbac:view" />
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--three">
+          <el-form-item label="图标">
+            <el-input v-model="menuForm.icon" placeholder="例如 Setting，选填" />
+          </el-form-item>
+          <el-form-item label="是否隐藏">
+            <el-radio-group v-model="menuForm.isHidden">
+              <el-radio :value="0">否</el-radio>
+              <el-radio :value="1">是</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="是否缓存">
+            <el-radio-group v-model="menuForm.isKeepAlive">
+              <el-radio :value="0">否</el-radio>
+              <el-radio :value="1">是</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </div>
         <el-form-item label="备注">
-          <el-input v-model="menuForm.remark" type="textarea" :rows="2" placeholder="备注" />
+          <el-input v-model="menuForm.remark" type="textarea" :rows="2" placeholder="例如 系统管理入口，选填" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -198,8 +174,8 @@
       </template>
     </el-dialog>
 
-    <!-- 权限点维护弹窗 -->
-    <el-dialog v-model="permissionDialogVisible" :title="permissionForm.id ? '编辑权限点' : '新增权限点'" width="900px" append-to-body>
+    <!-- 权限点维护弹窗：同上，仅调整布局与 placeholder，不改字段与提交逻辑。 -->
+    <el-dialog v-model="permissionDialogVisible" class="compact-form" :title="permissionForm.id ? '编辑权限点' : '新增权限点'" width="900px" append-to-body>
       <div class="dialog-toolbar">
         <el-input v-model="permissionKeyword" placeholder="按权限名称/编码搜索" clearable @clear="permissionKeyword = ''" />
         <el-select v-model="permissionTypeFilter" placeholder="权限类型" clearable @clear="permissionTypeFilter = ''">
@@ -230,47 +206,37 @@
       </el-table>
       <el-divider />
       <el-form :model="permissionForm" label-position="top">
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="权限编码">
-              <el-input v-model="permissionForm.permissionCode" placeholder="例如 page:dashboard:view" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="权限名称">
-              <el-input v-model="permissionForm.permissionName" placeholder="请输入权限名称" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="权限类型">
-              <el-select v-model="permissionForm.permissionType">
-                <el-option label="页面" value="PAGE" />
-                <el-option label="按钮" value="BUTTON" />
-                <el-option label="接口" value="API" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="请求方法">
-              <el-input v-model="permissionForm.httpMethod" placeholder="GET / POST" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="状态">
-              <el-radio-group v-model="permissionForm.status">
-                <el-radio :value="1">启用</el-radio>
-                <el-radio :value="0">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="权限编码">
+            <el-input v-model="permissionForm.permissionCode" placeholder="例如 page:dashboard:view" />
+          </el-form-item>
+          <el-form-item label="权限名称">
+            <el-input v-model="permissionForm.permissionName" placeholder="例如 查看仪表盘" />
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--three">
+          <el-form-item label="权限类型">
+            <el-select v-model="permissionForm.permissionType" placeholder="例如 PAGE 页面">
+              <el-option label="页面" value="PAGE" />
+              <el-option label="按钮" value="BUTTON" />
+              <el-option label="接口" value="API" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="请求方法">
+            <el-input v-model="permissionForm.httpMethod" placeholder="例如 GET、POST" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-radio-group v-model="permissionForm.status">
+              <el-radio :value="1">启用</el-radio>
+              <el-radio :value="0">停用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </div>
         <el-form-item label="资源路径">
           <el-input v-model="permissionForm.resourcePath" placeholder="例如 /api/rbac/users/page" />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="permissionForm.remark" type="textarea" :rows="2" placeholder="请输入备注" />
+          <el-input v-model="permissionForm.remark" type="textarea" :rows="2" placeholder="例如 页面查看权限，选填" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -534,6 +500,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 弹窗内表单网格改用全局 .form-grid + .compact-form-grid--two/--three，
+   页面 scoped 不再重复声明列宽与间距，避免覆盖紧凑规范。 el-form-item 的 margin
+   与控件高度统一由全局 .compact-form 规则提供。 */
 .module-card {
   background: #fff;
 }

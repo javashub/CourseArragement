@@ -103,97 +103,69 @@
       />
     </div>
 
-    <!-- 用户编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑用户' : '新增用户'" width="620px" append-to-body>
+    <!-- 用户编辑弹窗：挂接 A 方案紧凑布局；去掉账号说明 banner 与绑定信息解释段落，
+         示例与格式统一写入 placeholder，字段与提交逻辑不变。 -->
+    <el-dialog v-model="dialogVisible" class="compact-form" :title="form.id ? '编辑用户' : '新增用户'" width="620px" append-to-body>
       <el-form :model="form" label-position="top">
-        <div class="dialog-hint">
-          <div class="dialog-hint-title">账号说明</div>
-          <div class="dialog-hint-text">
-            普通管理员可在这里维护独立后台账号。教师、学生等业务账号会自动同步到 sys_user，来源绑定信息不建议手工修改。
-          </div>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="用户编码">
+            <el-input v-model="form.userCode" placeholder="例如 A_900001" />
+          </el-form-item>
+          <el-form-item label="登录账号">
+            <el-input v-model="form.username" placeholder="例如 admin_01" />
+          </el-form-item>
         </div>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="用户编码">
-              <el-input v-model="form.userCode" placeholder="例如 A_900001" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="登录账号">
-              <el-input v-model="form.username" placeholder="请输入登录账号" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="真实姓名">
-              <el-input v-model="form.realName" placeholder="请输入真实姓名" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="显示名称">
-              <el-input v-model="form.displayName" placeholder="为空则回退真实姓名" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item :label="form.id ? '重置密码' : '登录密码'">
-              <el-input
-                v-model="form.password"
-                type="password"
-                show-password
-                :placeholder="form.id ? '不修改可留空' : '请输入登录密码'"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="用户类型">
-              <el-select v-model="form.userType" placeholder="请选择用户类型" :disabled="isBoundSourceUser">
-                <el-option label="管理员" value="ADMIN" />
-                <el-option label="教师" value="TEACHER" />
-                <el-option label="学生" value="STUDENT" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="手机号">
-              <el-input v-model="form.mobile" placeholder="请输入手机号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="邮箱">
-              <el-input v-model="form.email" placeholder="请输入邮箱" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <div v-if="isBoundSourceUser" class="binding-panel">
-          <div class="binding-panel-header">
-            <span class="binding-panel-title">系统绑定信息</span>
-            <el-tag type="warning" effect="plain">只读</el-tag>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="真实姓名">
+            <el-input v-model="form.realName" placeholder="例如 张老师" />
+          </el-form-item>
+          <el-form-item label="显示名称">
+            <el-input v-model="form.displayName" placeholder="选填，为空则回退真实姓名" />
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item :label="form.id ? '重置密码' : '登录密码'">
+            <el-input
+              v-model="form.password"
+              type="password"
+              show-password
+              :placeholder="form.id ? '不修改可留空' : '例如 Admin@123，至少 6 位'"
+            />
+          </el-form-item>
+          <el-form-item label="用户类型">
+            <el-select v-model="form.userType" placeholder="例如 ADMIN 管理员" :disabled="isBoundSourceUser">
+              <el-option label="管理员" value="ADMIN" />
+              <el-option label="教师" value="TEACHER" />
+              <el-option label="学生" value="STUDENT" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <div class="form-grid compact-form-grid--two">
+          <el-form-item label="手机号">
+            <el-input v-model="form.mobile" placeholder="例如 13800000000，选填" />
+          </el-form-item>
+          <el-form-item label="邮箱">
+            <el-input v-model="form.email" placeholder="例如 admin@school.edu.cn，选填" />
+          </el-form-item>
+        </div>
+        <!-- 系统绑定信息：只读字段，去掉解释段落与卡片边框，仅保留短分组标题。 -->
+        <div v-if="isBoundSourceUser" class="binding-panel compact-form-section">
+          <div class="compact-form-section__header">
+            <div class="compact-form-section__title">系统绑定信息（只读）</div>
           </div>
-          <div class="binding-panel-text">
-            该账号来自业务资料同步，用于把统一认证账号和教师/学生/管理员资料绑定在一起。
+          <div class="form-grid compact-form-grid--two">
+            <div class="binding-field">
+              <span class="binding-label">来源类型</span>
+              <strong>{{ form.sourceType }}</strong>
+            </div>
+            <div class="binding-field">
+              <span class="binding-label">来源 ID</span>
+              <strong>{{ form.sourceId }}</strong>
+            </div>
           </div>
-          <el-row :gutter="12">
-            <el-col :span="12">
-              <div class="binding-field">
-                <span class="binding-label">来源类型</span>
-                <strong>{{ form.sourceType }}</strong>
-              </div>
-            </el-col>
-            <el-col :span="12">
-              <div class="binding-field">
-                <span class="binding-label">来源 ID</span>
-                <strong>{{ form.sourceId }}</strong>
-              </div>
-            </el-col>
-          </el-row>
         </div>
         <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="例如 独立后台账号，选填" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -203,7 +175,7 @@
     </el-dialog>
 
     <!-- 单用户分配角色弹窗 -->
-    <el-dialog v-model="userRoleDialogVisible" title="分配角色" width="480px" append-to-body>
+    <el-dialog v-model="userRoleDialogVisible" class="compact-form" title="分配角色" width="480px" append-to-body>
       <div class="role-dialog-user">
         <el-avatar :size="32" class="role-avatar">{{ userRoleTarget?.realName?.charAt(0) || '?' }}</el-avatar>
         <div class="role-user-info">
@@ -230,10 +202,10 @@
     </el-dialog>
 
     <!-- 批量设置角色弹窗 -->
-    <el-dialog v-model="batchRoleDialogVisible" title="批量设置角色" width="480px" append-to-body>
+    <el-dialog v-model="batchRoleDialogVisible" class="compact-form" title="批量设置角色" width="480px" append-to-body>
       <div class="batch-role-info">
         <el-tag type="primary" effect="plain" size="large">{{ selectedIds.length }}</el-tag>
-        <span class="batch-role-text"> 个用户，将被分配以下角色（将覆盖原有角色）</span>
+        <span class="batch-role-text"> 个用户，将覆盖原有角色</span>
       </div>
       <el-divider style="margin: 16px 0;" />
       <div class="role-check-list">
@@ -458,6 +430,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 弹窗表单网格统一走全局 .form-grid + .compact-form-grid--two，
+   页面 scoped 不再声明列宽与间距；form-item margin 与控件高度由全局提供。 */
 .module-card {
   background: #fff;
 }
@@ -528,52 +502,10 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
-.dialog-hint {
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  border: 1px solid #d9e8ff;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
-}
-
-.dialog-hint-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.dialog-hint-text {
-  margin-top: 6px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #526071;
-}
-
+/* 弹窗内的说明 banner 与分组描述已移除；绑定信息改为轻分组（短标题 + 分隔线）。
+   网格列数/间距、form-item 与控件高度统一由全局 .compact-form 规则提供。 */
 .binding-panel {
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  border: 1px dashed #f5c97a;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fffaf0 0%, #fff6df 100%);
-}
-
-.binding-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.binding-panel-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #8a5a00;
-}
-
-.binding-panel-text {
-  margin: 8px 0 12px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #7a5a1f;
+  margin-bottom: 10px;
 }
 
 .binding-field {
